@@ -32,4 +32,6 @@ export const config = {
   smtpPass: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   mailFrom: process.env.MAIL_FROM || '',
   mailFromName: process.env.MAIL_FROM_NAME || 'ALCOMBAR Gestión',
+  // Resend (API HTTP). Si está, se usa en lugar de SMTP
+  resendApiKey: process.env.RESEND_API_KEY || '',
 };
