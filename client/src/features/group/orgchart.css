@@ -1,0 +1,59 @@
+/* Organigrama del Grupo (misma estructura que el del Drive). Usa los tokens del tema: anda en claro y oscuro. */
+.org { display: flex; flex-direction: column; gap: 4px; }
+.org-connector { text-align: center; color: var(--muted); font-size: 0.9rem; line-height: 1; padding: 6px 0; user-select: none; }
+
+.org-context { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.org-context-card { border: 1px dashed var(--border-strong, var(--border)); border-radius: var(--radius, 10px); padding: 10px 14px; background: var(--surface-2); text-align: center; }
+.org-context-card .t { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
+.org-context-card .d { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+.org-jefatura { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 760px; margin: 0 auto; width: 100%; }
+.org-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius, 10px); box-shadow: var(--shadow); padding: 12px 16px; }
+.org-box.lead { border-top: 4px solid var(--primary); text-align: center; }
+.org-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
+.org-box.lead .org-names { font-size: 1.02rem; font-weight: 650; }
+
+.org-section-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
+.org-section-title h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.org-section-title .sup { color: var(--muted); font-size: 0.9rem; }
+
+.org-comite { border-top: 4px solid var(--accent); }
+.org-areas { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; margin-top: 10px; }
+.org-area { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; background: var(--surface-2); min-width: 0; }
+.org-area .name { font-weight: 650; font-size: 0.88rem; }
+.org-area .who { font-size: 0.85rem; margin-top: 2px; overflow-wrap: anywhere; }
+.org-area .tbd { color: var(--muted); font-style: italic; }
+.org-others { font-size: 0.88rem; color: var(--muted); margin-top: 12px; line-height: 1.6; }
+.org-others b { color: var(--text); font-weight: 600; }
+
+.org-units { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; }
+.org-unit-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--border); border-radius: var(--radius, 10px); box-shadow: var(--shadow); min-width: 0; }
+.org-unit-card .head { padding: 10px 12px; border-bottom: 1px solid var(--border); font-weight: 650; }
+.org-unit-card .head a { color: var(--text); }
+.org-unit-card .body { padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.org-unit-card .role .org-names { font-size: 0.9rem; }
+.org-names { display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.org-names .tbd { color: var(--muted); font-style: italic; }
+.org-names .note { color: var(--muted); font-size: 0.85em; }
+.org-status { padding: 7px 12px; font-size: 0.82rem; font-weight: 650; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius, 10px) var(--radius, 10px); }
+.org-status.ok { color: var(--ok); background: var(--ok-soft); }
+.org-status.faltan { color: var(--warn); background: var(--warn-soft); }
+.org-status.sin_chicos { color: var(--info); background: var(--info-soft); }
+
+.org-mayores { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.org-mayores .org-units { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.org-familia { display: flex; flex-direction: column; gap: 10px; }
+.org-familia .org-box { border-top: 4px solid var(--border-strong, var(--border)); }
+.org-familia .hint { font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+.org-pending { font-size: 0.88rem; }
+.org-pending .branch { color: var(--muted); font-size: 0.85em; }
+
+.org-legend { margin-top: 14px; font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.org-legend .item { display: inline-flex; align-items: center; gap: 6px; }
+
+@media (max-width: 1000px) {
+  .org-mayores { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .org-context, .org-jefatura { grid-template-columns: minmax(0, 1fr); }
+}

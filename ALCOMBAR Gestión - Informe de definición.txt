@@ -1,0 +1,521 @@
+﻿ALCOMBAR Gestión · Grupo Scout 155 Divina Providencia
+
+
+
+
+
+
+
+
+
+
+GRUPO SCOUT 155 DIVINA PROVIDENCIA
+ALCOMBAR Gestión
+Plataforma de gestión integral del Grupo
+Informe de definición del producto: alcance, módulos, roles, modelo de datos, arquitectura y plan de trabajo
+Versión 1 · Noviembre de 2026
+________________
+
+
+Índice
+1. Resumen        3
+2. Usuarios, roles y permisos        3
+2.1 Acceso        3
+2.2 Modelo de permisos        3
+2.3 Roles iniciales        4
+2.4 Reglas de visibilidad        4
+3. Módulos        4
+3.1 Grupo y unidades        4
+3.2 Adultos y formación        5
+3.3 Protagonistas        5
+3.4 Progresión personal        5
+3.5 Fichas de actividad y ciclo de programa        5
+3.6 Contabilidad        6
+3.7 Eventos        6
+3.8 Campamentos y salidas        6
+3.9 Inventario        6
+3.10 Calendario y documentos        6
+4. Ficha de actividad        6
+5. Progresión personal por rama        7
+5.1 Rama Scouts: lo que la app tiene que modelar        8
+5.2 Ciclo de programa        8
+6. Arquitectura        8
+6.1 Autenticación        9
+6.2 Estructura del repositorio        9
+6.3 Ambientes        9
+7. Modelo de datos        9
+8. Seguridad y datos personales        10
+9. Identidad visual        10
+10. Migración de datos        10
+11. Riesgos        11
+12. Plan de trabajo        11
+13. Preguntas pendientes        11
+General        11
+Adultos        12
+Protagonistas        12
+Progresión        12
+Fichas        12
+Contabilidad        12
+Eventos y campamentos        12
+Inventario        12
+Operación        12
+14. Fuentes        13
+________________
+
+
+1. Resumen
+ALCOMBAR Gestión es una aplicación web que centraliza la gestión del Grupo Scout 155 Divina Providencia: adultos y su formación, protagonistas y su progresión personal, fichas de actividad, contabilidad, eventos, campamentos e inventario. Reemplaza las planillas y documentos dispersos en distintos Drives por una única fuente de datos con usuarios, roles y permisos.
+Decisión
+	Definición acordada
+	Usuarios
+	Solo adultos del Grupo. Sin registro público: las cuentas las crea un superadmin.
+	Roles y permisos
+	Roles predefinidos y configurables por el superadmin, con permisos por módulo y acción, limitados a la unidad asignada cuando corresponde.
+	Primera versión
+	Los cuatro bloques: base y adultos, protagonistas y progresión, fichas de actividad, contabilidad con eventos, campamentos e inventario. Se entregan en etapas (ver sección 12).
+	Fichas de actividad
+	El formato que hoy usa la Unidad Scout Luis Conde, con objetivos y competencias según la rama y las guías de SAAC.
+	Privacidad
+	Todos los educadores pueden ver a los protagonistas de cualquier unidad; solo los de su unidad pueden editar. No se cargan datos de salud.
+	Contabilidad
+	Caja y movimientos, cuotas y afiliaciones por protagonista, presupuesto anual. Sin cajas separadas por unidad.
+	Inventario
+	Bienes con estado y ubicación, más préstamos y devoluciones.
+	Uso
+	Web responsive, con conexión. Sin modo offline.
+	Stack
+	React + Vite, Express con TypeScript, Sequelize, PostgreSQL. API y base en Railway, front en Netlify.
+	Identidad visual
+	Bordó y oro, los colores del Grupo.
+	Desarrollo
+	Un desarrollador con asistencia de IA. Este informe funciona como especificación.
+	
+
+2. Usuarios, roles y permisos
+2.1 Acceso
+* Sin registro. No existe pantalla de alta pública. El superadmin crea cada usuario y el sistema le envía un enlace para definir su contraseña.
+* Login. Email y contraseña. Recuperación de contraseña por email con enlace de un solo uso.
+* Usuario y adulto. Cada usuario se vincula a un registro de Adulto. Un adulto puede existir sin usuario (por ejemplo, un colaborador que no usa la app).
+* Baja. Los usuarios se desactivan, no se borran, para conservar el historial de lo que cargaron.
+2.2 Modelo de permisos
+Un permiso es la combinación de un módulo y una acción: ver, crear, editar, eliminar, aprobar, exportar. Un rol agrupa permisos. Un usuario puede tener varios roles. Cada asignación de rol tiene un alcance:
+* Alcance Grupo: el permiso vale para todo el Grupo (Jefatura, Tesorería, Secretaría).
+* Alcance Unidad: el permiso vale solo para la unidad indicada (Jefe/a de Unidad, educadores). Un adulto que pasa de unidad cambia el alcance, no el rol.
+El superadmin puede crear roles nuevos y cambiar los permisos de cualquier rol desde la app, salvo los del propio rol Superadmin, que están fijos en el código para que el sistema no quede sin administrador.
+2.3 Roles iniciales
+Rol
+	Alcance
+	Qué puede hacer
+	Superadmin
+	Grupo
+	Todo. Gestiona usuarios, roles, permisos, unidades y catálogos. Ve la auditoría.
+	Jefatura de Grupo
+	Grupo
+	Ve todos los módulos. Edita adultos, unidades, equipos y calendario del Grupo. Aprueba presupuestos y campamentos.
+	Jefe/a de Unidad
+	Unidad
+	Gestiona protagonistas, progresión, fichas, ciclo de programa y campamentos de su unidad. Aprueba las fichas de su unidad.
+	Educador/a
+	Unidad
+	Crea y edita fichas, registra asistencia y progresión en su unidad. Ve protagonistas y fichas de las demás unidades.
+	Tesorería
+	Grupo
+	Gestiona caja, cuotas, afiliaciones, presupuesto y rendiciones de eventos y campamentos.
+	Secretaría
+	Grupo
+	Altas y bajas de protagonistas y adultos, afiliaciones, control de documentación y legajos.
+	Programa / APF
+	Grupo
+	Gestiona la formación de adultos y los asesores personales. Ve fichas y ciclos de todas las unidades.
+	Intendencia
+	Grupo
+	Gestiona inventario y préstamos.
+	Consulta
+	Grupo
+	Solo lectura de lo no sensible: organigrama, calendario, documentos.
+	
+
+2.4 Reglas de visibilidad
+* Todos los educadores ven el padrón y la progresión de los protagonistas de cualquier unidad. Solo los de la unidad del protagonista pueden editar.
+* Los datos de contacto de las familias y la situación de pagos de cada protagonista los ven su unidad, Secretaría, Tesorería y Jefatura.
+* La contabilidad general la ven Tesorería y Jefatura. Los educadores ven solo el estado de pago de sus protagonistas y los presupuestos de sus campamentos.
+* Toda creación, edición y eliminación queda en un registro de auditoría: quién, cuándo y qué cambió.
+3. Módulos
+3.1 Grupo y unidades
+Estructura del Grupo. Es la base de todo lo demás.
+* Unidades con código, nombre, rama y nivel: Colonia Castores Alicura, Manada Isla Lukanon, Manada Pueblo Libre, Unidad Scout Luis Conde, Unidad Scout Pedro Bártolo, Comunidad Caminante Jorge Bergoglio, Comunidad Caminante Manu Lozano, Comunidad Rover San Luis Orione.
+* Equipos de apoyo del Comité Ejecutivo con su responsable.
+* Organigrama generado desde los datos, como el del Mapa del Grupo.
+* Pequeños grupos de cada unidad: seisenas, patrullas, equipos.
+3.2 Adultos y formación
+Reemplaza la Base de Datos de Adultos y la pestaña Adultos del Mapa del Grupo.
+* Ficha del adulto: datos personales, tótem, cargo, unidad, fecha de ingreso, estado (alta, baja, período de prueba).
+* Historial de cargos y unidades por año.
+* Formación: Insignia de Madera de Programa y de Gestión, Miembro Activo, cursos por nivel, con fecha y certificado adjunto.
+* Asesor Personal de Formación asignado y Plan de Desempeño.
+* Indicadores: adultos por unidad contra el mínimo de SAAC, quiénes cumplen edad y formación para cada cargo, adultos sin formación registrada.
+3.3 Protagonistas
+Padrón de chicos y chicas del Grupo.
+* Ficha: datos personales, unidad, pequeño grupo, fecha de ingreso, fecha de Promesa, responsables adultos con contacto.
+* Pases de rama con historial: de qué unidad a cuál y cuándo.
+* Asistencia por actividad.
+* Documentación: se registra si la ficha médica y cada autorización están presentadas y cuándo vencen. No se carga su contenido.
+* Afiliación anual a SAAC: estado por año.
+3.4 Progresión personal
+Seguimiento por protagonista según el esquema de su rama (ver sección 5).
+* Etapa actual, fecha de inicio de cada etapa y entrega de insignia.
+* Competencias elegidas para la etapa y su estado, con desafíos y notas.
+* Roles o cargos que tuvo en su pequeño grupo, por ciclo de programa.
+* Participación en proyectos, descubiertas, cacerías y campamentos, tomada de las fichas y la asistencia.
+* Revisión de fin de ciclo: autoevaluación, mirada de los pares y del educador, como texto libre.
+* Especialidades.
+* Vista de la unidad: tablero con todos los protagonistas y su avance.
+3.5 Fichas de actividad y ciclo de programa
+Las fichas REME de cada unidad, en un solo lugar (ver sección 4).
+* Crear, duplicar, editar y aprobar fichas. Estados: borrador, en revisión, aprobada, realizada, evaluada.
+* Banco de fichas del Grupo: buscar por rama, área, competencia, tipo, lugar o texto, y reutilizar fichas de otras unidades.
+* Ciclo de programa por unidad: fechas, diagnóstico, propósitos, actividades elegidas y calendario.
+* Programa del sábado: lista ordenada de fichas con horario y responsable.
+* Exportación a PDF con el formato del Grupo.
+3.6 Contabilidad
+Reemplaza las planillas de Administración.
+* Cuentas: efectivo, banco, billetera virtual.
+* Movimientos de ingreso y egreso con categoría, fecha, cuenta, evento o campamento asociado, comprobante adjunto y quién lo cargó.
+* Cuenta corriente por protagonista: cuota mensual, afiliación anual, campamento. Deudas, pagos y recibos.
+* Presupuesto anual por rubro y comparación con lo ejecutado.
+* Cierre mensual: los movimientos de un mes cerrado no se editan; se corrigen con un contra-asiento.
+* Reportes: caja por período, deudores, resultado por evento, ejecución presupuestaria.
+3.7 Eventos
+Fogón, festival aniversario, eventos de recaudación.
+* Presupuesto del evento, tareas con responsable y fecha, compras.
+* Ventas y gastos registrados como movimientos de la contabilidad, asociados al evento.
+* Rendición final: resultado, sobrantes, evaluación.
+3.8 Campamentos y salidas
+Campamento anual, acantonamientos y salidas de unidad.
+* Datos generales: lugar, fechas, unidades, responsable.
+* Inscripción por participante, costo, pagos y saldo.
+* Legajo por participante: autorización, ficha médica presentada, DNI, con semáforo de completo o incompleto.
+* Presupuesto y rendición: traslado, comida, predio, contingencias.
+* Logística: menú, compras, equipo de cocina, materiales que salen del inventario.
+* Catálogo de lugares de acampe con evaluación posterior.
+3.9 Inventario
+Bienes del Grupo y de las unidades.
+* Bien: nombre, categoría, cantidad, estado, ubicación, unidad dueña, foto, fecha y valor de compra.
+* Préstamos: quién retira, para qué actividad o campamento, fecha de devolución, estado al devolver.
+* Alertas de préstamos vencidos y de bienes en mal estado.
+3.10 Calendario y documentos
+Lo que hoy está en el Calendario anual y en Documentos del Mapa.
+* Calendario del Grupo y de cada unidad, con servicio rotativo, Consejos y eventos.
+* Actas del Consejo de Grupo y repositorio de documentos con enlaces al Drive.
+4. Ficha de actividad
+El formato sale de las fichas 2026 de la Unidad Scout Luis Conde (por ejemplo, «REME - Morse»). Los campos son los mismos en todas las ramas; cambian las opciones que ofrece cada uno.
+Campo
+	Tipo
+	Notas
+	Nombre de la actividad
+	Texto
+	
+
+	Rango de edad
+	Automático por rama
+	Editable.
+	Área de desarrollo
+	Selección
+	Catálogo de la rama. En Scouts: Salud y bienestar, Ambiente, Paz y desarrollo, Habilidades para la vida.
+	Participantes
+	Unidad + cantidad
+	La cantidad se propone desde el padrón.
+	Objetivos de la actividad
+	Lista de texto
+	Encabezado según la rama: «Que el/la Scout logre:».
+	Propósito
+	Selección múltiple
+	Competencias educativas del catálogo de la rama, tomadas de la guía de SAAC.
+	Marco de exploración
+	Texto
+	El nombre del campo cambia con el marco simbólico de cada rama.
+	Descripción de la actividad
+	Texto largo
+	
+
+	Recupero
+	Texto
+	Reflexión o cierre con los protagonistas.
+	Función de los demás educadores
+	Texto
+	
+
+	Materiales
+	Lista
+	Se puede vincular con bienes del inventario.
+	Responsable de la actividad
+	Adulto
+	
+
+	Fecha, lugar y duración
+	Fecha, texto, minutos
+	
+
+	
+
+Campos que agrega la app, sin cambiar la ficha impresa:
+* Tipo de oportunidad de aprendizaje, según la guía de SAAC: actividad fija o variable, proyecto, descubierta, campamento; de pequeño grupo o de unidad.
+* Ciclo de programa al que pertenece.
+* Evaluación posterior: qué funcionó, qué cambiar, asistencia.
+* Seguridad: riesgos y medidas, obligatorio cuando la actividad es fuera de la sede.
+* Estado y aprobación del Jefe/a de Unidad.
+Sobre el nombre REME. Las guías actuales de SAAC en Rumbo Sur no definen una ficha con ese nombre. SAAC publica fichas con código propio (por ejemplo, #AC005-V1) con tipo, nombre, lugar, participantes, materiales, rama, objetivos, desarrollo, reflexión y cierre. El formato del Grupo cubre esos campos y suma área, competencias y marco de exploración, así que es compatible.
+5. Progresión personal por rama
+Cada rama se carga como un esquema configurable: etapas, áreas, competencias y desafíos. Así, cuando SAAC actualiza una guía, se actualiza el catálogo sin tocar el código. Se guarda la versión del esquema con la que avanzó cada protagonista.
+Rama
+	Etapas
+	Estado de la información
+	Castores
+	A definir
+	Rumbo Sur todavía no publicó la rama («Próximamente»). Se usa el esquema que hoy aplica la Colonia.
+	Lobatos y Lobeznas
+	Pata Tierna · Lobo Saltador · Lobo Rastreador · Lobo Cazador
+	Nombres tomados de las insignias de Rumbo Sur. Competencias a cargar desde el capítulo 9 de la guía de la rama.
+	Scouts
+	Pistas · Senda · Rumbo · Travesía
+	Relevado del capítulo 9 de la Guía de la Rama Scouts (detalle abajo).
+	Caminantes
+	A cargar
+	Desde la Guía de Caminantes de Rumbo Sur.
+	Rovers
+	A cargar
+	Desde la Guía Rover y el Diario de Viaje de Rumbo Sur.
+	
+
+5.1 Rama Scouts: lo que la app tiene que modelar
+* Momentos: Ambientación (1 a 3 meses), Promesa (cuando el joven lo decide, sin relación con la etapa) y Tiempo de pase (Exploración de Travesía, interrama y pase a Caminantes alrededor de los 14 años).
+* Áreas de desarrollo: Salud y bienestar, Ambiente, Paz y desarrollo, Habilidades para la vida.
+* Competencias: alrededor de 50 competencias de rama numeradas, cada una con desafíos requeridos y opcionales.
+* Cartas de Exploración: en cada etapa el joven elige entre 12 y 14 competencias, equilibradas entre las cuatro áreas.
+* Requisitos por etapa: roles de patrulla ejercidos y participación en descubiertas y proyectos de patrulla y de unidad.
+* Evaluación: autoevaluación, mirada de la patrulla y del educador, al cierre de cada ciclo de programa. Es conversada, no un examen: la app registra el resultado y notas, no puntajes.
+* Insignias: una por etapa, se entrega al inicio de la etapa.
+* Estándares anuales de la unidad: 3 descubiertas, 2 proyectos de unidad, al menos 4 noches de campamento. La app puede mostrar cuánto falta.
+5.2 Ciclo de programa
+Según la guía, cada unidad hace 2 o 3 ciclos por año, de 3 a 4 meses, con cuatro fases: Revisar, Elegir, Organizar y Realizar. La app guarda por ciclo el diagnóstico, los propósitos, las actividades elegidas, el calendario y la evaluación, y vincula las fichas y las revisiones de progresión con el ciclo.
+6. Arquitectura
+Capa
+	Tecnología
+	Notas
+	Front
+	React + Vite + TypeScript
+	React Router, TanStack Query para datos, React Hook Form + Zod para formularios. Desplegado en Netlify.
+	API
+	Express + TypeScript
+	REST con prefijo /api/v1. Validación con Zod. Desplegada en Railway.
+	Datos
+	PostgreSQL + Sequelize
+	Migraciones con sequelize-cli; nunca sync en producción. Base en Railway con backups diarios.
+	Archivos
+	Almacenamiento S3 compatible
+	Comprobantes, certificados y fotos. Railway no conserva archivos en disco entre despliegues, por eso van aparte (Cloudflare R2 o similar).
+	Email
+	Servicio transaccional
+	Invitaciones y recuperación de contraseña (Resend, Brevo o similar).
+	PDF
+	Generación en la API
+	Fichas, recibos y rendiciones.
+	
+
+6.1 Autenticación
+* Contraseñas con hash argon2 o bcrypt. Mínimo 10 caracteres.
+* Token de acceso de corta duración y token de renovación rotativo, ambos en cookies httpOnly, Secure.
+* Como el front está en Netlify y la API en Railway, conviene que Netlify redirija /api/* a Railway con una regla de proxy. Así el navegador ve un solo dominio, las cookies funcionan sin configuración entre sitios y no hace falta CORS.
+* Límite de intentos de login y bloqueo temporal.
+* Middleware de autorización único: recibe módulo, acción y, si corresponde, la unidad del recurso.
+6.2 Estructura del repositorio
+alcombar/
+ apps/
+   web/        React + Vite
+     src/ features/<modulo>/  components/  lib/  routes/
+   api/        Express + TS
+     src/ modules/<modulo>/ {routes, controller, service, schema}
+          models/  migrations/  seeders/  middlewares/  lib/
+ packages/
+   shared/     tipos y esquemas Zod compartidos
+ docs/
+6.3 Ambientes
+* Local con Docker Compose para Postgres.
+* Staging y producción en Railway, cada uno con su base.
+* Despliegue automático desde la rama principal, con migraciones antes de iniciar la API.
+7. Modelo de datos
+Entidades principales por módulo. Todas llevan id, fechas de creación y modificación, y borrado lógico.
+Módulo
+	Entidades
+	Acceso
+	User, Role, Permission, RolePermission, UserRole (con unidad opcional), Session, AuditLog
+	Grupo
+	Unit, SmallGroup (patrulla, seisena, equipo), SupportTeam, ScoutYear
+	Adultos
+	Adult, AdultAssignment (cargo y unidad por año), Course, AdultCourse, TrainingAdvisor, PerformancePlan
+	Protagonistas
+	Member, Guardian, MemberGuardian, UnitTransfer, Affiliation, MemberDocument (tipo, presentado, vencimiento), Attendance
+	Progresión
+	ProgressionScheme (por rama y versión), Stage, Area, Competency, Challenge, MemberStage, MemberCompetency, MemberRole, CycleReview, Specialty, MemberSpecialty
+	Programa
+	ProgramCycle, ActivitySheet, ActivityObjective, ActivityCompetency, ActivityMaterial, ActivityEvaluation, MeetingProgram
+	Contabilidad
+	Account, Category, Transaction, Attachment, Budget, BudgetLine, FeePlan, Charge, Payment, Receipt, PeriodClose
+	Eventos
+	Event, EventTask, EventBudgetLine
+	Campamentos
+	Camp, CampUnit, CampEnrollment, CampDocumentCheck, CampBudgetLine, CampMenu, CampSite, CampSiteReview
+	Inventario
+	Item, ItemCategory, Location, Loan, LoanItem
+	General
+	CalendarEvent, CouncilMinute, DocumentLink
+	
+
+Relaciones clave. Un Member pertenece a una Unit y a un SmallGroup. Un ActivitySheet pertenece a una Unit y a un ProgramCycle, y se vincula con Competency. Una Transaction puede apuntar a un Event, un Camp o un Payment. Un Loan puede apuntar a un ActivitySheet o a un Camp. UserRole lleva la unidad que limita el permiso.
+8. Seguridad y datos personales
+* La app guarda datos personales de menores. En Argentina aplica la Ley 25.326 de Protección de Datos Personales: conviene informar a las familias qué se guarda y para qué, y registrar su consentimiento en la inscripción anual.
+* No se guardan datos de salud. Solo se marca si la documentación fue presentada.
+* HTTPS en todo. Backups diarios de la base con prueba de restauración periódica.
+* Auditoría de accesos y cambios. Exportaciones de datos limitadas por permiso y registradas.
+* Al dar de baja a un protagonista, sus datos de contacto se pueden anonimizar pasado un plazo a definir.
+* Los archivos adjuntos se sirven con enlaces firmados de corta duración, no con URL públicas.
+9. Identidad visual
+Elemento
+	Propuesta
+	Notas
+	Bordó
+	#7A1F2B
+	Color principal: barra superior, títulos, botones primarios. Valor aproximado, a confirmar con el del Grupo.
+	Oro
+	#F2C230
+	Acentos, estados activos, indicadores. A confirmar.
+	Neutros
+	Crema #FAF6EE, gris #666666, texto #222222
+	Fondos y texto.
+	Colores de rama
+	Marrón, amarillo, verde, azul, rojo
+	Para identificar unidades, como en el organigrama del Mapa.
+	Tipografía
+	Una sans legible
+	A definir.
+	Logo
+	Pendiente
+	Hace falta el archivo del logo del Grupo y, si existe, el de la tribu.
+	
+
+10. Migración de datos
+Origen
+	Destino en la app
+	Mapa del Grupo 155 (Google Sheet)
+	Unidades, adultos, formación, equipos de apoyo.
+	BASE DE DATOS ADULTOS
+	Datos personales de adultos y cursos.
+	Nóminas y listados de unidad (por ejemplo, NOMINA USLC 2026, Patrullas 2026)
+	Protagonistas, patrullas y pequeños grupos.
+	Fichas REME en Docs y Word
+	Banco de fichas. Carga manual de las vigentes; el resto queda como archivo enlazado.
+	Planillas de Administración
+	Saldos iniciales, plan de cuotas y deudores al momento del arranque.
+	Lugares de acampe (Excel)
+	Catálogo de lugares de acampe.
+	Calendario anual
+	Calendario del Grupo.
+	
+
+Se hace con importadores desde CSV por entidad, con vista previa y validación antes de confirmar.
+11. Riesgos
+* Alcance. Son diez módulos para un solo desarrollador. El plan por etapas existe para que haya algo en uso desde la primera.
+* Adopción. Si los educadores siguen usando sus planillas, la app queda desactualizada. Conviene arrancar con una unidad piloto.
+* Dependencia de una persona. Documentar el despliegue y dejar un segundo superadmin.
+* Guías de SAAC en cambio. Castores todavía no está publicado. Por eso los esquemas de progresión son configurables.
+* Contabilidad. Un error ahí cuesta confianza. Cierre mensual, auditoría y conciliación con la planilla actual durante los primeros meses.
+12. Plan de trabajo
+Los cuatro bloques entran en la primera versión, entregados en este orden. Cada etapa termina con algo que el Grupo puede usar.
+Etapa
+	Contenido
+	Resultado
+	0. Cimientos
+	Repositorio, ambientes, base, login, usuarios, roles, permisos, auditoría, diseño base.
+	El superadmin entra y crea usuarios.
+	1. Grupo y adultos
+	Unidades, equipos, adultos, formación, organigrama. Importación desde el Mapa.
+	Reemplaza al Mapa del Grupo.
+	2. Protagonistas
+	Padrón, responsables, pequeños grupos, pases, documentación, asistencia.
+	Cada unidad tiene su nómina en la app.
+	3. Fichas y ciclo
+	Fichas de actividad, aprobación, banco, ciclo de programa, PDF.
+	Las unidades planifican en la app.
+	4. Progresión
+	Esquemas por rama, etapas, competencias, revisiones. Primero Scouts, después el resto.
+	Seguimiento de cada protagonista.
+	5. Contabilidad
+	Cuentas, movimientos, cuotas, afiliaciones, presupuesto, reportes.
+	Tesorería deja la planilla.
+	6. Eventos y campamentos
+	Eventos, inscripción, legajos, presupuesto, rendición, logística.
+	Campamento anual gestionado en la app.
+	7. Inventario
+	Bienes, préstamos, alertas.
+	Intendencia en la app.
+	8. Cierre
+	Calendario, actas, documentos, ajustes de uso real.
+	Todo centralizado.
+	
+
+13. Preguntas pendientes
+Lo que falta definir para cerrar la especificación, por tema.
+General
+* ¿El nombre se escribe Alcombar o Alconbar? En el Drive hay una carpeta «Tribu Alconbar».
+* ¿Quiénes van a ser los superadmin? Conviene que sean dos.
+* ¿Qué dominio va a usar la app?
+* ¿Hay logo del Grupo y de la tribu en buena calidad? ¿Cuáles son los valores exactos del bordó y el oro?
+Adultos
+* ¿Qué datos personales de los adultos hacen falta además de los de la Base actual?
+* ¿Se registran los adultos dados de baja con su historial?
+* ¿El período de prueba y el Plan de Desempeño tienen un formato definido?
+Protagonistas
+* ¿Qué datos de la familia se guardan: uno o dos responsables, teléfono, email, dirección?
+* ¿Qué autorizaciones se controlan: anual de salidas cercanas, uso de imagen, campamento, retiro?
+* ¿La asistencia se toma todos los sábados en todas las unidades?
+* ¿Las familias firman hoy algún consentimiento sobre el uso de sus datos?
+Progresión
+* ¿Qué esquema usa hoy cada unidad de Castores, Caminantes y Rovers?
+* ¿Las unidades ya trabajan con las Cartas de Exploración y las competencias nuevas de Rumbo Sur, o con el esquema anterior?
+* ¿Se registran especialidades? ¿Con qué catálogo?
+* ¿Hace falta cargar el historial de progresión de años anteriores?
+Fichas
+* ¿Todas las unidades usan el mismo formato que la USLC o hay variantes por rama?
+* ¿Cómo se llama en cada rama el campo «Marco de exploración»?
+* ¿La ficha necesita aprobación del Jefe/a de Unidad antes de realizarse, o alcanza con cargarla?
+* ¿Las fichas llevan numeración o código?
+Contabilidad
+* ¿Qué cuentas existen hoy: efectivo, banco, billetera? ¿A nombre de quién?
+* ¿Cuál es la lista de rubros de ingresos y egresos? ¿Sirve la del Presupuesto 2024?
+* ¿Cómo se define la cuota: mensual fija, con descuento por hermanos, con becas?
+* El presupuesto 2024 tenía un «beneficio a ramas por cobro de cuotas» del 30%. ¿Sigue vigente? Si las unidades no tienen caja propia, ¿cómo se registra?
+* ¿Se emiten recibos a las familias? ¿Con numeración?
+* ¿Qué medios de pago se aceptan? ¿Interesa integrar Mercado Pago más adelante?
+* ¿El año contable va de marzo a febrero o de enero a diciembre?
+Eventos y campamentos
+* ¿Quién aprueba el presupuesto de un campamento?
+* ¿El costo del campamento es igual para todos o hay becas y descuentos?
+* ¿Los adultos que van al campamento pagan?
+* ¿Hace falta registrar el transporte: empresa, documentación, lista de pasajeros?
+Inventario
+* ¿Existe hoy un listado de bienes para importar?
+* ¿Los bienes son del Grupo, de cada unidad, o de ambos?
+* ¿Quién autoriza un préstamo?
+Operación
+* ¿Cuánto presupuesto mensual hay para alojamiento y servicios?
+* ¿Con qué unidad se hace la prueba piloto?
+* ¿Cada cuánto se revisan los backups y quién lo hace?
+14. Fuentes
+* Rumbo Sur, plataforma de Scouts de Argentina
+* Guía de la Rama Scouts, capítulo 7: oportunidades de aprendizaje
+* Guía de la Rama Scouts, capítulo 8: ciclo de programa
+* Guía de la Rama Scouts, capítulo 9: progresión personal
+* Ficha oficial #AC005-V1, Rama Scouts
+* Ficha «REME - Morse», USLC 2026 (Drive del Grupo)
+* Mapa del Grupo 155 (Drive, carpeta GRUPO)
+Informe de definición del producto · Página

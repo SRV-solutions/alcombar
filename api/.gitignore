@@ -1,0 +1,16 @@
+# Dependencias y build
+node_modules
+dist
+
+# Claves (usar .env.example como modelo)
+.env
+.env.*
+!.env.example
+
+# Base de datos local (tiene datos personales de los chicos y las familias)
+.data/
+
+# Logs
+logs
+*.log
+npm-debug.log*

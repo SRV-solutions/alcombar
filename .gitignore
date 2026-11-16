@@ -1,0 +1,66 @@
+# === NODE MODULES ===
+/api/node_modules/
+/client/node_modules/
+node_modules/
+
+# === LOGS ===
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# === NODE DIAGNOSTIC & PID FILES ===
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# === COVERAGE / BUILD / CACHE ===
+coverage
+*.lcov
+.nyc_output
+*.tsbuildinfo
+.npm
+.eslintcache
+.cache
+.parcel-cache
+*.tgz
+
+# === ENV FILES (claves: nunca al repo; .env.example sí) ===
+.env
+.env.*
+!.env.example
+
+# === BASE DE DATOS LOCAL Y DATOS PERSONALES (nunca al repo) ===
+# La base local tiene los datos de los chicos y las familias.
+.data/
+/api/.data/
+uploads/
+*.dump
+*.sql.gz
+# Exportaciones y listas con datos de personas (Mi Rincón, planillas, nóminas)
+personas*.json
+personas*.csv
+*.tsv
+nomina*.csv
+protagonistas-*.csv
+adultos-*.csv
+
+# === FRAMEWORKS OUTPUT ===
+dist/
+dist-ssr/
+out
+.temp
+
+# === EDITORES Y SISTEMA ===
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.sw?

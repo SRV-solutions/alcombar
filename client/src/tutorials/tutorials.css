@@ -1,0 +1,59 @@
+/* Tutoriales de Luisito: capa, foco sobre el elemento y globo (mismo esquema que sentryx). */
+.tour-layer { position: fixed; inset: 0; z-index: 150; pointer-events: none; }
+.tour-dim { position: absolute; inset: 0; background: rgba(25, 8, 10, 0.45); animation: tour-fade 0.2s ease; }
+.tour-spot {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(25, 8, 10, 0.55), 0 0 0 3px var(--accent, #f2c230);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.tour-spot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 16px;
+  border: 2px solid var(--accent, #f2c230);
+  animation: tour-pulse 1.6s ease-out infinite;
+}
+.tour-bubble {
+  position: fixed;
+  pointer-events: auto;
+  padding: 14px 16px 12px;
+  background: var(--surface, #fff);
+  color: var(--text, #222);
+  border: 1px solid var(--border, #e6dfd2);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  animation: tour-up 0.2s ease;
+  max-height: 80dvh;
+  overflow-y: auto;
+}
+.tour-head { display: flex; gap: 12px; align-items: flex-start; }
+.tour-guide { flex-shrink: 0; margin-top: -2px; color: var(--primary, #7a1f2b); }
+.tour-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.tour-text p { margin: 0; font-size: 0.92rem; line-height: 1.45; }
+.tour-meta { font-size: 0.76rem; color: var(--muted, #666); }
+.tour-title { font-size: 1.02rem; }
+.tour-dots { display: flex; gap: 4px; justify-content: center; margin: 12px 0 10px; }
+.tour-dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--border-strong, #d3c8b6); transition: width 0.2s ease; }
+.tour-dots span.on { width: 16px; background: var(--primary, #7a1f2b); }
+.tour-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+@keyframes tour-pulse { from { opacity: 0.9; transform: scale(1); } to { opacity: 0; transform: scale(1.08); } }
+@keyframes tour-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tour-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.tour-bubble[style*='translate(-50%'] { animation: tour-fade 0.2s ease; }
+
+/* Tarjeta de tutoriales (Mi perfil) */
+.tutorials-head { display: flex; gap: 14px; align-items: center; }
+.tutorials-head .luisito { color: var(--primary, #7a1f2b); }
+.tutorials-progress { height: 8px; border-radius: 4px; background: var(--surface-2, #f1ede5); overflow: hidden; margin-top: 8px; }
+.tutorials-progress span { display: block; height: 100%; background: var(--accent, #f2c230); border-radius: 4px; transition: width 0.3s ease; }
+.tutorials-list { list-style: none; margin: 14px 0 0; padding: 0; border: 1px solid var(--border, #e6dfd2); border-radius: 10px; overflow: hidden; }
+.tutorials-list li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--border, #e6dfd2); }
+.tutorials-list li:last-child { border-bottom: none; }
+.tutorials-list .t-name { font-weight: 650; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tutorials-list .t-desc { font-size: 0.82rem; color: var(--muted, #666); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot, .tour-spot::after, .tour-dim, .tour-bubble { animation: none !important; transition: none !important; }
+}

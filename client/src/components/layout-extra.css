@@ -1,0 +1,22 @@
+/* Barra superior con el buscador (escritorio) y ajustes del menú: buscador, Ayuda, perfil y tema. */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 32px;
+  background: var(--bg, #faf6ee);
+  border-bottom: 1px solid var(--border, #e6dfd2);
+}
+.appbar .appbar-help { margin-left: auto; }
+@media (max-width: 900px) {
+  .appbar { display: none; }
+  .topbar .gsearch { margin-left: 4px; }
+  .topbar .brand-name { display: none; }
+}
+@media (min-width: 901px) {
+  .topbar .gsearch { display: none; }
+}
+.sidebar-footer .footer-actions { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }

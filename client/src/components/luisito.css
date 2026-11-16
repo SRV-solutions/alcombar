@@ -1,0 +1,31 @@
+/* Luisito: color con currentColor (el del contenedor). Se anima la figura entera; se apaga con "reducir movimiento".
+   Los desplazamientos están en unidades del dibujo (300 de ancho), así se ven igual en cualquier tamaño. */
+.luisito { overflow: visible; display: inline-block; flex-shrink: 0; }
+.luisito * { transform-box: view-box; }
+.lu-figure { transform-origin: 165px 317.1px; }
+.lu-shadow { transform-origin: 165px 323.1px; }
+
+/* Quieto, respirando */
+.lu-idle .lu-figure { animation: lu-float 3.4s ease-in-out infinite; }
+.lu-idle .lu-shadow { animation: lu-shadow 3.4s ease-in-out infinite; }
+/* Saluda: se balancea con el banderín */
+.lu-wave .lu-figure { animation: lu-wave 1.8s ease-in-out infinite; }
+/* Señala: se inclina hacia adelante, como mostrando algo */
+.lu-point .lu-figure { animation: lu-point 2s ease-in-out infinite; }
+/* Piensa: se ladea despacio */
+.lu-think .lu-figure { animation: lu-think 3.2s ease-in-out infinite; }
+/* Festeja: salta */
+.lu-cheer .lu-figure { animation: lu-jump 1s ease-in-out infinite; }
+.lu-cheer .lu-shadow { animation: lu-shadow-jump 1s ease-in-out infinite; }
+
+@keyframes lu-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes lu-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.15; } 50% { transform: scaleX(0.85); opacity: 0.09; } }
+@keyframes lu-wave { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes lu-point { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+@keyframes lu-think { 0%, 100% { transform: rotate(0deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-6px); } }
+@keyframes lu-jump { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-38px) rotate(-2deg); } 55% { transform: translateY(-38px) rotate(2deg); } 80% { transform: translateY(0); } }
+@keyframes lu-shadow-jump { 0%, 100% { transform: scaleX(1); opacity: 0.15; } 45% { transform: scaleX(0.6); opacity: 0.06; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .luisito, .luisito * { animation: none !important; }
+}

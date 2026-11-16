@@ -1,0 +1,365 @@
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { z } from 'zod';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  ageAt,
+  BRANCH_INFO,
+  defaultSmallGroupKind,
+  formatDate,
+  SMALL_GROUP_KINDS,
+  smallGroupSchema,
+  type Branch,
+} from '@shared';
+import { api, qs } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
+import { applyServerErrors } from '../../lib/forms';
+import { adultName, useUnits } from '../../lib/queries';
+import { useToast } from '../../lib/toast';
+import type { Adult, MemberListItem, SmallGroup, Unit } from '../../lib/types';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  ConfirmButton,
+  Empty,
+  ErrorBox,
+  Field,
+  Input,
+  Loading,
+  Modal,
+  PageHeader,
+  Select,
+  UnitBadge,
+} from '../../components/ui';
+import { UnitFormModal } from './UnitsPage';
+
+type SmallGroupForm = z.input<typeof smallGroupSchema>;
+
+const KIND_LABELS: Record<string, string> = { equipo: 'Equipo', seisena: 'Seisena', patrulla: 'Patrulla' };
+
+function SmallGroupModal({ unit, group, onClose }: { unit: Unit; group?: SmallGroup; onClose: () => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SmallGroupForm>({
+    resolver: zodResolver(smallGroupSchema),
+    defaultValues: group
+      ? { unitId: unit.id, name: group.name, kind: group.kind as SmallGroupForm['kind'], active: group.active }
+      : { unitId: unit.id, name: '', kind: defaultSmallGroupKind(unit.branch as Branch), active: true },
+  });
+
+  const onSubmit = async (values: SmallGroupForm) => {
+    try {
+      if (group) await api.put(`/group/small-groups/${group.id}`, values);
+      else await api.post('/group/small-groups', values);
+      await qc.invalidateQueries({ queryKey: ['units'] });
+      await qc.invalidateQueries({ queryKey: ['members'] });
+      toast.ok(group ? 'Pequeño grupo actualizado' : 'Pequeño grupo creado');
+      onClose();
+    } catch (e) {
+      if (!applyServerErrors(e, setError)) toast.error(e);
+    }
+  };
+
+  const label = BRANCH_INFO[unit.branch as Branch]?.smallGroup.one ?? 'Pequeño grupo';
+  return (
+    <Modal
+      title={group ? `Editar ${group.name}` : `Nuevo/a ${label.toLowerCase()}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="sg-form" loading={isSubmitting}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <form id="sg-form" className="form-grid" onSubmit={handleSubmit(onSubmit)}>
+        <input type="hidden" {...register('unitId')} />
+        <Field label="Nombre" required error={errors.name?.message} full>
+          <Input {...register('name')} invalid={!!errors.name} placeholder="Halcones" autoFocus />
+        </Field>
+        <Field label="Tipo" required error={errors.kind?.message}>
+          <Select {...register('kind')}>
+            {SMALL_GROUP_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {KIND_LABELS[k]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <div className="field" style={{ justifyContent: 'flex-end' }}>
+          <Checkbox {...register('active')} label="Activo" />
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+export function UnitDetailPage() {
+  const { id = '' } = useParams();
+  const { can } = useAuth();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const units = useUnits();
+  const unit = units.data?.find((u) => u.id === id);
+  const [editUnit, setEditUnit] = useState(false);
+  const [sgModal, setSgModal] = useState<SmallGroup | 'new' | null>(null);
+
+  const canMembers = can('members', 'view');
+  const canAdults = can('adults', 'view');
+  const members = useQuery({
+    queryKey: ['members', { unitId: id }],
+    queryFn: () => api.get<MemberListItem[]>(`/members${qs({ unitId: id })}`),
+    enabled: canMembers && !!unit,
+  });
+  const adults = useQuery({
+    queryKey: ['adults', { unitId: id }],
+    queryFn: () => api.get<Adult[]>(`/adults${qs({ unitId: id })}`),
+    enabled: canAdults && !!unit,
+  });
+
+  if (units.isLoading) return <Loading />;
+  if (units.error) return <ErrorBox error={units.error} />;
+  if (!unit) return <Empty>No se encontró la unidad.</Empty>;
+
+  const info = BRANCH_INFO[unit.branch as Branch];
+  const sgLabel = info?.smallGroup ?? { one: 'Pequeño grupo', many: 'Pequeños grupos' };
+  const groups = [...unit.smallGroups].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  const countIn = (sgId: string) => (members.data ?? []).filter((m) => m.smallGroup?.id === sgId).length;
+  const withoutGroup = (members.data ?? []).filter((m) => !m.smallGroup).length;
+
+  const deleteGroup = async (sg: SmallGroup) => {
+    try {
+      await api.del(`/group/small-groups/${sg.id}`);
+      await qc.invalidateQueries({ queryKey: ['units'] });
+      await qc.invalidateQueries({ queryKey: ['members'] });
+      toast.ok('Pequeño grupo eliminado');
+    } catch (e) {
+      toast.error(e);
+    }
+  };
+
+  return (
+    <>
+      <PageHeader
+        crumbs={[{ to: '/grupo/unidades', label: 'Unidades' }]}
+        title={<UnitBadge unit={unit} />}
+        sub={
+          <>
+            {info?.label} · <code>{unit.code}</code> · {unit.active ? 'Activa' : 'Inactiva'}
+          </>
+        }
+        actions={
+          can('group', 'edit') ? (
+            <Button variant="secondary" onClick={() => setEditUnit(true)}>
+              <Pencil /> Editar unidad
+            </Button>
+          ) : null
+        }
+      />
+
+      <div className="grid grid-3 mb">
+        <div className="card stat">
+          <div className="label">Protagonistas activos</div>
+          <div className="value">{unit.memberCount}</div>
+          {info ? <div className="hint">Rango de edad: {info.ages[0]} a {info.ages[1]} años</div> : null}
+        </div>
+        <div className="card stat">
+          <div className="label">Adultos {new Date().getFullYear()}</div>
+          <div className="value">{unit.adultCount}</div>
+          {unit.minAdults !== null ? (
+            <div className="hint">
+              Mínimo: {unit.minAdults} {unit.adultCount < unit.minAdults ? <Badge tone="warn">Faltan</Badge> : <Badge tone="ok">Cumple</Badge>}
+            </div>
+          ) : null}
+        </div>
+        <div className="card stat">
+          <div className="label">{sgLabel.many}</div>
+          <div className="value">{unit.smallGroups.filter((s) => s.active).length}</div>
+        </div>
+      </div>
+
+      <div className="stack">
+        <Card
+          title={sgLabel.many}
+          actions={
+            can('small_groups', 'create', unit.id) ? (
+              <Button size="sm" onClick={() => setSgModal('new')}>
+                <Plus /> Agregar
+              </Button>
+            ) : null
+          }
+          bodyClass=""
+        >
+          {!groups.length ? (
+            <Empty>Esta unidad todavía no tiene {sgLabel.many.toLowerCase()}.</Empty>
+          ) : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    {canMembers ? <th className="num">Protagonistas</th> : null}
+                    <th>Estado</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.map((sg) => (
+                    <tr key={sg.id}>
+                      <td>{sg.name}</td>
+                      <td>{KIND_LABELS[sg.kind] ?? sg.kind}</td>
+                      {canMembers ? <td className="num">{countIn(sg.id)}</td> : null}
+                      <td>{sg.active ? <Badge tone="ok">Activo</Badge> : <Badge>Inactivo</Badge>}</td>
+                      <td className="num nowrap">
+                        {can('small_groups', 'edit', unit.id) ? (
+                          <Button variant="ghost" size="sm" onClick={() => setSgModal(sg)}>
+                            <Pencil /> Editar
+                          </Button>
+                        ) : null}
+                        {can('small_groups', 'delete', unit.id) ? (
+                          <ConfirmButton
+                            size="sm"
+                            title={`Eliminar ${sg.name}`}
+                            message={<p>Los protagonistas de este pequeño grupo van a quedar sin asignar. ¿Querés eliminarlo?</p>}
+                            confirmLabel="Eliminar"
+                            onConfirm={() => deleteGroup(sg)}
+                          >
+                            <Trash2 />
+                          </ConfirmButton>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                  {canMembers && withoutGroup > 0 ? (
+                    <tr>
+                      <td colSpan={2} className="muted">
+                        Sin pequeño grupo asignado
+                      </td>
+                      <td className="num">{withoutGroup}</td>
+                      <td colSpan={2} />
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
+        {canMembers ? (
+          <Card
+            title={`Protagonistas (${members.data?.length ?? '…'})`}
+            actions={
+              <Link to={`/protagonistas?unitId=${unit.id}`} className="btn btn-secondary btn-sm">
+                Ver en el padrón
+              </Link>
+            }
+            bodyClass=""
+          >
+            {members.isLoading ? (
+              <Loading />
+            ) : members.error ? (
+              <div className="card-body">
+                <ErrorBox error={members.error} />
+              </div>
+            ) : !members.data?.length ? (
+              <Empty>No hay protagonistas activos en esta unidad.</Empty>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Apellido y nombre</th>
+                      <th>{sgLabel.one}</th>
+                      <th>Nacimiento</th>
+                      <th className="num">Edad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.data.map((m) => (
+                      <tr key={m.id}>
+                        <td>
+                          <Link to={`/protagonistas/${m.id}`}>
+                            {m.lastName}, {m.firstName}
+                          </Link>
+                        </td>
+                        <td>{m.smallGroup?.name ?? <span className="muted">—</span>}</td>
+                        <td className="nowrap">{formatDate(m.birthDate) || <span className="muted">—</span>}</td>
+                        <td className="num">{ageAt(m.birthDate) ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        ) : null}
+
+        {canAdults ? (
+          <Card title={`Adultos ${new Date().getFullYear()}`} bodyClass="">
+            {adults.isLoading ? (
+              <Loading />
+            ) : adults.error ? (
+              <div className="card-body">
+                <ErrorBox error={adults.error} />
+              </div>
+            ) : !adults.data?.length ? (
+              <Empty>No hay adultos con cargo en esta unidad este año.</Empty>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Adulto</th>
+                      <th>Cargo</th>
+                      <th>Formación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adults.data.map((a) => (
+                      <tr key={a.id}>
+                        <td>
+                          <Link to={`/adultos/${a.id}`}>{adultName(a)}</Link>
+                        </td>
+                        <td>
+                          {a.assignments
+                            .filter((x) => x.unitId === unit.id)
+                            .map((x) => x.position)
+                            .join(', ')}
+                        </td>
+                        <td>
+                          {a.courses.length ? (
+                            <Badge tone="ok">{a.courses.length} registrada{a.courses.length === 1 ? '' : 's'}</Badge>
+                          ) : (
+                            <Badge tone="warn">Sin formación</Badge>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        ) : null}
+      </div>
+
+      {editUnit ? <UnitFormModal unit={unit} onClose={() => setEditUnit(false)} /> : null}
+      {sgModal ? <SmallGroupModal unit={unit} group={sgModal === 'new' ? undefined : sgModal} onClose={() => setSgModal(null)} /> : null}
+    </>
+  );
+}

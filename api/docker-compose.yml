@@ -1,0 +1,18 @@
+# Alternativa a la base local automática: PostgreSQL con Docker.
+# Uso (con Docker Desktop abierto, desde la carpeta api): docker compose up -d
+# Usa el mismo puerto y credenciales que api/.env, así que no hay que cambiar nada:
+# `npm run dev` detecta que el puerto 5433 ya está ocupado y no levanta la otra.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alcombar
+      POSTGRES_PASSWORD: alcombar_dev
+      POSTGRES_DB: alcombar
+    ports:
+      - '5433:5432'
+    volumes:
+      - alcombar-pg:/var/lib/postgresql/data
+volumes:
+  alcombar-pg:
