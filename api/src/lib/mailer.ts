@@ -9,7 +9,9 @@ import { config } from '../config';
 
 let transporter: Transporter | null = null;
 
-export const mailEnabled = () => Boolean(config.smtpUser && config.smtpPass);
+const useResend = () => Boolean(config.resendApiKey);
+
+export const mailEnabled = () => useResend() || Boolean(config.smtpUser && config.smtpPass);
 
 function getTransporter(): Transporter {
   if (!transporter) {
@@ -51,6 +53,16 @@ export function emailLayout({ title, paragraphs, button, footnote }: { title: st
   </td></tr></table></body></html>`;
 }
 
+/** Envío por la API HTTP de Resend (Railway bloquea SMTP). Variables: RESEND_API_KEY y MAIL_FROM (de un dominio verificado en Resend). */
+async function sendWithResend(to: string, subject: string, text: string, html?: string): Promise<void> {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: from(), to: [to], subject, text, ...(html ? { html } : {}) }),
+  });
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+}
+
 /** Envía un email al instante. Devuelve true si salió; si falla, lo registra y devuelve false (la app muestra el enlace). */
 export async function sendMail(to: string, subject: string, text: string, html?: string): Promise<boolean> {
   if (!mailEnabled()) {
@@ -58,7 +70,8 @@ export async function sendMail(to: string, subject: string, text: string, html?:
     return false;
   }
   try {
-    await getTransporter().sendMail({ from: from(), to, subject, text, ...(html ? { html } : {}) });
+    if (useResend()) await sendWithResend(to, subject, text, html);
+    else await getTransporter().sendMail({ from: from(), to, subject, text, ...(html ? { html } : {}) });
     return true;
   } catch (e) {
     console.error('[mail] error enviando a', to, (e as Error).message);
@@ -68,6 +81,7 @@ export async function sendMail(to: string, subject: string, text: string, html?:
 
 /** Comprueba usuario y contraseña SMTP sin mandar ningún mail. */
 export async function verifyMail(): Promise<void> {
-  if (!mailEnabled()) throw new Error('Falta configurar SMTP_USER y SMTP_PASS en api/.env');
+  if (!mailEnabled()) throw new Error('Falta configurar RESEND_API_KEY, o SMTP_USER y SMTP_PASS, en api/.env');
+  if (useResend()) return;
   await getTransporter().verify();
 }
