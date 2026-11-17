@@ -6,6 +6,7 @@ import {
   can,
   canGroupWide,
   competencyBulkSchema,
+  formatDate,
   competencySchema,
   cycleSchema,
   meetingSchema,
@@ -32,6 +33,7 @@ import {
   ProgramCycle,
 } from '../models/program';
 import { writeAudit } from '../lib/audit';
+import { notifyReferents } from '../lib/notify';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
 
@@ -369,6 +371,25 @@ programRouter.get(
   }),
 );
 
+/** Aviso a los referentes de Programa de la rama: se cargó una ficha nueva. */
+function notifySheetCreated(req: Request, sheet: ActivitySheet, unit: Unit, copiedFrom?: string) {
+  const actor = req.user!;
+  const label = BRANCH_INFO[unit.branch as Branch]?.label ?? unit.branch;
+  const when = [sheet.date ? formatDate(sheet.date) : null, sheet.place].filter(Boolean).join(' · ');
+  void notifyReferents({ id: actor.id, name: actor.name }, [unit.branch], {
+    kind: 'ficha',
+    title: `Nueva ficha en ${unit.name}: ${sheet.name}`,
+    body: `${sheet.code} · cargada por ${actor.name}${when ? ` · ${when}` : ''}`,
+    link: `/programa/fichas/${sheet.id}`,
+    paragraphs: [
+      `${actor.name} cargó la ficha ${sheet.code} «${sheet.name}» en ${unit.name} (${label})${copiedFrom ? `, copiada de ${copiedFrom}` : ''}.`,
+      ...(when ? [`Cuándo y dónde: ${when}`] : []),
+      'Como referente de Programa de la rama podés revisarla y acompañar a los educadores de la unidad.',
+    ],
+    button: 'Ver la ficha',
+  });
+}
+
 programRouter.post(
   '/sheets',
   ah(async (req, res) => {
@@ -385,6 +406,7 @@ programRouter.post(
       await setCompetencies(s.id, d.competencyIds, transaction);
       return s;
     });
+    notifySheetCreated(req, sheet, unit);
     res.status(201).json(sheet);
   }),
 );
@@ -508,6 +530,7 @@ programRouter.post(
       if (sameBranch) await setCompetencies(c.id, (src.competencies ?? []).map((x) => x.id), transaction);
       return c;
     });
+    notifySheetCreated(req, copy, target, src.code);
     res.status(201).json({ id: copy.id, code: copy.code, competenciesKept: sameBranch });
   }),
 );

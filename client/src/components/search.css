@@ -44,3 +44,9 @@
 .gsearch-enter { color: var(--muted, #888); flex-shrink: 0; }
 .gsearch-empty { padding: 12px; font-size: 0.88rem; color: var(--muted, #666); }
 .gsearch-foot { padding: 7px 12px; border-top: 1px solid var(--border, #e6dfd2); font-size: 0.78rem; color: var(--muted, #666); margin-top: 4px; }
+.gsearch-section { padding: 8px 10px 4px; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted, #666); }
+@media (max-width: 900px) {
+  .gsearch-item { padding: 11px 10px; }
+  .gsearch-compact .gsearch-menu { max-height: calc(100vh - 70px); }
+  .gsearch-input.input { font-size: 16px; } /* evita el zoom automático de iOS al tocar el buscador */
+}

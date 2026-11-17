@@ -19,6 +19,8 @@ interface MemberHit {
   lastName: string;
   status?: string;
   unit: { code: string; name: string } | null;
+  smallGroup?: { name: string } | null;
+  dni?: string | null;
   branch?: string | null;
 }
 interface AdultHit {
@@ -57,7 +59,7 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
 
   const members = useQuery({
     queryKey: ['search-members', dq],
-    queryFn: () => api.get<MemberHit[]>(`/members${qs({ q: dq, status: 'todos' })}`),
+    queryFn: () => api.get<MemberHit[]>(`/members${qs({ q: dq, status: 'todos', limit: 8 })}`),
     enabled: canMembers && dq.length >= 2,
     staleTime: 30_000,
   });
@@ -68,14 +70,16 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
     staleTime: 30_000,
   });
 
-  const results: Result[] = useMemo(
-    () => [
-      ...help.map((entry) => ({ kind: 'help' as const, entry })),
-      ...(members.data ?? []).slice(0, 4).map((m) => ({ kind: 'member' as const, m })),
+  // Si busca un DNI o encuentra personas, las personas van primero; la ayuda, después.
+  const looksLikeDni = /^[\d.\s-]{3,}$/.test(dq);
+  const results: Result[] = useMemo(() => {
+    const people: Result[] = [
+      ...(members.data ?? []).slice(0, 6).map((m) => ({ kind: 'member' as const, m })),
       ...(adults.data ?? []).slice(0, 4).map((a) => ({ kind: 'adult' as const, a })),
-    ],
-    [help, members.data, adults.data],
-  );
+    ];
+    const helpHits: Result[] = looksLikeDni ? [] : help.map((entry) => ({ kind: 'help' as const, entry }));
+    return people.length ? [...people, ...helpHits.slice(0, 4)] : helpHits;
+  }, [help, members.data, adults.data, looksLikeDni]);
   useEffect(() => setActive(0), [results.length, q]);
 
   // Ctrl+K / Cmd+K enfoca el buscador desde cualquier pantalla (solo el visible).
@@ -127,7 +131,8 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
   const fetching = members.isFetching || adults.isFetching;
   const memberSub = (m: MemberHit) => {
     const where = m.unit ? m.unit.name : m.branch ? `${BRANCH_INFO[m.branch as Branch]?.label ?? m.branch} · por asignar` : 'Sin unidad';
-    return `Protagonista · ${where}${m.status === 'baja' ? ' · Baja' : ''}`;
+    const dni = looksLikeDni && m.dni ? ` · DNI ${m.dni}` : '';
+    return `Protagonista · ${where}${m.smallGroup ? ` · ${m.smallGroup.name}` : ''}${dni}${m.status === 'baja' ? ' · Baja' : ''}`;
   };
   const adultSub = (a: AdultHit) => {
     const cargos = (a.assignments ?? []).map((x) => `${x.position}${x.unit ? ` (${x.unit.code})` : x.supportTeam ? ` (${x.supportTeam.name})` : ''}`);
@@ -140,7 +145,7 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
       <input
         ref={inputRef}
         className="input gsearch-input"
-        placeholder={compact ? 'Buscar…' : '¿Qué querés hacer? Asistencia, ficha médica, un chico…  (Ctrl+K)'}
+        placeholder={compact ? 'Buscar persona, DNI o pantalla…' : 'Buscá una persona (nombre, apellido o DNI) o qué querés hacer…  (Ctrl+K)'}
         value={q}
         onChange={(e) => {
           setQ(e.target.value);
@@ -158,54 +163,66 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
         <div className="gsearch-menu" role="listbox" id="gsearch-list">
           {!results.length ? (
             <div className="gsearch-empty">
-              {fetching ? 'Buscando…' : 'Nada por acá. Probá con otra palabra (por ejemplo "asistencia", "patrulla", "ficha médica").'}
+              {fetching
+                ? 'Buscando…'
+                : looksLikeDni
+                  ? 'No hay nadie con ese DNI (o no lo podés ver).'
+                  : 'Nada por acá. Probá con otra palabra (por ejemplo "asistencia", "patrulla", "ficha médica") o con el apellido.'}
             </div>
           ) : null}
           {results.map((r, i) => (
-            <button
-              key={resultKey(r)}
-              type="button"
-              role="option"
-              aria-selected={i === active}
-              className={`gsearch-item ${i === active ? 'active' : ''}`}
-              onMouseEnter={() => setActive(i)}
-              onClick={() => go(r)}
-            >
-              <span className="gsearch-kind">
-                {r.kind === 'help' ? (
-                  r.entry.section === 'Tutoriales' ? <PlayCircle size={16} /> : <BookOpen size={16} />
-                ) : r.kind === 'member' ? (
-                  <UserRound size={16} />
-                ) : (
-                  <UsersRound size={16} />
-                )}
-              </span>
-              <span className="gsearch-body">
-                {r.kind === 'help' ? (
-                  <>
-                    <span className="gsearch-title">
-                      {r.entry.title} <span className="gsearch-sub-inline">· {r.entry.section}</span>
-                    </span>
-                    <span className="gsearch-sub">{r.entry.description}</span>
-                  </>
-                ) : r.kind === 'member' ? (
-                  <>
-                    <span className="gsearch-title">
-                      {r.m.lastName}, {r.m.firstName}
-                    </span>
-                    <span className="gsearch-sub">{memberSub(r.m)}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="gsearch-title">
-                      {r.a.lastName}, {r.a.firstName}
-                    </span>
-                    <span className="gsearch-sub">{adultSub(r.a)}</span>
-                  </>
-                )}
-              </span>
-              {i === active ? <CornerDownLeft size={14} className="gsearch-enter" /> : null}
-            </button>
+            <div key={resultKey(r)} style={{ display: 'contents' }}>
+              {i === 0 || (results[i - 1].kind === 'help') !== (r.kind === 'help') ? (
+                <div className="gsearch-section">{r.kind === 'help' ? 'Dónde está cada cosa' : 'Personas'}</div>
+              ) : null}
+              <button
+                type="button"
+                role="option"
+                aria-selected={i === active}
+                className={`gsearch-item ${i === active ? 'active' : ''}`}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => go(r)}
+              >
+                <span className="gsearch-kind">
+                  {r.kind === 'help' ? (
+                    r.entry.section === 'Tutoriales' ? (
+                      <PlayCircle size={16} />
+                    ) : (
+                      <BookOpen size={16} />
+                    )
+                  ) : r.kind === 'member' ? (
+                    <UserRound size={16} />
+                  ) : (
+                    <UsersRound size={16} />
+                  )}
+                </span>
+                <span className="gsearch-body">
+                  {r.kind === 'help' ? (
+                    <>
+                      <span className="gsearch-title">
+                        {r.entry.title} <span className="gsearch-sub-inline">· {r.entry.section}</span>
+                      </span>
+                      <span className="gsearch-sub">{r.entry.description}</span>
+                    </>
+                  ) : r.kind === 'member' ? (
+                    <>
+                      <span className="gsearch-title">
+                        {r.m.lastName}, {r.m.firstName}
+                      </span>
+                      <span className="gsearch-sub">{memberSub(r.m)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="gsearch-title">
+                        {r.a.lastName}, {r.a.firstName}
+                      </span>
+                      <span className="gsearch-sub">{adultSub(r.a)}</span>
+                    </>
+                  )}
+                </span>
+                {i === active ? <CornerDownLeft size={14} className="gsearch-enter" /> : null}
+              </button>
+            </div>
           ))}
           <div className="gsearch-foot">
             ↑↓ para moverte · Enter para abrir ·{' '}

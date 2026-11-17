@@ -152,7 +152,8 @@ groupRouter.post(
   '/support-teams',
   authorize('group', 'create'),
   ah(async (req, res) => {
-    res.status(201).json(await SupportTeam.create(parse(supportTeamSchema, req.body)));
+    const d = parse(supportTeamSchema, req.body);
+    res.status(201).json(await SupportTeam.create({ ...d, receivesRegistryAlerts: d.receivesRegistryAlerts ?? false }));
   }),
 );
 
@@ -162,7 +163,8 @@ groupRouter.put(
   ah(async (req, res) => {
     const team = await SupportTeam.findByPk(req.params.id);
     if (!team) throw notFound();
-    await team.update(parse(supportTeamSchema, req.body));
+    const { receivesRegistryAlerts, ...d } = parse(supportTeamSchema, req.body);
+    await team.update({ ...d, ...(receivesRegistryAlerts !== undefined ? { receivesRegistryAlerts } : {}) });
     res.json(team);
   }),
 );

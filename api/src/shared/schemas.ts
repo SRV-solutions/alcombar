@@ -135,6 +135,8 @@ export const supportTeamSchema = z.object({
   name: reqStr(120),
   description: optStr(500),
   leaderAdultId: optUuid,
+  /** Recibe los avisos de altas y bajas para cargar en Cruz del Sur. */
+  receivesRegistryAlerts: z.boolean().optional(),
 });
 export const documentTypeSchema = z.object({
   name: reqStr(120),

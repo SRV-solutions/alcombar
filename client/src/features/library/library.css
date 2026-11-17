@@ -15,3 +15,13 @@
 @media print {
   .minute-doc h2 { color: #000; }
 }
+
+/* Temario del Consejo */
+.agenda-sent { display: flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 14px; border-radius: 10px; background: var(--ok-soft); color: var(--text); font-size: 0.9rem; }
+.agenda-sent svg { width: 17px; height: 17px; color: var(--ok); flex-shrink: 0; }
+.agenda-hint { background: var(--accent-soft); }
+.agenda-hint svg { color: var(--accent-text); }
+.agenda-preview { white-space: pre-line; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; max-height: 220px; overflow-y: auto; font-size: 0.9rem; }
+.agenda-audience { display: flex; flex-direction: column; gap: 8px; }
+.agenda-audience label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.agenda-audience small { display: block; color: var(--muted); }

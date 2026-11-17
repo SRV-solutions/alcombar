@@ -7,7 +7,10 @@
 import { Router, type Request } from 'express';
 import { Op, QueryTypes, type Transaction as SqlTx } from 'sequelize';
 import {
+  BRANCH_INFO,
+  BRANCHES,
   CAMP_RUBROS,
+  CAMP_TYPE_LABELS,
   campBudgetLineSchema,
   campMenuSchema,
   campNights,
@@ -18,9 +21,12 @@ import {
   can,
   documentStatus,
   enrollmentSchema,
+  formatDate,
   enrollSchema,
   round2,
   unitsWith,
+  type Branch,
+  type CampType,
 } from '../shared';
 import { sequelize } from '../db';
 import { Adult, DocumentType, Member, MemberDocument, SmallGroup, Unit, User } from '../models';
@@ -39,6 +45,7 @@ import {
   Movement,
 } from '../models/treasury';
 import { writeAudit } from '../lib/audit';
+import { notifyReferents } from '../lib/notify';
 import { currentContext } from '../lib/context';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
@@ -308,6 +315,40 @@ campsRouter.get(
   }),
 );
 
+/**
+ * Aviso a los referentes de Programa de las ramas del campamento. Al crearlo, todas sus ramas (sin unidades, es de
+ * Grupo: todas); al editarlo, solo las ramas que se sumaron.
+ */
+async function notifyCampReferents(req: Request, camp: Camp, unitIds: string[], previousBranches?: string[]) {
+  try {
+    const units = unitIds.length ? await Unit.findAll({ where: { id: unitIds }, attributes: ['id', 'name', 'branch'] }) : [];
+    const branches = [...new Set(units.map((u) => u.branch))];
+    const target = previousBranches ? branches.filter((b) => !previousBranches.includes(b)) : branches.length ? branches : 'all';
+    if (Array.isArray(target) && !target.length) return;
+    const actor = req.user!;
+    const typeLabel = CAMP_TYPE_LABELS[camp.type as CampType] ?? 'Campamento';
+    const dates = camp.startDate === camp.endDate ? formatDate(camp.startDate) : `del ${formatDate(camp.startDate)} al ${formatDate(camp.endDate)}`;
+    const who = units.length ? units.map((u) => u.name).join(', ') : 'todo el Grupo';
+    const branchLabels = Array.isArray(target) ? target.map((b) => BRANCH_INFO[b as Branch]?.label ?? b).join(', ') : null;
+    await notifyReferents({ id: actor.id, name: actor.name }, target, {
+      kind: 'campamento',
+      title: previousBranches ? `Se sumó ${branchLabels} a «${camp.name}» (${typeLabel.toLowerCase()})` : `Se cargó «${camp.name}» (${typeLabel.toLowerCase()})`,
+      body: `${dates}${camp.place ? ` · ${camp.place}` : ''} · ${who}`,
+      link: `/campamentos/${camp.id}`,
+      paragraphs: [
+        previousBranches
+          ? `${actor.name} sumó a ${branchLabels} en «${camp.name}» (${typeLabel.toLowerCase()}).`
+          : `${actor.name} cargó «${camp.name}» (${typeLabel.toLowerCase()}).`,
+        `Cuándo: ${dates}${camp.place ? ` · Dónde: ${camp.place}` : ''}`,
+        `Participan: ${who}.`,
+      ],
+      button: 'Ver el campamento',
+    });
+  } catch (e) {
+    console.error('[avisos] campamento:', (e as Error).message);
+  }
+}
+
 async function setUnits(campId: string, unitIds: string[], transaction: SqlTx) {
   const current = await CampUnit.findAll({ where: { campId }, transaction });
   for (const cu of current) if (!unitIds.includes(cu.unitId)) await cu.destroy({ transaction });
@@ -326,6 +367,7 @@ campsRouter.post(
       await setUnits(c.id, unitIds, transaction);
       return c;
     });
+    void notifyCampReferents(req, camp, unitIds);
     res.status(201).json(camp);
   }),
 );
@@ -465,6 +507,8 @@ campsRouter.put(
     if (data.ownerUnitId !== camp.ownerUnitId) assertCan(req, 'camps', 'edit', data.ownerUnitId);
     if (camp.status === 'rendido') throw badRequest('El campamento ya está rendido');
     const oldCost = camp.cost;
+    const oldUnitIds = [...new Set([...(camp.ownerUnitId ? [camp.ownerUnitId] : []), ...campUnitIds(camp)])];
+    const newUnitIds = [...new Set([...(data.ownerUnitId ? [data.ownerUnitId] : []), ...data.unitIds])];
     await sequelize.transaction(async (transaction) => {
       const { unitIds, ...fields } = data;
       await camp.update(fields, { transaction });
@@ -483,6 +527,11 @@ campsRouter.put(
         for (const e of enrs) await syncCharge(e, camp, transaction);
       }
     });
+    // Si se sumó una unidad de otra rama, se avisa a los referentes de esa rama (sin unidades era de Grupo: ya sabían)
+    if (newUnitIds.some((u) => !oldUnitIds.includes(u))) {
+      const oldBranches = oldUnitIds.length ? (await Unit.findAll({ where: { id: oldUnitIds }, attributes: ['branch'] })).map((u) => u.branch) : [...BRANCHES];
+      void notifyCampReferents(req, camp, newUnitIds, oldBranches);
+    }
     res.json(camp);
   }),
 );

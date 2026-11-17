@@ -4,7 +4,10 @@ import { documentLinkSchema, minuteSchema } from '../shared';
 import { sequelize } from '../db';
 import { Unit, User } from '../models';
 import { CouncilMinute, DocumentLink } from '../models/operations';
-import { ah, badRequest, notFound, parse } from '../lib/errors';
+import { z } from 'zod';
+import { formatDate } from '../shared';
+import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
+import { councilRecipients, isJefaturaUser, notify } from '../lib/notify';
 import { authorize } from '../middlewares/auth';
 
 /** Etapa 8: actas del Consejo de Grupo y repositorio de documentos (enlaces al Drive). */
@@ -40,7 +43,8 @@ libraryRouter.get(
   ah(async (req, res) => {
     const m = await CouncilMinute.findByPk(req.params.id, { include: [{ model: User, as: 'createdBy', attributes: ['id', 'name'] }] });
     if (!m) throw notFound();
-    res.json(m);
+    const sentBy = m.agendaSentByUserId ? await User.findByPk(m.agendaSentByUserId, { attributes: ['id', 'name'] }) : null;
+    res.json({ ...m.toJSON(), agendaSentBy: sentBy, canSendAgenda: await isJefaturaUser(req.user!.id, req.auth!.isSuperadmin) });
   }),
 );
 
@@ -81,6 +85,72 @@ libraryRouter.put(
     const approvedAt = data.status === 'aprobada' ? m.approvedAt ?? new Date() : null;
     await m.update({ ...data, approvedAt });
     res.json(m);
+  }),
+);
+
+// ---- Temario del Consejo: la Jefatura lo manda como aviso unos días antes ----
+const agendaSchema = z.object({
+  audience: z.enum(['educadores', 'todos']).default('educadores'),
+  message: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
+});
+
+libraryRouter.get(
+  '/minutes/:id/agenda-recipients',
+  authorize('documents', 'view'),
+  ah(async (req, res) => {
+    if (!(await isJefaturaUser(req.user!.id, req.auth!.isSuperadmin))) throw forbidden();
+    const [educadores, todos] = await Promise.all([councilRecipients('educadores', req.user!.id), councilRecipients('todos', req.user!.id)]);
+    res.json({
+      educadores: { users: educadores.userIds.length, emails: educadores.emails.length },
+      todos: { users: todos.userIds.length, emails: todos.emails.length },
+    });
+  }),
+);
+
+libraryRouter.post(
+  '/minutes/:id/send-agenda',
+  authorize('documents', 'view'),
+  ah(async (req, res) => {
+    if (!(await isJefaturaUser(req.user!.id, req.auth!.isSuperadmin))) throw forbidden('El temario del Consejo lo manda la Jefatura de Grupo');
+    const m = await CouncilMinute.findByPk(req.params.id);
+    if (!m) throw notFound();
+    if (!m.agenda?.trim()) throw badRequest('Primero cargá el orden del día (temario) en el acta');
+    const d = parse(agendaSchema, req.body);
+    const actor = req.user!;
+    const recipients = await councilRecipients(d.audience, actor.id);
+    if (!recipients.userIds.length && !recipients.emails.length) throw badRequest('No hay a quién mandarle el temario (adultos con cargo este año)');
+    const topics = m.agenda
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const title = `Temario del Consejo del ${formatDate(m.date)}: ${m.title}`;
+    await notify({
+      recipients,
+      kind: 'consejo',
+      title,
+      body: [d.message, topics.slice(0, 4).join(' · ') + (topics.length > 4 ? ' …' : '')].filter(Boolean).join(' — '),
+      link: `/actas/${m.id}`,
+      email: {
+        subject: title,
+        paragraphs: [
+          `${actor.name}, de la Jefatura de Grupo, comparte el temario del Consejo de Grupo del ${formatDate(m.date)}.`,
+          ...(d.message ? [d.message] : []),
+          'Orden del día:',
+          ...topics.map((t) => (/^[-•*\d]/.test(t) ? t : `• ${t}`)),
+          'Si querés sumar un tema, avisale a la Jefatura antes del Consejo.',
+        ],
+        button: 'Ver el temario en ALCOMBAR',
+        footnote: 'Te llega porque sos parte del Consejo de Grupo.',
+      },
+    });
+    await m.update({ agendaSentAt: new Date(), agendaSentByUserId: actor.id, agendaMessage: d.message });
+    res.json({ ok: true, users: recipients.userIds.length, emails: recipients.emails.length });
   }),
 );
 

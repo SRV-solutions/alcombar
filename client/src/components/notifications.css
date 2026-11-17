@@ -1,0 +1,87 @@
+/* Campanita de avisos */
+.nbell { position: relative; flex-shrink: 0; }
+.nbell-btn { position: relative; }
+.topbar .nbell-btn { color: var(--sidebar-text); }
+.nbell-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.topbar .nbell-count { box-shadow: 0 0 0 2px var(--sidebar-bg); }
+.nbell-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 24px);
+  z-index: 120;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.nbell-compact .nbell-menu { position: fixed; top: 54px; left: 8px; right: 8px; width: auto; max-width: none; }
+.nbell-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.nbell-head .link-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; }
+.nbell-head .link-btn svg { width: 15px; height: 15px; }
+.nbell-list { list-style: none; margin: 0; padding: 4px; max-height: min(60vh, 460px); overflow-y: auto; }
+.nbell-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+}
+.nbell-item:hover, .nbell-item:focus-visible { background: var(--surface-hover); }
+.nbell-item.unread { background: var(--primary-soft); }
+.nbell-item.unread:hover { background: var(--surface-hover); }
+.nbell-icon { color: var(--primary); display: inline-flex; margin-top: 2px; flex-shrink: 0; }
+.nbell-icon svg { width: 18px; height: 18px; }
+.nbell-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nbell-title { font-weight: 650; font-size: 0.9rem; line-height: 1.3; }
+.nbell-text { font-size: 0.82rem; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+.nbell-time { font-size: 0.74rem; color: var(--muted); }
+.nbell-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: 6px; flex-shrink: 0; }
+.nbell-empty { padding: 16px 14px; font-size: 0.86rem; color: var(--muted); line-height: 1.45; }
+.nbell-foot { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 0.76rem; color: var(--muted); }
+
+/* Pendientes de Cruz del Sur */
+.registry-who { display: flex; flex-direction: column; gap: 2px; }
+.registry-who .muted { font-size: 0.8rem; }
+.registry-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.registry-detail { font-size: 0.8rem; color: var(--muted); }
+.registry-note { margin-bottom: 16px; }
+.registry-note p { margin: 0 0 6px; }
+.registry-note p:last-child { margin-bottom: 0; }
+
+/* Referentes de rama */
+.referents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.card.referent-branch { border-top: 4px solid var(--branch-color, var(--primary)); }
+.referent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.referent-person { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.referent-person .name { font-weight: 650; }
+.referent-contact { display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem; margin-top: 2px; }
+.referent-contact a { overflow-wrap: anywhere; }
+.referent-warning { font-size: 0.8rem; color: var(--warn); margin-top: 4px; }
+.referent-add { display: flex; gap: 8px; margin-top: 14px; }
+.referent-add .select { flex: 1; min-width: 0; }

@@ -222,6 +222,10 @@ export class CouncilMinute extends Model<InferAttributes<CouncilMinute>, InferCr
   declare status: CreationOptional<string>;
   declare approvedAt: Date | null;
   declare createdByUserId: ForeignKey<User['id']> | null;
+  /** Cuándo y quién mandó el temario como aviso. */
+  declare agendaSentAt: CreationOptional<Date | null>;
+  declare agendaSentByUserId: CreationOptional<string | null>;
+  declare agendaMessage: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
@@ -240,11 +244,48 @@ CouncilMinute.init(
     driveUrl: STRING(500),
     status: { type: STRING(20), allowNull: false, defaultValue: 'borrador' },
     approvedAt: DATE,
+    agendaSentAt: DATE,
+    agendaSentByUserId: UUID,
+    agendaMessage: TEXT,
     createdAt: DATE,
     updatedAt: DATE,
     deletedAt: DATE,
   },
   { sequelize, tableName: 'council_minutes', modelName: 'CouncilMinute' },
+);
+
+// ======================= Sábados del año =======================
+/** Un sábado del calendario anual (las filas de la planilla del Grupo). Las unidades de servicio son eventos "servicio". */
+export class Saturday extends Model<InferAttributes<Saturday>, InferCreationAttributes<Saturday>> {
+  declare id: CreationOptional<string>;
+  declare date: string;
+  declare noActivity: CreationOptional<boolean>;
+  declare ephemeris: string | null;
+  declare training: string | null;
+  declare serviceNote: string | null;
+  declare meetings: string | null;
+  declare activities: string | null;
+  declare others: string | null;
+  declare updatedByUserId: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+Saturday.init(
+  {
+    id,
+    date: { type: DATEONLY, allowNull: false, unique: true },
+    noActivity: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    ephemeris: TEXT,
+    training: TEXT,
+    serviceNote: STRING(200),
+    meetings: TEXT,
+    activities: TEXT,
+    others: TEXT,
+    updatedByUserId: UUID,
+    createdAt: DATE,
+    updatedAt: DATE,
+  },
+  { sequelize, tableName: 'saturdays', modelName: 'Saturday', paranoid: false },
 );
 
 export class DocumentLink extends Model<InferAttributes<DocumentLink>, InferCreationAttributes<DocumentLink>> {

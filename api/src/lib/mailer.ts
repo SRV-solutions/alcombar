@@ -86,6 +86,57 @@ export async function sendMail(to: string, subject: string, text: string, html?:
   }
 }
 
+export interface OutgoingMail {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}
+
+/**
+ * Manda varios mails (un mail por destinatario, sin que se vean las direcciones entre sí).
+ * Con Resend usa el envío por lotes (hasta 100 por pedido) para no chocar con el límite de pedidos por segundo.
+ * Devuelve cuántos salieron. Nunca lanza: si falla, lo registra.
+ */
+export async function sendMailBatch(mails: OutgoingMail[]): Promise<number> {
+  if (!mails.length) return 0;
+  const provider = mailProvider();
+  if (!provider) {
+    for (const m of mails) await sendMail(m.to, m.subject, m.text, m.html);
+    return 0;
+  }
+  if (provider === 'smtp') {
+    let ok = 0;
+    for (const m of mails) if (await sendMail(m.to, m.subject, m.text, m.html)) ok++;
+    return ok;
+  }
+  let ok = 0;
+  for (let i = 0; i < mails.length; i += 100) {
+    const chunk = mails.slice(i, i + 100);
+    try {
+      const res = await fetch('https://api.resend.com/emails/batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          chunk.map((m) => ({
+            from: from(),
+            to: [m.to],
+            subject: m.subject,
+            text: m.text,
+            ...(m.html ? { html: m.html } : {}),
+            ...(config.mailReplyTo ? { reply_to: config.mailReplyTo } : {}),
+          })),
+        ),
+      });
+      if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+      ok += chunk.length;
+    } catch (e) {
+      console.error('[mail] error en envío por lotes:', (e as Error).message);
+    }
+  }
+  return ok;
+}
+
 /** Comprueba la configuración sin mandar ningún mail. Devuelve una descripción de lo verificado. */
 export async function verifyMail(): Promise<string> {
   const provider = mailProvider();

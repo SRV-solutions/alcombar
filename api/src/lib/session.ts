@@ -17,11 +17,15 @@ export interface AccessPayload {
   sid: string;
 }
 
-function setCookies(res: Response, userId: string, sessionId: string, refreshToken: string) {
+function setAccessCookie(res: Response, userId: string, sessionId: string) {
   const access = jwt.sign({ sub: userId, sid: sessionId } satisfies AccessPayload, config.jwtSecret, {
     expiresIn: `${config.accessTokenMinutes}m`,
   });
   res.cookie(ACCESS_COOKIE, access, { ...base, path: '/', maxAge: config.accessTokenMinutes * 60_000 });
+}
+
+function setCookies(res: Response, userId: string, sessionId: string, refreshToken: string) {
+  setAccessCookie(res, userId, sessionId);
   res.cookie(REFRESH_COOKIE, refreshToken, { ...base, path: REFRESH_PATH, maxAge: config.refreshTokenDays * 86_400_000 });
 }
 
@@ -49,7 +53,10 @@ export async function startSession(req: Request, res: Response, user: User) {
   return session;
 }
 
-/** Token de renovación rotativo: cada uso emite uno nuevo. Si se reusa uno ya rotado, se cierran todas las sesiones. */
+/**
+ * Token de renovación rotativo: cada uso emite uno nuevo con otros 30 días, así la sesión solo se cierra si pasan
+ * 30 días seguidos sin usar la app. Si se reusa uno ya rotado (fuera del margen), se cierran todas las sesiones.
+ */
 export async function rotateSession(req: Request, res: Response): Promise<User> {
   const token = req.cookies?.[REFRESH_COOKIE];
   if (!token) throw unauthorized('Sesión vencida', 'session_expired');
@@ -59,11 +66,20 @@ export async function rotateSession(req: Request, res: Response): Promise<User> 
     throw unauthorized('Sesión vencida', 'session_expired');
   }
   if (session.revokedAt) {
-    // Si fue rotado hace instantes (pedidos simultáneos del navegador), no es un robo: se rechaza sin cerrar todo.
-    const graceMs = 10_000;
-    if (!(session.replacedById && Date.now() - session.revokedAt.getTime() < graceMs)) {
-      await Session.update({ revokedAt: new Date() }, { where: { userId: session.userId, revokedAt: null } });
+    // Rotado hace instantes por otro pedido simultáneo (otra pestaña, o la app volviendo del segundo plano):
+    // no es un robo. El navegador ya recibió el token nuevo, así que solo se le da un acceso de la sesión
+    // que lo reemplazó, sin tocar la cookie de renovación (borrarla acá cerraba la sesión sin motivo).
+    const graceMs = 60_000;
+    if (session.replacedById && Date.now() - session.revokedAt.getTime() < graceMs) {
+      const next = await Session.findByPk(session.replacedById);
+      const user = await User.findByPk(session.userId);
+      if (next && !(next.revokedAt && !next.replacedById) && next.expiresAt.getTime() > Date.now() && user?.active) {
+        setAccessCookie(res, user.id, next.id);
+        return user;
+      }
+      throw unauthorized('Sesión vencida', 'session_expired');
     }
+    await Session.update({ revokedAt: new Date() }, { where: { userId: session.userId, revokedAt: null } });
     clearCookies(res);
     throw unauthorized('Sesión vencida', 'session_expired');
   }
@@ -81,6 +97,12 @@ export async function rotateSession(req: Request, res: Response): Promise<User> 
   session.replacedById = next.id;
   await session.save();
   return user;
+}
+
+/** Limpieza: borra las sesiones vencidas o cerradas hace más de 30 días (ya no sirven ni para detectar reúsos). */
+export async function pruneSessions(userId: string) {
+  const cutoff = new Date(Date.now() - config.refreshTokenDays * 86_400_000);
+  await Session.destroy({ where: { userId, [Op.or]: [{ expiresAt: { [Op.lt]: new Date() } }, { revokedAt: { [Op.lt]: cutoff } }] } });
 }
 
 export async function endSession(req: Request, res: Response) {

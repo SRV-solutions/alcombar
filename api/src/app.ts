@@ -24,6 +24,9 @@ import { calendarRouter } from './modules/calendar.routes';
 import './modules/calendar.sources'; // campamentos, eventos y salidas en el calendario
 import { libraryRouter } from './modules/library.routes';
 import { supportRouter } from './modules/support.routes';
+import { notificationsRouter, registryRouter } from './modules/notifications.routes';
+import { referentsRouter } from './modules/referents.routes';
+import { saturdaysRouter } from './modules/saturdays.routes';
 
 export function createApp() {
   const app = express();
@@ -56,9 +59,13 @@ export function createApp() {
   api.use('/events', eventsRouter);
   api.use('/camps', campsRouter);
   api.use('/inventory', inventoryRouter);
+  api.use('/calendar/saturdays', saturdaysRouter);
   api.use('/calendar', calendarRouter);
   api.use('/library', libraryRouter);
   api.use('/support', supportRouter);
+  api.use('/notifications', notificationsRouter);
+  api.use('/registry', registryRouter);
+  api.use('/referents', referentsRouter);
   app.use('/api/v1', api);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta inexistente' }));

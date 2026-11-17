@@ -28,7 +28,10 @@ import {
   Settings2,
   ShieldCheck,
   Tent,
+  Contact,
+  Repeat,
   UserCog,
+  UserRoundCheck,
   Users,
   UsersRound,
 } from 'lucide-react';
@@ -41,6 +44,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { ReportProblemButton } from './ReportProblem';
 import { OpenOnPhoneButton } from './OpenOnPhone';
 import { PoweredBySrv } from './PoweredBy';
+import { NotificationBell } from './NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import './layout-extra.css';
@@ -55,7 +59,9 @@ interface NavItem {
   /** Solo para superadmins. */
   superadmin?: boolean;
   /** Contador al lado del nombre (ej: reportes abiertos). */
-  badgeKey?: 'support';
+  badgeKey?: 'support' | 'registry';
+  /** Se muestra solo si el servidor dice que esta persona lo puede ver. */
+  visibleKey?: 'registry';
 }
 
 const SECTIONS: { title?: string; items: NavItem[] }[] = [
@@ -67,6 +73,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
       { to: '/pases', label: 'Pases de unidad', icon: <ArrowLeftRight />, perm: ['members', 'edit'] },
       { to: '/asistencia', label: 'Asistencia', icon: <CalendarCheck />, perm: ['attendance', 'view'] },
       { to: '/documentacion', label: 'Documentación', icon: <FileCheck2 />, perm: ['member_documents', 'view'] },
+      { to: '/cruz-del-sur', label: 'Altas y bajas · Cruz del Sur', icon: <UserRoundCheck />, visibleKey: 'registry', badgeKey: 'registry' },
     ],
   },
   {
@@ -76,6 +83,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
       { to: '/programa/ciclos', label: 'Ciclos de programa', icon: <CalendarRange />, perm: ['activities', 'view'] },
       { to: '/programa/sabado', label: 'Programa del sábado', icon: <CalendarDays />, perm: ['activities', 'view'] },
       { to: '/programa/banco', label: 'Banco de fichas', icon: <Library />, perm: ['activities', 'view'] },
+      { to: '/programa/referentes', label: 'Referentes de rama', icon: <Contact />, perm: ['activities', 'view'] },
       { to: '/progresion', label: 'Progresión', icon: <RouteIcon />, perm: ['progression', 'view'] },
     ],
   },
@@ -95,7 +103,8 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
       { to: '/adultos', label: 'Adultos', icon: <UsersRound />, perm: ['adults', 'view'] },
       { to: '/grupo/equipos', label: 'Equipos de apoyo', icon: <ClipboardList />, perm: ['group', 'view'] },
       { to: '/grupo/organigrama', label: 'Organigrama', icon: <Network />, perm: ['group', 'view'] },
-      { to: '/calendario', label: 'Calendario', icon: <Compass />, perm: ['calendar', 'view'] },
+      { to: '/calendario', label: 'Calendario', icon: <Compass />, perm: ['calendar', 'view'], end: true },
+      { to: '/calendario/sabados', label: 'Sábados y servicio', icon: <Repeat />, perm: ['calendar', 'view'] },
       { to: '/actas', label: 'Actas y documentos', icon: <BookOpenCheck />, perm: ['documents', 'view'] },
       { to: '/inventario', label: 'Inventario', icon: <Boxes />, perm: ['inventory', 'view'] },
     ],
@@ -130,7 +139,14 @@ export function Layout() {
     enabled: !!me?.isSuperadmin,
     refetchInterval: 5 * 60_000,
   });
-  const badges: Record<string, number> = { support: supportCount.data?.open ?? 0 };
+  const registry = useQuery({
+    queryKey: ['registry-summary'],
+    queryFn: () => api.get<{ canSee: boolean; pending: number }>('/registry/summary'),
+    enabled: !!me,
+    refetchInterval: 5 * 60_000,
+  });
+  const badges: Record<string, number> = { support: supportCount.data?.open ?? 0, registry: registry.data?.pending ?? 0 };
+  const visible: Record<string, boolean> = { registry: !!registry.data?.canSee };
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const [lastPath, setLastPath] = useState(location.pathname);
@@ -154,6 +170,7 @@ export function Layout() {
           {SECTIONS.map((s, i) => {
             const items = s.items.filter((it) => {
               if (it.superadmin) return !!me?.isSuperadmin;
+              if (it.visibleKey) return visible[it.visibleKey];
               const perms = it.anyOf ?? (it.perm ? [it.perm] : []);
               return !perms.length || perms.some(([m, a]) => can(m, a));
             });
@@ -197,12 +214,14 @@ export function Layout() {
           <Logo className="brand-logo" />
           <span className="brand-name">ALCOMBAR</span>
           <GlobalSearch compact />
+          <NotificationBell compact />
         </header>
         <div className="appbar">
           <GlobalSearch />
           <Link to="/ayuda" className="btn btn-ghost btn-sm appbar-help">
             <CircleHelp /> Ayuda
           </Link>
+          <NotificationBell />
         </div>
         <main className="content">
           <Outlet />

@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Download, Plus, UserCheck } from 'lucide-react';
-import { ADULT_STATUSES, ADULT_STATUS_LABELS, ageAt, BRANCH_INFO, trainingSummary, type AdultStatus, type Branch } from '@shared';
+import { ADULT_STATUSES, ADULT_STATUS_LABELS, ageAt, BRANCH_INFO, BRANCHES, trainingSummary, type AdultStatus, type Branch } from '@shared';
 import { api, qs } from '../../lib/api';
+import { matchesPerson } from '../../lib/search';
+import { FilterBar } from '../../components/FilterBar';
 import { useAuth } from '../../lib/auth';
 import { useUnits } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { Adult, Assignment } from '../../lib/types';
-import { Badge, Button, Empty, ErrorBox, Input, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
+import { Badge, Button, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
 
 export const ADULT_STATUS_TONES: Record<string, Tone> = { alta: 'ok', prueba: 'warn', baja: 'neutral' };
 
@@ -30,11 +32,12 @@ export function AdultsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [unitId, setUnitId] = useState('');
+  const [branch, setBranch] = useState('');
   const [downloading, setDownloading] = useState(false);
 
   const adults = useQuery({
-    queryKey: ['adults', { q, status, unitId }],
-    queryFn: () => api.get<Adult[]>(`/adults${qs({ q, status, unitId })}`),
+    queryKey: ['adults', { status, unitId }],
+    queryFn: () => api.get<Adult[]>(`/adults${qs({ status, unitId })}`),
     placeholderData: keepPreviousData,
   });
 
@@ -50,7 +53,12 @@ export function AdultsPage() {
   };
 
   const year = new Date().getFullYear();
-  const list = adults.data ?? [];
+  // Búsqueda y rama en el navegador: al instante, por palabras, sin tildes y con DNI con o sin puntos
+  const list = (adults.data ?? []).filter((a) => {
+    const cur = (a.assignments ?? []).filter((x) => x.year === year);
+    if (branch && !cur.some((x) => (x.unit?.branch ?? x.branch) === branch)) return false;
+    return matchesPerson(q, [a.lastName, a.firstName, a.totem, a.dni, ...cur.map((x) => `${x.position} ${x.unit?.code ?? ''} ${x.supportTeam?.name ?? ''}`)], a.dni);
+  });
 
   return (
     <>
@@ -72,8 +80,17 @@ export function AdultsPage() {
           </>
         }
       />
-      <div className="toolbar">
-        <Input className="grow" placeholder="Buscar por nombre, tótem o DNI" value={q} onChange={(e) => setQ(e.target.value)} />
+      <FilterBar
+        value={q}
+        onChange={setQ}
+        placeholder="Buscar por nombre, apellido, tótem, cargo o DNI"
+        active={[status, unitId, branch].filter(Boolean).length}
+        onClear={() => {
+          setStatus('');
+          setUnitId('');
+          setBranch('');
+        }}
+      >
         <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Estado">
           <option value="">Todos los estados</option>
           {ADULT_STATUSES.map((s) => (
@@ -90,13 +107,21 @@ export function AdultsPage() {
             </option>
           ))}
         </Select>
-      </div>
+        <Select value={branch} onChange={(e) => setBranch(e.target.value)} aria-label="Rama">
+          <option value="">Todas las ramas</option>
+          {BRANCHES.map((b) => (
+            <option key={b} value={b}>
+              {BRANCH_INFO[b].label}
+            </option>
+          ))}
+        </Select>
+      </FilterBar>
       {adults.isLoading ? (
         <Loading />
       ) : adults.error ? (
         <ErrorBox error={adults.error} />
       ) : !list.length ? (
-        <Empty>{q || status || unitId ? 'No hay adultos que coincidan con la búsqueda.' : 'Todavía no hay adultos cargados.'}</Empty>
+        <Empty>{q || status || unitId || branch ? 'No hay adultos que coincidan con la búsqueda.' : 'Todavía no hay adultos cargados.'}</Empty>
       ) : (
         <section className="card">
           <div className="table-wrap">

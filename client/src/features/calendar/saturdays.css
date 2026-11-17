@@ -1,0 +1,113 @@
+/* Calendario de sábados */
+.sat-year { min-width: 70px; }
+
+.sat-help { margin-bottom: 14px; }
+.sat-help-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 16px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-weight: 650; color: var(--text); text-align: left;
+}
+.sat-help-toggle svg { width: 18px; height: 18px; color: var(--primary); flex-shrink: 0; }
+.sat-help-chev { margin-left: auto; transition: transform 0.15s; color: var(--muted) !important; }
+.sat-help-chev.open { transform: rotate(90deg); }
+.sat-help-body { padding: 0 16px 14px 42px; line-height: 1.5; }
+.sat-help-body p { margin: 0 0 8px; }
+.sat-help-body p:last-child { margin-bottom: 0; }
+
+.sat-toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 8px; }
+.sat-search { position: relative; flex: 1 1 260px; max-width: 420px; }
+.sat-search .input { padding-left: 34px; width: 100%; }
+.sat-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--muted); pointer-events: none; }
+
+.sat-list { display: flex; flex-direction: column; }
+.sat-month { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--primary); margin: 22px 0 8px; font-weight: 800; }
+.sat-month::first-letter { text-transform: uppercase; }
+
+.sat-row {
+  display: grid;
+  grid-template-columns: 72px minmax(170px, 0.9fr) minmax(0, 2fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  scroll-margin-top: 90px;
+}
+.sat-row.past { opacity: 0.62; }
+.sat-row.next { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), var(--shadow); }
+.sat-row.off { background: repeating-linear-gradient(135deg, var(--surface), var(--surface) 10px, var(--surface-2) 10px, var(--surface-2) 20px); }
+.sat-row.mine { border-left: 4px solid var(--accent); }
+.sat-row.focus { animation: sat-flash 2.2s ease-out 1; }
+@keyframes sat-flash {
+  0%, 30% { box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+  100% { box-shadow: var(--shadow); }
+}
+
+.sat-date { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.sat-day { font-size: 1.7rem; font-weight: 800; line-height: 1; color: var(--text); }
+.sat-mon { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+.sat-date .badge { margin-top: 4px; font-size: 0.68rem; }
+
+.sat-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+.sat-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.sat-pill {
+  --c: var(--primary);
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 0.86rem; font-weight: 700;
+  background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--text); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+}
+.sat-pill-note { --c: var(--accent); font-weight: 600; }
+.sat-mine { display: inline-block; margin-top: 8px; font-size: 0.78rem; font-weight: 700; color: var(--accent-text); background: var(--accent-soft); padding: 2px 8px; border-radius: 6px; }
+.sat-empty { color: var(--muted); font-size: 0.88rem; }
+
+.sat-what { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.sat-what > .badge { align-self: flex-start; }
+.sat-line { display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
+.sat-line-icon { display: inline-flex; color: var(--primary); margin-top: 2px; flex-shrink: 0; }
+.sat-line-icon svg { width: 15px; height: 15px; }
+.sat-line-text { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+
+.sat-actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+
+/* Edición */
+.sat-edit-title { display: inline-flex; align-items: center; gap: 4px; }
+.sat-edit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; }
+.sat-edit h3 { font-size: 0.95rem; margin: 0 0 6px; }
+.sat-edit-hint { font-size: 0.82rem; margin: 0 0 10px; }
+.sat-branch-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.sat-branch-toggle {
+  --c: var(--primary);
+  padding: 7px 14px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent); background: var(--surface);
+  color: var(--text); font: inherit; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+}
+.sat-branch-toggle:hover { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+.sat-branch-toggle.on { background: var(--c); color: #fff; border-color: var(--c); }
+.sat-unit-checks { display: grid; grid-template-columns: 1fr; gap: 4px; margin-bottom: 14px; font-size: 0.88rem; }
+.sat-edit-fields { margin-top: 12px; }
+
+/* Cambio de día */
+.sat-swap { display: flex; flex-direction: column; gap: 14px; }
+.sat-swap-cols { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: start; }
+.sat-swap-col { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--surface-2); }
+.sat-swap-head { font-weight: 700; font-size: 0.86rem; margin-bottom: 2px; }
+.sat-swap-arrow { align-self: center; color: var(--primary); width: 22px; height: 22px; }
+.sat-preview { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: var(--info-soft); line-height: 1.45; font-size: 0.9rem; }
+.sat-preview svg { color: var(--info); flex-shrink: 0; margin-top: 2px; width: 18px; height: 18px; }
+
+@media (max-width: 900px) {
+  .sat-row { grid-template-columns: 56px minmax(0, 1fr); gap: 10px 12px; padding: 12px; }
+  .sat-date { grid-row: span 3; }
+  .sat-service, .sat-what, .sat-actions { grid-column: 2; }
+  .sat-actions { flex-direction: row; flex-wrap: wrap; }
+  .sat-day { font-size: 1.45rem; }
+  .sat-edit { grid-template-columns: 1fr; gap: 16px; }
+  .sat-swap-cols { grid-template-columns: 1fr; }
+  .sat-swap-arrow { transform: rotate(90deg); justify-self: center; }
+}
+
+@media print {
+  .sat-help, .sat-toolbar, .sat-actions { display: none !important; }
+  .sat-row { break-inside: avoid; box-shadow: none; opacity: 1 !important; padding: 6px 10px; margin-bottom: 4px; grid-template-columns: 54px 180px minmax(0, 1fr); }
+  .sat-month { margin: 10px 0 4px; }
+}

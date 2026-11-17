@@ -12,7 +12,7 @@ import { applyServerErrors } from '../../lib/forms';
 import { adultName, useAdults } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { SupportTeam } from '../../lib/types';
-import { Button, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select, Textarea } from '../../components/ui';
+import { Badge, Button, Checkbox, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select, Textarea } from '../../components/ui';
 
 type TeamForm = z.input<typeof supportTeamSchema>;
 
@@ -28,8 +28,8 @@ function TeamModal({ team, onClose }: { team?: SupportTeam; onClose: () => void 
   } = useForm<TeamForm>({
     resolver: zodResolver(supportTeamSchema),
     defaultValues: team
-      ? { name: team.name, description: team.description ?? '', leaderAdultId: team.leaderAdultId ?? '' }
-      : { name: '', description: '', leaderAdultId: '' },
+      ? { name: team.name, description: team.description ?? '', leaderAdultId: team.leaderAdultId ?? '', receivesRegistryAlerts: team.receivesRegistryAlerts }
+      : { name: '', description: '', leaderAdultId: '', receivesRegistryAlerts: false },
   });
 
   const onSubmit = async (values: TeamForm) => {
@@ -78,6 +78,9 @@ function TeamModal({ team, onClose }: { team?: SupportTeam; onClose: () => void 
         </Field>
         <Field label="Descripción" error={errors.description?.message} full>
           <Textarea {...register('description')} placeholder="Qué hace el equipo" />
+        </Field>
+        <Field label="Avisos" full hint="Todo el equipo (responsable e integrantes del año) recibe en la campanita y por mail cada alta o baja que hay que cargar en Cruz del Sur.">
+          <Checkbox {...register('receivesRegistryAlerts')} label="Recibe los avisos de altas y bajas para Cruz del Sur" />
         </Field>
       </form>
     </Modal>
@@ -147,6 +150,11 @@ export function SupportTeamsPage() {
               </div>
               <div className="card-body">
                 {t.description ? <p className="muted">{t.description}</p> : null}
+                {t.receivesRegistryAlerts ? (
+                  <p>
+                    <Badge tone="gold">Recibe los avisos de altas y bajas para Cruz del Sur</Badge>
+                  </p>
+                ) : null}
                 <dl className="dl">
                   <dt>Responsable</dt>
                   <dd>{t.leader ? <Link to={`/adultos/${t.leader.id}`}>{adultName(t.leader)}</Link> : <span className="muted">Sin asignar</span>}</dd>

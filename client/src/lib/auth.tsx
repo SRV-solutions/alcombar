@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { can as canFn, canGroupWide, unitsWith, type Action, type ModuleKey } from '@shared';
-import { api, ApiError, setSessionLostHandler } from './api';
+import { api, ApiError, refreshSession, setSessionLostHandler } from './api';
 import type { Me } from './types';
 
 interface AuthValue {
@@ -26,8 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (e instanceof ApiError && e.status === 401) {
           // Intenta renovar la sesión una vez antes de mandar al login
-          const ok = await fetch('/api/v1/auth/refresh', { method: 'POST', credentials: 'include' }).then((r) => r.ok).catch(() => false);
-          if (ok) return api.get<Me>('/auth/me');
+          if (await refreshSession()) return api.get<Me>('/auth/me');
           return null;
         }
         throw e;

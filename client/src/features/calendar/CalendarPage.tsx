@@ -6,7 +6,7 @@ import { CALENDAR_TYPE_LABELS, CALENDAR_TYPES, todayIso } from '@shared';
 import { api, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useUnits } from '../../lib/queries';
-import { Badge, Button, Card, Empty, ErrorBox, Loading, Modal, PageHeader, Select, UnitBadge } from '../../components/ui';
+import { Badge, Button, Card, Empty, ErrorBox, LinkButton, Loading, Modal, PageHeader, Select, UnitBadge } from '../../components/ui';
 import { EventDetails, EventDialog } from './EventDialog';
 import { RotationDialog } from './RotationDialog';
 import { addDays, day, longDate, MONTHS, parseIso, time, toIso, typeLabel, WEEKDAYS_SHORT, type CalItem } from './types';
@@ -27,7 +27,7 @@ function useNarrow(px = 700) {
 const MAX_CHIPS = 3;
 
 export function CalendarPage() {
-  const { can, canAll } = useAuth();
+  const { can, me } = useAuth();
   const units = useUnits();
   const narrow = useNarrow();
   const [params, setParams] = useSearchParams();
@@ -97,7 +97,10 @@ export function CalendarPage() {
         sub="Actividades del Grupo y de cada unidad: reuniones, servicio rotativo, Consejos, eventos y campamentos."
         actions={
           <>
-            {canAll('calendar', 'create') ? (
+            <LinkButton to="/calendario/sabados" variant="secondary">
+              <CalendarDays /> Sábados del año
+            </LinkButton>
+            {me?.isJefatura ? (
               <Button variant="secondary" onClick={() => setDialog({ kind: 'rotation' })}>
                 <Repeat /> Servicio rotativo
               </Button>

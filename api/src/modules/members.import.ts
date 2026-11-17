@@ -15,6 +15,7 @@ import {
 import { sequelize } from '../db';
 import { Guardian, Member, MemberGuardian, SmallGroup, Unit } from '../models';
 import { writeAudit } from '../lib/audit';
+import { recordRegistryChanges } from '../lib/registry';
 
 interface GuardianPlan {
   name: string;
@@ -228,6 +229,7 @@ export async function commitRows(rows: MemberImportRow[], req: Request) {
   const results = await analyzeRows(rows, req);
   const valid = results.filter((r) => r.plan);
   const stats = { created: 0, updated: 0, skipped: results.length - valid.length, guardiansCreated: 0, smallGroupsCreated: 0 };
+  const createdMembers: Member[] = [];
 
   await sequelize.transaction(async (transaction: Transaction) => {
     const guardians = await Guardian.findAll({ transaction });
@@ -275,6 +277,7 @@ export async function commitRows(rows: MemberImportRow[], req: Request) {
           { ...p.values, unitId: p.unit.id, branch: p.unit.branch, smallGroupId, status: 'activo', leftAt: null, notes: null },
           { transaction },
         );
+        createdMembers.push(member);
         stats.created++;
       }
 
@@ -312,5 +315,7 @@ export async function commitRows(rows: MemberImportRow[], req: Request) {
       transaction,
     );
   });
+  // Los nuevos son altas para cargar en Cruz del Sur (un solo aviso con todos)
+  if (createdMembers.length) await recordRegistryChanges(req, createdMembers.map((member) => ({ kind: 'alta' as const, member, detail: 'Importado desde planilla' })));
   return { stats, results: results.map(({ plan: _plan, ...rest }) => rest) };
 }

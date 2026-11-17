@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeftRight, Download, Plus, Search, Tent, Upload, Users } from 'lucide-react';
+import { ArrowLeftRight, Download, Plus, Tent, Upload, Users } from 'lucide-react';
 import { ageAt, BRANCH_INFO, BRANCHES, type Branch } from '@shared';
 import { api, qs } from '../../lib/api';
+import { matchesPerson } from '../../lib/search';
+import { FilterBar } from '../../components/FilterBar';
 import { useAuth } from '../../lib/auth';
 import { useUnits } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { DocSummary, MemberListItem } from '../../lib/types';
-import { Badge, Button, Card, Empty, ErrorBox, Input, LinkButton, Loading, PageHeader, Select, UnitBadge } from '../../components/ui';
+import { Badge, Button, Card, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, UnitBadge } from '../../components/ui';
 import { AssignUnitDialog } from './AssignUnitDialog';
 
 export const PENDING = 'pendientes';
@@ -34,12 +36,6 @@ export function PendingBadge({ branch }: { branch: string | null }) {
     </span>
   );
 }
-
-const norm = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
 
 export function MembersPage() {
   const { can, canAll, me } = useAuth();
@@ -78,10 +74,12 @@ export function MembersPage() {
   useEffect(() => setSelected(new Set()), [unitId, branch]);
 
   const filtered = useMemo(() => {
-    const needle = norm(q).trim();
-    if (!needle) return list.data ?? [];
-    return (list.data ?? []).filter((m) => norm(`${m.lastName} ${m.firstName} ${m.dni ?? ''}`).includes(needle));
-  }, [list.data, q]);
+    let rows = list.data ?? [];
+    // Rama (con "Todas las unidades"): por ejemplo, Scouts = las dos Unidades Scouts
+    if (branch && !pendingView) rows = rows.filter((m) => m.branch === branch);
+    if (!q.trim()) return rows;
+    return rows.filter((m) => matchesPerson(q, [m.lastName, m.firstName, m.dni, m.smallGroup?.name], m.dni));
+  }, [list.data, q, branch, pendingView]);
 
   const selectedUnit = units.data?.find((u) => u.id === unitId);
   const sgLabel = selectedUnit ? BRANCH_INFO[selectedUnit.branch as Branch]?.smallGroup.one ?? 'Pequeño grupo' : 'Pequeño grupo';
@@ -146,11 +144,13 @@ export function MembersPage() {
         </div>
       ) : null}
 
-      <div className="toolbar">
-        <div className="grow" style={{ position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: 10, top: 11, color: 'var(--muted)' }} />
-          <Input placeholder="Buscar por nombre o DNI" value={q} onChange={(e) => set('q', e.target.value)} style={{ paddingLeft: 32, width: '100%' }} />
-        </div>
+      <FilterBar
+        value={q}
+        onChange={(v) => set('q', v)}
+        placeholder="Buscar por nombre, apellido o DNI"
+        active={[unitId && !pendingView, branch, smallGroupId, status !== 'activo' && !pendingView].filter(Boolean).length}
+        onClear={() => setParams(new URLSearchParams(q ? { q } : {}), { replace: true })}
+      >
         <Select value={unitId} onChange={(e) => set('unitId', e.target.value)} aria-label="Unidad">
           <option value="">Todas las unidades</option>
           {canSeePending ? <option value={PENDING}>Por asignar unidad</option> : null}
@@ -160,7 +160,7 @@ export function MembersPage() {
             </option>
           ))}
         </Select>
-        {pendingView ? (
+        {pendingView || !unitId ? (
           <Select value={branch} onChange={(e) => set('rama', e.target.value)} aria-label="Rama">
             <option value="">Todas las ramas</option>
             {BRANCHES.map((b) => (
@@ -187,7 +187,7 @@ export function MembersPage() {
             <option value="todos">Todos</option>
           </Select>
         ) : null}
-      </div>
+      </FilterBar>
 
       {pendingView ? (
         <div className="alert alert-info mb row between">

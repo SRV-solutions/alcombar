@@ -9,8 +9,9 @@ import { currentContext } from '../lib/context';
 import { ah, badRequest, HttpError, notFound, parse, unauthorized } from '../lib/errors';
 import { createPasswordLink, createQrLogin, findValidToken, QR_LOGIN_MINUTES, sendReset } from '../lib/passwordTokens';
 import { DUMMY_HASH, hashPassword, sha256, verifyPassword } from '../lib/security';
-import { endSession, revokeAllSessions, rotateSession, startSession } from '../lib/session';
+import { endSession, pruneSessions, revokeAllSessions, rotateSession, startSession } from '../lib/session';
 import { authenticate } from '../middlewares/auth';
+import { isJefaturaUser } from '../lib/notify';
 import { sequelize } from '../db';
 
 export const authRouter = Router();
@@ -52,6 +53,7 @@ authRouter.post(
     user.lastLoginAt = new Date();
     await user.save();
     await startSession(req, res, user);
+    void pruneSessions(user.id).catch(() => undefined);
     currentContext().userId = user.id;
     await writeAudit({ action: 'login', entity: 'User', entityId: user.id, summary: user.email });
     res.json({ ok: true });
@@ -85,6 +87,7 @@ authRouter.get(
     res.json({
       user: { id: user.id, email: user.email, name: user.name, adultId: user.adultId, adult },
       isSuperadmin: req.auth!.isSuperadmin,
+      isJefatura: await isJefaturaUser(user.id, req.auth!.isSuperadmin),
       grants: req.auth!.grants,
       roles: req.auth!.roles.map((r) => ({ name: r.name, unit: units.find((u) => u.id === r.unitId) ?? null })),
     });

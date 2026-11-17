@@ -1,12 +1,19 @@
 import { Router, type Request } from 'express';
 import { Op } from 'sequelize';
-import { calendarEventSchema, can, canGroupWide, rotationSchema, unitsWith, type CalendarType } from '../shared';
+import { calendarEventSchema, can, rotationSchema, unitsWith, type CalendarType } from '../shared';
 import { sequelize } from '../db';
 import { Unit } from '../models';
 import { CalendarEvent } from '../models/operations';
 import { writeAudit } from '../lib/audit';
-import { ah, badRequest, notFound, parse } from '../lib/errors';
+import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
+import { isJefaturaUser } from '../lib/notify';
+
+/** El servicio de los sábados (eventos "servicio" y servicio rotativo) lo maneja solo la Jefatura de Grupo. */
+export const isJefatura = (req: Request) => isJefaturaUser(req.user!.id, req.auth!.isSuperadmin);
+async function assertJefatura(req: Request) {
+  if (!(await isJefatura(req))) throw forbidden('El servicio de los sábados lo modifica solo la Jefatura de Grupo. Para cambiar de día con otra unidad usá «Cambiar día» en Sábados del año.');
+}
 
 /** Etapa 8: calendario del Grupo y de cada unidad. */
 export const calendarRouter = Router();
@@ -38,13 +45,13 @@ export const calendarSources: CalendarSource[] = [];
 
 const unitAttrs = ['id', 'name', 'code', 'branch'];
 const isoDate = (s: unknown) => (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null);
-const addDays = (iso: string, n: number) => {
+export const addDays = (iso: string, n: number) => {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
 
-function toItem(req: Request, e: CalendarEvent): CalendarItem {
+function toItem(req: Request, e: CalendarEvent, jefatura: boolean): CalendarItem {
   return {
     id: e.id,
     title: e.title,
@@ -57,7 +64,7 @@ function toItem(req: Request, e: CalendarEvent): CalendarItem {
     description: e.description,
     source: 'calendar',
     link: null,
-    editable: can(req.auth, 'calendar', 'edit', e.unitId),
+    editable: can(req.auth, 'calendar', 'edit', e.unitId) && (e.type !== 'servicio' || jefatura),
   };
 }
 
@@ -75,7 +82,8 @@ calendarRouter.get(
     const where: Record<string | symbol, unknown> = { startDate: { [Op.lte]: to }, endDate: { [Op.gte]: from } };
     if (allowed !== 'all') where[Op.or] = [{ unitId: null }, { unitId: allowed }];
     const events = await CalendarEvent.findAll({ where, include: [{ model: Unit, as: 'unit', attributes: unitAttrs }] });
-    let items = events.map((e) => toItem(req, e));
+    const jefatura = await isJefatura(req);
+    let items = events.map((e) => toItem(req, e, jefatura));
 
     for (const source of calendarSources) {
       try {
@@ -101,7 +109,8 @@ calendarRouter.get(
   ah(async (req, res) => {
     const e = await CalendarEvent.findByPk(req.params.id, { include: [{ model: Unit, as: 'unit', attributes: unitAttrs }] });
     if (!e) throw notFound();
-    res.json({ ...e.toJSON(), editable: can(req.auth, 'calendar', 'edit', e.unitId), deletable: can(req.auth, 'calendar', 'delete', e.unitId) });
+    const locked = e.type === 'servicio' && !(await isJefatura(req));
+    res.json({ ...e.toJSON(), editable: !locked && can(req.auth, 'calendar', 'edit', e.unitId), deletable: !locked && can(req.auth, 'calendar', 'delete', e.unitId) });
   }),
 );
 
@@ -115,6 +124,7 @@ calendarRouter.post(
     const data = parse(calendarEventSchema, req.body);
     // Evento de una unidad: su unidad; evento del Grupo: permiso para todo el Grupo
     assertCan(req, 'calendar', 'create', data.unitId);
+    if (data.type === 'servicio') await assertJefatura(req);
     await checkUnit(data.unitId);
     const e = await CalendarEvent.create({ ...data, createdByUserId: req.user!.id });
     res.status(201).json(e);
@@ -128,6 +138,7 @@ calendarRouter.put(
     if (!e) throw notFound();
     assertCan(req, 'calendar', 'edit', e.unitId);
     const data = parse(calendarEventSchema, req.body);
+    if (e.type === 'servicio' || data.type === 'servicio') await assertJefatura(req);
     if (data.unitId !== e.unitId) assertCan(req, 'calendar', 'create', data.unitId);
     await checkUnit(data.unitId);
     await e.update(data);
@@ -141,6 +152,7 @@ calendarRouter.delete(
     const e = await CalendarEvent.findByPk(req.params.id);
     if (!e) throw notFound();
     assertCan(req, 'calendar', 'delete', e.unitId);
+    if (e.type === 'servicio') await assertJefatura(req);
     await e.destroy();
     res.json({ ok: true });
   }),
@@ -181,7 +193,7 @@ async function planRotation(data: { from: string; to: string; unitIds: string[];
 calendarRouter.post(
   '/rotation/preview',
   ah(async (req, res) => {
-    assertCan(req, 'calendar', 'create', null);
+    await assertJefatura(req);
     const data = parse(rotationSchema, req.body);
     res.json({ plan: await planRotation(data) });
   }),
@@ -190,8 +202,7 @@ calendarRouter.post(
 calendarRouter.post(
   '/rotation',
   ah(async (req, res) => {
-    assertCan(req, 'calendar', 'create', null);
-    if (!canGroupWide(req.auth, 'calendar', 'create')) throw badRequest('Solo quien gestiona el calendario del Grupo puede armar el servicio rotativo');
+    await assertJefatura(req);
     const data = parse(rotationSchema, req.body);
     const plan = (await planRotation(data)).filter((p) => !p.skipped && p.unit);
     await sequelize.transaction(async (transaction) => {

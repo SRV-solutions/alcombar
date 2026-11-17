@@ -476,3 +476,24 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 
 /* Editar usuario: los roles que ya tiene */
 .current-roles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 8px; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
+
+/* Barra de búsqueda + filtros (en el celular, los filtros se despliegan con un botón) */
+.filterbar-search { position: relative; flex: 1 1 260px; min-width: 0; }
+.filterbar-search .input { width: 100%; padding-left: 32px; padding-right: 30px; }
+.filterbar-search .input::-webkit-search-cancel-button { display: none; }
+.filterbar-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.filterbar-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px; display: inline-flex; border-radius: 6px; }
+.filterbar-clear:hover { background: var(--surface-hover); }
+.filterbar-toggle { display: none; }
+.filterbar-filters { display: contents; }
+.filterbar-reset { font-size: 0.85rem; }
+@media (max-width: 700px) {
+  .filterbar { gap: 8px; }
+  .filterbar-search { flex: 1 1 0; }
+  .filterbar-search .input { font-size: 16px; min-height: 42px; } /* sin zoom automático en iPhone */
+  .filterbar-toggle { display: inline-flex; flex-shrink: 0; min-height: 42px; }
+  .filterbar-toggle.has { border-color: var(--primary); color: var(--primary); }
+  .filterbar-filters { display: none; width: 100%; }
+  .filterbar-filters.open { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .filterbar-filters .select, .filterbar-filters .input { width: 100%; min-width: 0; min-height: 42px; font-size: 16px; }
+}

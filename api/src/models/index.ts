@@ -75,6 +75,8 @@ export class SupportTeam extends Model<InferAttributes<SupportTeam>, InferCreati
   declare name: string;
   declare description: string | null;
   declare leaderAdultId: ForeignKey<Adult['id']> | null;
+  /** Recibe los avisos de altas y bajas para cargar en Cruz del Sur. */
+  declare receivesRegistryAlerts: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
@@ -85,6 +87,7 @@ SupportTeam.init(
     id,
     name: { type: STRING(120), allowNull: false },
     description: TEXT,
+    receivesRegistryAlerts: { type: BOOLEAN, allowNull: false, defaultValue: false },
     createdAt: DATE,
     updatedAt: DATE,
     deletedAt: DATE,

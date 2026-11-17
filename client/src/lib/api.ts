@@ -17,8 +17,11 @@ export function setSessionLostHandler(fn: () => void) {
   onSessionLost = fn;
 }
 
-/** Renueva el token de acceso con el token de renovación (cookie). Un solo pedido aunque fallen varios a la vez. */
-function refresh(): Promise<boolean> {
+/**
+ * Renueva el token de acceso con el token de renovación (cookie). Un solo pedido aunque fallen varios a la vez
+ * (si dos pedidos usaran el mismo token, el segundo podía cerrar la sesión). Cada renovación suma otros 30 días.
+ */
+export function refreshSession(): Promise<boolean> {
   if (!refreshing) {
     refreshing = fetch('/api/v1/auth/refresh', { method: 'POST', credentials: 'include' })
       .then((r) => r.ok)
@@ -35,7 +38,7 @@ async function request(path: string, init: RequestInit): Promise<Response> {
   let res = await doFetch();
   if (res.status === 401 && !path.startsWith('/auth/')) {
     const body = await res.clone().json().catch(() => ({}));
-    if (body.code === 'token_expired' && (await refresh())) res = await doFetch();
+    if (body.code === 'token_expired' && (await refreshSession())) res = await doFetch();
   }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

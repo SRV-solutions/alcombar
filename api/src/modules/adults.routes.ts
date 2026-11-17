@@ -3,6 +3,8 @@ import { Op, type WhereOptions } from 'sequelize';
 import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, formatDate, type AdultStatus } from '../shared';
 import { Adult, AdultAssignment, AdultCourse, Course, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
+import { personSearchWhere } from '../lib/personSearch';
+import { adultRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
 import { sendCsv, toCsv } from '../lib/csv';
 import { ah, badRequest, notFound, parse } from '../lib/errors';
 import { authorize } from '../middlewares/auth';
@@ -41,12 +43,8 @@ adultsRouter.get(
   ah(async (req, res) => {
     const where: WhereOptions = {};
     const q = String(req.query.q ?? '').trim();
-    if (q) {
-      const like = `%${q}%`;
-      Object.assign(where, {
-        [Op.or]: [{ firstName: { [Op.iLike]: like } }, { lastName: { [Op.iLike]: like } }, { totem: { [Op.iLike]: like } }, { dni: { [Op.iLike]: like } }],
-      });
-    }
+    const search = q ? personSearchWhere(q, ['Adult.first_name', 'Adult.last_name', 'Adult.totem', 'Adult.dni'], 'Adult.dni') : null;
+    if (search) Object.assign(where, { [Op.and]: [search] });
     if (req.query.status) Object.assign(where, { status: String(req.query.status) });
     const year = Number(req.query.year) || currentYear();
     const adults = await Adult.findAll({
@@ -127,7 +125,9 @@ adultsRouter.post(
   authorize('adults', 'create'),
   ah(async (req, res) => {
     const data = parse(adultSchema, req.body);
-    res.status(201).json(await Adult.create(data));
+    const adult = await Adult.create(data);
+    if (adultRegistered(adult.status)) await recordRegistryChanges(req, [{ kind: 'alta', adult }]);
+    res.status(201).json(adult);
   }),
 );
 
@@ -139,7 +139,10 @@ adultsRouter.put(
     if (!adult) throw notFound();
     const data = parse(adultSchema, req.body);
     if (data.advisorAdultId === adult.id) throw badRequest('Revisá los datos', { advisorAdultId: 'No puede ser su propio asesor' });
+    const wasRegistered = adultRegistered(adult.status);
     await adult.update(data);
+    const kind = registryTransition(wasRegistered, adultRegistered(adult.status));
+    if (kind) await recordRegistryChanges(req, [{ kind, adult }]);
     res.json(adult);
   }),
 );
@@ -152,6 +155,11 @@ adultsRouter.delete(
     if (!adult) throw notFound();
     if (await User.count({ where: { adultId: adult.id } })) throw badRequest('El adulto tiene un usuario vinculado. Dalo de baja en lugar de eliminarlo.');
     await adult.destroy();
+    if (adultRegistered(adult.status)) {
+      await recordRegistryChanges(req, [
+        { kind: 'baja', adult, detail: 'Se eliminó de ALCOMBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
+      ]);
+    }
     res.json({ ok: true });
   }),
 );

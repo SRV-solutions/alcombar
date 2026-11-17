@@ -29,7 +29,7 @@ import {
   UnitBadge,
 } from '../../components/ui';
 import { UnitFormModal } from './UnitsPage';
-import { normalize } from '../../help/helpIndex';
+import { matchesPerson } from '../../lib/search';
 
 type SmallGroupForm = z.input<typeof smallGroupSchema>;
 
@@ -158,22 +158,13 @@ export function UnitDetailPage() {
   const groups = [...unit.smallGroups].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
   const countIn = (sgId: string) => (members.data ?? []).filter((m) => m.smallGroup?.id === sgId).length;
   const withoutGroup = (members.data ?? []).filter((m) => !m.smallGroup).length;
-  const mq = normalize(memberQ);
   const shownMembers = (members.data ?? []).filter(
     (m) =>
       (!sgFilter || (sgFilter === 'sin' ? !m.smallGroup : m.smallGroup?.id === sgFilter)) &&
-      (!mq || normalize(`${m.lastName} ${m.firstName} ${m.firstName} ${m.lastName} ${m.dni ?? ''}`).includes(mq)),
+      matchesPerson(memberQ, [m.lastName, m.firstName, m.dni, m.smallGroup?.name], m.dni),
   );
-  const aq = normalize(adultQ);
-  const shownAdults = (adults.data ?? []).filter(
-    (a) =>
-      !aq ||
-      normalize(
-        `${adultName(a)} ${a.firstName} ${a.lastName} ${a.totem ?? ''} ${a.assignments
-          .filter((x) => x.unitId === id)
-          .map((x) => x.position)
-          .join(' ')}`,
-      ).includes(aq),
+  const shownAdults = (adults.data ?? []).filter((a) =>
+    matchesPerson(adultQ, [a.firstName, a.lastName, a.totem, ...a.assignments.filter((x) => x.unitId === id).map((x) => x.position)], a.dni),
   );
   const showGroup = (key: string) => {
     setSgFilter(key);
@@ -345,7 +336,7 @@ export function UnitDetailPage() {
         {canMembers ? (
           <div id="unit-members">
             <Card
-              title={`Protagonistas (${members.data && (sgFilter || mq) ? `${shownMembers.length} de ${members.data.length}` : (members.data?.length ?? '…')})`}
+              title={`Protagonistas (${members.data && (sgFilter || memberQ.trim()) ? `${shownMembers.length} de ${members.data.length}` : (members.data?.length ?? '…')})`}
               actions={
                 <Link to={`/protagonistas?unitId=${unit.id}`} className="btn btn-secondary btn-sm">
                   Ver en el padrón
@@ -498,7 +489,7 @@ export function UnitDetailPage() {
 
         {canAdults ? (
           <Card
-            title={`Adultos ${new Date().getFullYear()}${adults.data && aq ? ` (${shownAdults.length} de ${adults.data.length})` : ''}`}
+            title={`Adultos ${new Date().getFullYear()}${adults.data && adultQ.trim() ? ` (${shownAdults.length} de ${adults.data.length})` : ''}`}
             bodyClass=""
           >
             {adults.isLoading ? (

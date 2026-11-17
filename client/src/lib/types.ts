@@ -4,6 +4,8 @@ import type { DocStatus, Grant } from '@shared';
 export interface Me {
   user: { id: string; email: string; name: string; adultId: string | null; adult: AdultRef | null };
   isSuperadmin: boolean;
+  /** Jefatura de Grupo (o superadmin): maneja el servicio de los sábados y manda el temario del Consejo. */
+  isJefatura?: boolean;
   grants: Grant[];
   roles: { name: string; unit: { id: string; name: string; code: string } | null }[];
 }
@@ -39,6 +41,8 @@ export interface SupportTeam {
   name: string;
   description: string | null;
   leaderAdultId: string | null;
+  /** Recibe los avisos de altas y bajas para cargar en Cruz del Sur. */
+  receivesRegistryAlerts: boolean;
   leader: AdultRef | null;
   members: (AdultRef & { position: string })[];
 }

@@ -34,10 +34,12 @@ import {
   UnitTransfer,
 } from '../models';
 import { writeAudit } from '../lib/audit';
+import { memberRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
 import { sendCsv, toCsv } from '../lib/csv';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
 import { analyzeRows, commitRows } from './members.import';
+import { personSearchWhere } from '../lib/personSearch';
 
 export const membersRouter = Router();
 
@@ -84,11 +86,11 @@ membersRouter.get(
     const status = String(req.query.status ?? 'activo');
     if (status !== 'todos') Object.assign(where, { status });
     const q = String(req.query.q ?? '').trim();
-    if (q) {
-      const like = `%${q}%`;
-      Object.assign(where, { [Op.or]: [{ firstName: { [Op.iLike]: like } }, { lastName: { [Op.iLike]: like } }, { dni: { [Op.iLike]: like } }] });
-    }
-    const members = await Member.findAll({ where, include: unitInclude, order: [['lastName', 'ASC'], ['firstName', 'ASC']] });
+    const search = q ? personSearchWhere(q, ['Member.first_name', 'Member.last_name', 'Member.dni'], 'Member.dni') : null;
+    if (search) Object.assign(where, { [Op.and]: [search] });
+    if (req.query.branch && unitId !== 'pendientes') Object.assign(where, { branch: String(req.query.branch) });
+    const limit = Math.min(Number(req.query.limit) || 0, 50) || undefined;
+    const members = await Member.findAll({ where, include: unitInclude, order: [['lastName', 'ASC'], ['firstName', 'ASC']], limit });
     const docs = await docSummaries(members.map((m) => m.id));
     res.json(
       members.map((m) => ({
@@ -364,6 +366,7 @@ membersRouter.post(
     const unit = await Unit.findByPk(data.unitId);
     if (!unit) throw badRequest('Revisá los datos', { unitId: 'Unidad inexistente' });
     const member = await Member.create({ ...data, branch: unit.branch, leftAt: data.status === 'baja' ? todayIso() : null });
+    if (memberRegistered(member.status)) await recordRegistryChanges(req, [{ kind: 'alta', member }]);
     res.status(201).json(member);
   }),
 );
@@ -394,12 +397,15 @@ membersRouter.put(
     const canContacts = can(req.auth, 'member_contacts', 'edit', member.unitId ?? data.unitId);
     const { address, phone, email, unitId: _unitId, ...rest } = data;
     const leftAt = data.status === 'baja' ? (member.status === 'baja' ? member.leftAt : todayIso()) : null;
+    const wasRegistered = memberRegistered(member.status);
     await member.update({
       ...rest,
       leftAt,
       ...(assignUnit ? { unitId: assignUnit.id, branch: assignUnit.branch } : {}),
       ...(canContacts ? { address, phone, email } : {}),
     });
+    const kind = registryTransition(wasRegistered, memberRegistered(member.status));
+    if (kind) await recordRegistryChanges(req, [{ kind, member }]);
     res.json(member);
   }),
 );
@@ -411,6 +417,11 @@ membersRouter.delete(
     const member = await Member.findByPk(req.params.id);
     if (!member) throw notFound();
     await member.destroy();
+    if (memberRegistered(member.status)) {
+      await recordRegistryChanges(req, [
+        { kind: 'baja', member, detail: 'Se eliminó de ALCOMBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
+      ]);
+    }
     res.json({ ok: true });
   }),
 );

@@ -3,6 +3,7 @@ import { Empty, LinkButton } from '../../components/ui';
 import { BankPage } from './BankPage';
 import { CycleDetailPage, CyclesPage } from './CyclesPage';
 import { MeetingPage } from './MeetingPage';
+import { ReferentsPage } from './ReferentsPage';
 import { SheetDetailPage } from './SheetDetailPage';
 import { SheetFormPage } from './SheetFormPage';
 import { SheetPrintPage } from './SheetPrintPage';
@@ -21,6 +22,7 @@ export function ProgramRoutes() {
       <Route path="ciclos" element={<CyclesPage />} />
       <Route path="ciclos/:id" element={<CycleDetailPage />} />
       <Route path="sabado" element={<MeetingPage />} />
+      <Route path="referentes" element={<ReferentsPage />} />
       <Route
         path="*"
         element={

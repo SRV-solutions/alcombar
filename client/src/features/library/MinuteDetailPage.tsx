@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ExternalLink, Pencil, Printer, Trash2 } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Pencil, Printer, Send, Trash2 } from 'lucide-react';
 import { formatDate } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, ErrorBox, Loading, PageHeader } from '../../components/ui';
 import { MinuteDialog } from './Dialogs';
+import { SendAgendaDialog } from './SendAgendaDialog';
 import { kindLabel, minuteNumber, statusLabel, type Minute } from './types';
 import './library.css';
 
@@ -18,6 +19,7 @@ export function MinuteDetailPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [sending, setSending] = useState(false);
   const q = useQuery({ queryKey: ['library', 'minute', id], queryFn: () => api.get<Minute>(`/library/minutes/${id}`) });
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorBox error={q.error} />;
@@ -73,6 +75,11 @@ export function MinuteDetailPage() {
                 <CheckCircle2 /> Aprobar acta
               </ConfirmButton>
             ) : null}
+            {m.canSendAgenda ? (
+              <Button variant={m.agendaSentAt ? 'secondary' : 'primary'} onClick={() => setSending(true)}>
+                <Send /> {m.agendaSentAt ? 'Reenviar temario' : 'Enviar temario'}
+              </Button>
+            ) : null}
             {can('documents', 'edit') ? (
               <Button variant="secondary" onClick={() => setEditing(true)}>
                 <Pencil /> Editar
@@ -104,6 +111,16 @@ export function MinuteDetailPage() {
         }
       />
 
+      {m.agendaSentAt ? (
+        <div className="agenda-sent no-print">
+          <Send /> Temario enviado al Consejo el {new Date(m.agendaSentAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          {m.agendaSentBy ? ` por ${m.agendaSentBy.name}` : ''}.
+        </div>
+      ) : m.canSendAgenda && m.status === 'borrador' ? (
+        <div className="agenda-sent agenda-hint no-print">
+          <Send /> Unos días antes del Consejo, cargá el orden del día y tocá «Enviar temario»: les llega a todos en la campanita y por mail.
+        </div>
+      ) : null}
       <Card>
         <article className="minute-doc">
           <div className="print-only" style={{ marginBottom: 12 }}>
@@ -132,6 +149,7 @@ export function MinuteDetailPage() {
       </Card>
 
       {editing ? <MinuteDialog minute={m} onClose={() => setEditing(false)} /> : null}
+      {sending ? <SendAgendaDialog minute={m} onClose={() => setSending(false)} /> : null}
     </>
   );
 }

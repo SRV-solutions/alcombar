@@ -17,6 +17,11 @@ export interface Minute extends MinuteRow {
   agenda: string | null;
   content: string | null;
   createdBy: { id: string; name: string } | null;
+  /** Temario enviado como aviso al Consejo. */
+  agendaSentAt?: string | null;
+  agendaSentBy?: { id: string; name: string } | null;
+  agendaMessage?: string | null;
+  canSendAgenda?: boolean;
 }
 export interface DocLink {
   id: string;
