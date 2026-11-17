@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Award, BookOpen, Users } from 'lucide-react';
-import { BRANCH_INFO, COMPETENCIES_PER_STAGE, formatDate, type Branch } from '@shared';
+import { BRANCH_INFO, COMPETENCIES_PER_STAGE, formatDate, isComingSoon, type Branch } from '@shared';
 import { api, qs } from '../../lib/api';
 import { Badge, Card, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select } from '../../components/ui';
 import { UnitSelect, useProgramUnit } from '../program/common';
@@ -104,7 +104,11 @@ export function BoardPage() {
       ) : b ? (
         <div className="stack" style={{ gap: 16 }}>
           <StandardsCard s={b.standards} branchLabel={BRANCH_INFO[b.unit.branch as Branch]?.label ?? b.unit.name} />
-          {!b.scheme?.stages.length ? (
+          {isComingSoon(b.unit.branch) ? (
+            <div className="alert alert-info">
+              <strong>Próximamente.</strong> La propuesta de progresión de la Rama {BRANCH_INFO[b.unit.branch as Branch]?.label ?? b.unit.branch} todavía no está publicada; cuando salga, se carga acá.
+            </div>
+          ) : !b.scheme?.stages.length ? (
             <div className="alert alert-info">
               El esquema de progresión de esta rama está <strong>a definir</strong>: todavía no tiene etapas cargadas. Se cargan en <strong>Esquemas y catálogos → Etapas</strong>.
             </div>

@@ -201,7 +201,14 @@ export const competencyBulkSchema = z.object({
 });
 export const schemeSchema = z.object({ branch, name: reqStr(80), version: z.coerce.number().int().min(1).max(99).default(1), active: z.boolean().default(true) });
 export const stageSchema = z.object({ name: reqStr(80), description: optStr(2000) });
-export const specialtySchema = z.object({ name: reqStr(120), description: optStr(2000), active: z.boolean().default(true) });
+export const specialtySchema = z.object({
+  name: reqStr(120),
+  description: optStr(2000),
+  /** Rama (vacía = para todas las ramas) y área de desarrollo */
+  branch: z.enum(BRANCHES).nullable().optional().transform((v) => v ?? null),
+  areaId: optUuid,
+  active: z.boolean().default(true),
+});
 
 // ---------------- Progresión de cada protagonista ----------------
 export const memberMomentsSchema = z.object({
@@ -247,3 +254,17 @@ export const moveSmallGroupSchema = z.object({
   smallGroupId: z.string().uuid().nullable(),
 });
 export type MoveSmallGroupInput = z.infer<typeof moveSmallGroupSchema>;
+
+// ---- Ramas cuya propuesta de progresión todavía no está publicada ----
+export const BRANCHES_COMING_SOON: readonly string[] = ['castores'];
+export const isComingSoon = (branch: string | null | undefined) => !!branch && BRANCHES_COMING_SOON.includes(branch);
+export const COMING_SOON_TEXT = 'Próximamente: la propuesta de progresión de esta rama todavía no está publicada.';
+
+/** Con qué herramienta elige cada protagonista sus competencias, según la guía de su rama. */
+export const PROGRESSION_TOOL: Record<string, string | null> = {
+  castores: null,
+  lobatos: 'Rastros',
+  scouts: 'Cartas de Exploración',
+  caminantes: 'Diario de Marcha',
+  rovers: 'Plan Personal',
+};

@@ -22,7 +22,8 @@
     "mail:test": "tsx src/scripts/mailTest.ts",
     "seed:prod": "node dist/seed.js",
     "db:backup": "node scripts/db-backup.mjs",
-    "db:restore": "node scripts/db-restore.mjs"
+    "db:restore": "node scripts/db-restore.mjs",
+    "fichas:importar": "tsx src/scripts/importarFichas.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

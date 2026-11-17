@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Award, CheckSquare, Flag, NotebookPen, Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { COMPETENCIES_PER_STAGE, COMPETENCY_STATUSES, COMPETENCY_STATUS_LABELS, formatDate, type CompetencyStatus } from '@shared';
+import { COMPETENCIES_PER_STAGE, COMPETENCY_STATUSES, COMPETENCY_STATUS_LABELS, formatDate, isComingSoon, PROGRESSION_TOOL, type CompetencyStatus } from '@shared';
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Input, Loading, Modal, Select, type Tone } from '../../components/ui';
@@ -73,7 +73,7 @@ function ChooseDialog({
   return (
     <Modal
       wide
-      title="Elegir competencias"
+      title={PROGRESSION_TOOL[data.member.branch ?? ''] ? `Elegir competencias · ${PROGRESSION_TOOL[data.member.branch ?? '']}` : 'Elegir competencias'}
       onClose={onClose}
       footer={
         <>
@@ -170,6 +170,8 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
   if (q.error) return <ErrorBox error={q.error} />;
   if (!d) return null;
   const canEdit = d.canEdit;
+  // Rastros, Cartas de Exploración, Diario de Marcha o Plan Personal, según la rama
+  const tool = PROGRESSION_TOOL[d.member.branch ?? ''] ?? null;
   const achieved = currentComps.filter((c) => c.status === 'lograda').length;
   const byArea: Record<string, { chosen: number; achieved: number }> = {};
   for (const c of currentComps) {
@@ -432,14 +434,18 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
           <Card
             title="Etapas"
             actions={
-              canEdit && d.member.branch ? (
+              canEdit && d.member.branch && !isComingSoon(d.member.branch) ? (
                 <Button size="sm" onClick={() => stageDialog()} disabled={!d.scheme?.stages.length} className="stage-add">
                   <Flag /> Registrar etapa
                 </Button>
               ) : null
             }
           >
-            {!d.scheme?.stages.length && d.member.branch ? (
+            {isComingSoon(d.member.branch) ? (
+              <p className="muted" style={{ marginTop: 0 }}>
+                <strong>Próximamente:</strong> la propuesta de progresión de esta rama todavía no está publicada.
+              </p>
+            ) : !d.scheme?.stages.length && d.member.branch ? (
               <p className="muted" style={{ marginTop: 0 }}>
                 El esquema de esta rama está a definir: todavía no tiene etapas. Se cargan en <Link to="/progresion/esquemas?tab=etapas">Esquemas y catálogos</Link>.
               </p>
@@ -507,7 +513,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
         </div>
 
         <Card
-          title={`Competencias${current && !current.endedAt ? ` · ${current.stage?.name ?? ''}` : ''}`}
+          title={`Competencias${current && !current.endedAt ? ` · ${current.stage?.name ?? ''}` : ''}${tool ? ` (${tool})` : ''}`}
           actions={
             canEdit && d.member.branch ? (
               <Button size="sm" onClick={() => setChoosing(true)} className="comp-choose">

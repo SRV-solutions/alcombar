@@ -440,6 +440,11 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         pose: 'think',
+        title: 'El seguimiento',
+        text: 'Abajo de todo está "Seguimiento": cualquier adulto de la unidad anota cómo viene el chico, y queda el historial de todo lo que se hizo con el adulto que lo hizo. Así todo el equipo sabe quién lo viene acompañando.',
+      },
+      {
+        pose: 'think',
         title: 'También desde la ficha',
         text: 'En la ficha de cada protagonista hay una pestaña "Progresión" con el resumen y el botón "Abrir en Progresión".',
       },

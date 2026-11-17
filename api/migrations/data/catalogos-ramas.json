@@ -1,0 +1,1968 @@
+{
+ "source": "Guías de rama de Scouts de Argentina (Rumbo Sur), 2026",
+ "branches": [
+  {
+   "branch": "lobatos",
+   "replaceAreas": true,
+   "areas": [
+    {
+     "name": "Salud y bienestar",
+     "description": "Sendero de la salud y el bienestar · Bagheera. Cuidado integral de uno mismo y de otras personas: hábitos saludables, cuerpo, emociones, resiliencia y entornos seguros."
+    },
+    {
+     "name": "Ambiente",
+     "description": "Sendero de la naturaleza · Hermano Gris. Mirada crítica y corresponsable sobre el impacto ambiental: cuidado de la naturaleza, consumo responsable, biodiversidad y disfrute del entorno natural."
+    },
+    {
+     "name": "Paz y desarrollo",
+     "description": "Sendero de la paz · Baloo. Convivencia pacífica, respeto por la diversidad, derechos, participación, compromiso solidario con la comunidad y exploración del sentido espiritual de la vida."
+    },
+    {
+     "name": "Habilidades para la vida",
+     "description": "Sendero de las habilidades · Kaa. Desarrollo del potencial personal: aprender siempre, resolver problemas, comunicarse, usar la tecnología con responsabilidad, liderazgo y autoconocimiento."
+    }
+   ],
+   "scheme": {
+    "name": "Guía de la Rama Lobatos y Lobeznas",
+    "stages": [
+     {
+      "name": "Lobo o Loba Pata Tierna",
+      "description": "Primera etapa: desarrolla el primer grupo de competencias elegidas con los Rastros. Ya puede empezar especialidades e insignias especiales. Edad aproximada: 7 años."
+     },
+     {
+      "name": "Lobo Saltador / Loba Saltadora",
+      "description": "Elige con los Rastros un segundo grupo de competencias y las trabaja mediante actividades, cacerías y descubiertas. Edad aproximada: 8 años."
+     },
+     {
+      "name": "Lobo Rastreador / Loba Rastreadora",
+      "description": "Elige un tercer grupo de competencias; con más práctica en elegir y mayor participación en la vida de la Manada. Edad aproximada: 9 años."
+     },
+     {
+      "name": "Lobo Cazador / Loba Cazadora",
+      "description": "Último grupo de competencias. Se espera que haya sido seisenero/a alguna vez y que acompañe a otro lobato o lobezna en su progresión. Edad aproximada: 10 años."
+     }
+    ]
+   },
+   "competencies": [
+    {
+     "area": "Salud y bienestar",
+     "number": 1,
+     "name": "Elijo alimentos que me ayudan a crecer, estar sano y fuerte.",
+     "description": "Elegir una alimentación saludable que favorezca el crecimiento y la energía."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 2,
+     "name": "Mantengo una buena higiene personal para tener una vida saludable.",
+     "description": "Sostener hábitos de higiene personal y orden en los propios espacios y pertenencias."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 3,
+     "name": "Reconozco y expreso mis emociones",
+     "description": "Identificar lo que siente, expresarlo y darse cuenta de cómo eso influye en sí mismo y en los demás."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 4,
+     "name": "Miro con sentido crítico los modelos de cuerpo de los medios",
+     "description": "Cuestionar los estereotipos corporales que aparecen en medios, publicidad, deporte y espectáculos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 5,
+     "name": "Valoro y cuido mi cuerpo sin compararme",
+     "description": "Aceptar y cuidar el propio cuerpo tal como es, evitando compararlo con el de otras personas."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 6,
+     "name": "Expreso mis afectos con claridad y respeto",
+     "description": "Demostrar cariño de forma clara y respetuosa a la familia y a las amistades."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 7,
+     "name": "Cuido mi privacidad e intimidad y respeto la de las demás personas.",
+     "description": "Proteger la propia intimidad y respetar la de los demás."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 8,
+     "name": "Evito hacer cosas que puedan lastimarme a mi o a otras personas.",
+     "description": "Prevenir conductas que pongan en riesgo la propia integridad o la de otras personas."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 9,
+     "name": "Disfruto del deporte y el juego con mis amistades",
+     "description": "Practicar y disfrutar actividades deportivas y recreativas compartidas con sus pares."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 10,
+     "name": "Conozco mi cuerpo y por qué cuidarlo",
+     "description": "Conocer órganos, sistemas y funciones del cuerpo, y entender la importancia de cuidarlos para sentirse bien."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 11,
+     "name": "Ante una pelea o situación de conflicto recurro al diálogo para resolverla.",
+     "description": "Resolver peleas y conflictos conversando, sin violencia."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 12,
+     "name": "Me intereso por la cultura de mi comunidad y mi país.",
+     "description": "Mostrar interés por las expresiones culturales locales y nacionales."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 13,
+     "name": "Respeto las tradiciones culturales de mi comunidad",
+     "description": "Valorar y respetar la diversidad cultural de las distintas colectividades que forman su comunidad."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 14,
+     "name": "Conozco mi historia, la de mi familia y de mi país.",
+     "description": "Conocer la historia personal, familiar y nacional."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 15,
+     "name": "Conozco mis derechos y detecto cuando no se respetan",
+     "description": "Conocer los derechos de la infancia y reconocer situaciones en las que se vulneran."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 16,
+     "name": "Participo en las decisiones y respeto los acuerdos",
+     "description": "Tomar parte en las decisiones que le involucran y cumplir lo acordado en grupo."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 17,
+     "name": "Comprendo y acepto las reglas y expreso mi opinión sobre ellas.",
+     "description": "Entender y aceptar las normas, dando su opinión sobre ellas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 18,
+     "name": "Participo e incluyo a todas las personas sin discriminarlas.",
+     "description": "Integrar a todas las personas en las actividades, sin discriminar."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 19,
+     "name": "Realizo acciones solidarias en mi entorno",
+     "description": "Ayudar a quienes lo necesitan y contribuir a mejorar los lugares donde vive."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 20,
+     "name": "Observo los problemas de mi entorno y sus causas",
+     "description": "Mirar con atención su entorno para entender los problemas que afectan a las personas y qué los provoca."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 21,
+     "name": "Comparto lo que creo y respeto otras creencias",
+     "description": "Dialogar sobre sus propias creencias y respetar las de otras personas (dimensión espiritual)."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 22,
+     "name": "Mis creencias se notan en cómo actúo",
+     "description": "Actuar con coherencia entre lo que cree y el trato con los demás (dimensión espiritual)."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 23,
+     "name": "Intento vivir la Ley de la Manada en mis acciones cotidianas.",
+     "description": "Poner en práctica la Ley de la Manada en la vida de todos los días."
+    },
+    {
+     "area": "Ambiente",
+     "number": 24,
+     "name": "Cuido del planeta utilizando los recursos de forma responsable sin desperdiciar.",
+     "description": "Usar agua, energía y materiales con responsabilidad, evitando el desperdicio."
+    },
+    {
+     "area": "Ambiente",
+     "number": 25,
+     "name": "Colaboro con otras personas en acciones de cuidado del planeta",
+     "description": "Sumarse con otras personas a acciones concretas de cuidado ambiental."
+    },
+    {
+     "area": "Ambiente",
+     "number": 26,
+     "name": "Identifico problemas ambientales de mi comunidad y sus causas",
+     "description": "Reconocer problemas ambientales cercanos y qué los origina."
+    },
+    {
+     "area": "Ambiente",
+     "number": 27,
+     "name": "Todo en la naturaleza está relacionado y la cuido",
+     "description": "Comprender la interdependencia en la naturaleza y comprometerse con acciones para mantenerla sana y en equilibrio."
+    },
+    {
+     "area": "Ambiente",
+     "number": 28,
+     "name": "Mis acciones impactan en el planeta y me comprometo a cuidarlo",
+     "description": "Reconocer el efecto de sus acciones sobre la Tierra y asumir el compromiso de cuidarla."
+    },
+    {
+     "area": "Ambiente",
+     "number": 29,
+     "name": "Disfruto de descubrir la diversidad que existe en la naturaleza",
+     "description": "Explorar con alegría la variedad de seres vivos y paisajes naturales."
+    },
+    {
+     "area": "Ambiente",
+     "number": 30,
+     "name": "Desarrollo habilidades que me permiten disfrutar de la naturaleza.",
+     "description": "Adquirir técnicas y destrezas para estar y disfrutar al aire libre."
+    },
+    {
+     "area": "Ambiente",
+     "number": 31,
+     "name": "Me asombro con las maravillas de la naturaleza",
+     "description": "Contemplar y valorar la grandeza y belleza del entorno natural."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 32,
+     "name": "Me intereso por aprender cosas nuevas.",
+     "description": "Mostrar curiosidad y ganas de aprender."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 33,
+     "name": "Utilizo diferentes herramientas y busco soluciones para resolver situaciones cotidianas.",
+     "description": "Usar herramientas y buscar soluciones prácticas a situaciones de todos los días."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 34,
+     "name": "Me enfrento a desafíos y problemas y encuentro soluciones creativas para resolverlos.",
+     "description": "Afrontar desafíos y resolver problemas con creatividad."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 35,
+     "name": "Conozco diferentes profesiones y oficios.",
+     "description": "Conocer distintos trabajos, profesiones y oficios."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 36,
+     "name": "Descubro mis intereses y habilidades realizando pasatiempos y especialidades.",
+     "description": "Descubrir gustos y talentos propios a través de pasatiempos y especialidades."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 37,
+     "name": "Me responsabilizo por distintas tareas en mi Manada y seisena.",
+     "description": "Asumir y cumplir tareas en la Manada y en su seisena."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 38,
+     "name": "Ejerzo el rol de seisenero/a y ayudo a otros a hacerlo",
+     "description": "Coordinar su seisena y apoyar a otras lobeznas y lobatos para que también asuman ese rol."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 39,
+     "name": "Uso programas y aplicaciones que me ayudan en mi vida cotidiana.",
+     "description": "Usar programas y aplicaciones útiles para la vida diaria."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 40,
+     "name": "Busco información y verifico que sea confiable",
+     "description": "Buscar información en distintas fuentes y comprobar que sea útil y verdadera antes de usarla o compartirla."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 41,
+     "name": "Uso la tecnología de forma responsable y segura",
+     "description": "Usar los dispositivos tecnológicos con responsabilidad y cuidando su seguridad."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 42,
+     "name": "Sé usar el dinero y utilizar mis recursos de manera responsable.",
+     "description": "Manejar dinero y recursos propios con criterio y responsabilidad."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 43,
+     "name": "Organizo mi tiempo entre tareas, responsabilidades y juego",
+     "description": "Distribuir el tiempo entre actividades y obligaciones sin descuidar el tiempo libre y de juego."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 44,
+     "name": "Me propongo tareas que ayudan a superar mis dificultades.",
+     "description": "Fijarse metas concretas para superar sus propias dificultades."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 45,
+     "name": "Pido ayuda y también ayudo a los demás para enfrentar algunas dificultades.",
+     "description": "Pedir y ofrecer ayuda frente a dificultades."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 46,
+     "name": "Expreso mis ideas con claridad y escucho con respeto",
+     "description": "Comunicar ideas de forma clara y amable, escuchando a los demás con atención y respeto."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 47,
+     "name": "Expreso mis emociones y sentimientos de diversos medios artísticos.",
+     "description": "Expresar emociones y sentimientos mediante distintas formas artísticas."
+    }
+   ],
+   "specialties": [
+    {
+     "area": "Ambiente",
+     "name": "Naturalista",
+     "description": "Observar y conocer flora, fauna y ecosistemas del entorno."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Montañismo",
+     "description": "Desenvolverse con seguridad en caminatas y ambientes de montaña."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Pesca",
+     "description": "Técnicas de pesca responsable y cuidado de ambientes acuáticos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Astronomía",
+     "description": "Observar el cielo: estrellas, constelaciones, planetas y la Luna."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Meteorología",
+     "description": "Observar y registrar el tiempo atmosférico y sus fenómenos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Ornitología",
+     "description": "Observar, identificar y proteger aves."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Orientación",
+     "description": "Ubicarse en la naturaleza con mapas, brújula y referencias naturales."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Cocina rústica",
+     "description": "Cocinar al aire libre con fuego y elementos simples."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Pionerismo",
+     "description": "Nudos, amarres y construcciones con sogas y troncos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Senderismo",
+     "description": "Planificar y realizar caminatas por senderos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Geología",
+     "description": "Conocer rocas, minerales y formas del terreno."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Habilidades de supervivencia",
+     "description": "Recursos básicos para cubrir necesidades en la naturaleza."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Espeleología",
+     "description": "Conocer y explorar cuevas con seguridad."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Conservación ambiental",
+     "description": "Acciones para proteger y recuperar el ambiente."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Horticultura y jardinería",
+     "description": "Cultivar huertas, plantas y jardines."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Forestal",
+     "description": "Conocer y cuidar árboles y bosques."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Cocina",
+     "description": "Preparar comidas sencillas con higiene y seguridad."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Albañilería",
+     "description": "Nociones básicas de construcción y sus materiales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Electrónica",
+     "description": "Circuitos y componentes electrónicos simples."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Electricidad",
+     "description": "Conceptos básicos de electricidad y su uso seguro."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Hojalatería",
+     "description": "Trabajar objetos de chapa y metal liviano."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Reparaciones",
+     "description": "Arreglar objetos de uso cotidiano."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Puericultura",
+     "description": "Nociones sobre el cuidado de bebés y niños pequeños."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Costura",
+     "description": "Coser, remendar y confeccionar objetos simples."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Carpintería",
+     "description": "Trabajar la madera con herramientas básicas."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Fotografía",
+     "description": "Tomar, seleccionar y compartir fotografías."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Informática",
+     "description": "Uso de computadoras y programas."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Tallado",
+     "description": "Dar forma a madera u otros materiales tallándolos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Mecánica",
+     "description": "Funcionamiento y mantenimiento de máquinas sencillas."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Química",
+     "description": "Experimentos químicos simples y seguros."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Diseño gráfico",
+     "description": "Crear piezas visuales como afiches, logos o ilustraciones."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Videos",
+     "description": "Grabar y editar videos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Redes sociales",
+     "description": "Uso responsable y seguro de las redes sociales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Cuidado de mascotas",
+     "description": "Atender y cuidar animales domésticos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Economía doméstica",
+     "description": "Organizar recursos y gastos del hogar."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Deportes",
+     "description": "Practicar uno o más deportes (denominación genérica)."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Atletismo",
+     "description": "Carreras, saltos y lanzamientos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Natación",
+     "description": "Nadar y desenvolverse con seguridad en el agua."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Coleccionismo",
+     "description": "Reunir, ordenar y mostrar una colección (denominación genérica)."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Primeros auxilios",
+     "description": "Actuar ante lesiones y emergencias simples."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Seguridad",
+     "description": "Prevención de accidentes y riesgos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Defensa Civil",
+     "description": "Prevención y respuesta ante emergencias y desastres."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Modelismo",
+     "description": "Construir maquetas y modelos a escala."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Higiene y salud pública",
+     "description": "Hábitos de higiene y cuidado de la salud comunitaria."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Seguridad vial",
+     "description": "Normas de tránsito y circulación segura."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Navegación",
+     "description": "Nociones de navegación y seguridad en embarcaciones."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Artes marciales",
+     "description": "Práctica de alguna disciplina marcial."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Hobbies",
+     "description": "Desarrollar un pasatiempo personal (denominación genérica)."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Culturas originarias",
+     "description": "Conocer y valorar a los pueblos originarios."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Interpretación",
+     "description": "Hacer de intérprete entre personas de distintas lenguas (interpretación propia; la guía no la describe)."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Orientación urbana",
+     "description": "Ubicarse y moverse con autonomía en la ciudad."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Cívica",
+     "description": "Instituciones, derechos y participación ciudadana."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Comunicación",
+     "description": "Transmitir mensajes por distintos medios."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Mediación",
+     "description": "Ayudar a resolver conflictos de forma pacífica."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Alfabetización",
+     "description": "Acompañar a otras personas en la lectura y la escritura."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Animación espiritual",
+     "description": "Preparar y animar momentos de reflexión espiritual."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Folclore",
+     "description": "Danzas, música y tradiciones populares."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Lector/a",
+     "description": "Cultivar el hábito de la lectura y compartir libros."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Teatro",
+     "description": "Actuar y preparar representaciones."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Bellas artes",
+     "description": "Dibujo, pintura y otras artes plásticas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Cerámica",
+     "description": "Modelar y trabajar la arcilla."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Música",
+     "description": "Cantar o tocar un instrumento."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Circo",
+     "description": "Malabares, acrobacias y otras artes circenses."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Escritura",
+     "description": "Escribir cuentos, poesías u otros textos."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Periodismo",
+     "description": "Investigar y contar noticias."
+    }
+   ]
+  },
+  {
+   "branch": "scouts",
+   "replaceAreas": true,
+   "areas": [
+    {
+     "name": "Salud y bienestar",
+     "description": "Cuidado integral de sí y de los demás: hábitos saludables, emociones, sexualidad, resiliencia y entornos seguros."
+    },
+    {
+     "name": "Ambiente",
+     "description": "Vínculo con la naturaleza y conciencia ambiental: vida al aire libre, consumo responsable, cambio climático y cuidado de los recursos."
+    },
+    {
+     "name": "Paz y desarrollo",
+     "description": "Convivencia pacífica, derechos, diversidad, participación democrática y solidaridad; incluye además la dimensión espiritual y el diálogo entre creencias."
+    },
+    {
+     "name": "Habilidades para la vida",
+     "description": "Herramientas para desenvolverse en la sociedad: liderazgo, comunicación, aprendizaje continuo, manejo de información y tecnología, organización personal."
+    }
+   ],
+   "scheme": {
+    "name": "Guía de la Rama Scouts",
+    "stages": [
+     {
+      "name": "Pistas",
+      "description": "Primera etapa: empieza a trabajar las competencias elegidas, asume su primer rol en la patrulla y puede iniciar especialidades. Edad aproximada: 10-11 años."
+     },
+     {
+      "name": "Senda",
+      "description": "Segunda etapa: gestiona sus Cartas con más soltura, elige un nuevo grupo de competencias y participa más en patrulla y Unidad."
+     },
+     {
+      "name": "Rumbo",
+      "description": "Tercera etapa: tercer grupo de competencias; anima a sus pares, propone ideas y se hace cargo de iniciativas."
+     },
+     {
+      "name": "Travesía",
+      "description": "Etapa final: completa las competencias de la rama, es referente de su patrulla, acompaña a otros y cierra con la Exploración de Travesía."
+     }
+    ]
+   },
+   "competencies": [
+    {
+     "area": "Salud y bienestar",
+     "number": 1,
+     "name": "Incorporo hábitos de higiene",
+     "description": "Cuidar la higiene personal y el orden de los espacios propios, de la patrulla y del campamento."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 2,
+     "name": "Entiendo la importancia de alimentarme de forma saludable",
+     "description": "Saber qué es comer sano y aplicarlo planificando y preparando comidas en casa y en campamento."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 3,
+     "name": "Reconocer y expresar mis emociones",
+     "description": "Identificar lo que siente, expresarlo de distintas formas y comprender cómo influye en sí y en otras personas."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 4,
+     "name": "Mirada crítica sobre modelos corporales en medios y redes",
+     "description": "Analizar críticamente los estereotipos de belleza y de cuerpo que difunden los medios y las redes sociales."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 5,
+     "name": "Decisiones informadas para cuidar mi salud",
+     "description": "Buscar información confiable sobre salud adolescente y adoptar hábitos de cuidado y bienestar personal."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 6,
+     "name": "Acepto y valoro mi cuerpo y el de los demás, evitando comparaciones",
+     "description": "Respetar y valorar el propio cuerpo y el ajeno, sin comparar ni juzgar."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 7,
+     "name": "Conocer los cambios de mi cuerpo al crecer",
+     "description": "Informarse y reconocer las transformaciones físicas de la adolescencia y las diferencias corporales entre personas."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 8,
+     "name": "Emociones y sentimientos ligados a la sexualidad",
+     "description": "Reconocer y respetar lo que siente respecto de la sexualidad, con información adecuada y personas de confianza."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 9,
+     "name": "Diálogo y respeto en mis relaciones",
+     "description": "Comunicarse con empatía y honestidad, escuchando a los demás y dando su opinión sin agresividad."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 10,
+     "name": "Recursos para proteger mis derechos sexuales",
+     "description": "Conocer sus derechos vinculados a la salud sexual y saber a quién o adónde acudir para defenderlos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 11,
+     "name": "Beneficios de la actividad física y el deporte",
+     "description": "Descubrir cómo el ejercicio y el deporte favorecen su bienestar físico y emocional, y practicarlos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 12,
+     "name": "Deporte y actividad física en equipo",
+     "description": "Disfrutar juegos y deportes con la patrulla, fortaleciendo el trabajo en equipo y los vínculos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 13,
+     "name": "Identifico situaciones de riesgo y adopto prácticas seguras",
+     "description": "Prevenir riesgos en actividades y en internet, manejar primeros auxilios básicos y respetar normas de seguridad."
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 14,
+     "name": "Conozco y construyo redes de apoyo y ayuda mutua",
+     "description": "Saber a quién pedir ayuda en distintos ámbitos y apoyar a compañeras y compañeros de patrulla."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 15,
+     "name": "Resolver conflictos mediante el diálogo, sin violencia",
+     "description": "Ayudar a resolver conflictos de forma pacífica y saber actuar ante violencia, bullying o ciberacoso."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 16,
+     "name": "Explorar la cultura de mi comunidad y mi país",
+     "description": "Investigar tradiciones, juegos, música e historia local y nacional, y proponer actividades sobre esos temas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 17,
+     "name": "Historia, identidad y símbolos patrios",
+     "description": "Valorar la historia familiar y nacional, y conocer y respetar el sentido de los símbolos patrios."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 18,
+     "name": "Valorar los Derechos Humanos y detectar su vulneración",
+     "description": "Conocer los derechos de niñas, niños y adolescentes, reconocer cuándo se vulneran y saber dónde pedir ayuda."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 19,
+     "name": "Practicar y promover la participación democrática",
+     "description": "Ejercer prácticas democráticas en la patrulla, la escuela y el barrio, respetando las decisiones colectivas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 20,
+     "name": "Respetar acuerdos de convivencia y expresar mis ideas",
+     "description": "Cumplir y ayudar a construir acuerdos de convivencia, expresando su postura con empatía y respeto."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 21,
+     "name": "Promover los derechos de todas las personas",
+     "description": "Actuar para que se respeten los derechos de todos en los espacios donde participa, incluida la igualdad de géneros."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 22,
+     "name": "Respeto a la diversidad y rechazo de estereotipos",
+     "description": "Valorar las diferencias entre personas, cuestionar prejuicios y evitar comentarios o actitudes discriminatorias."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 23,
+     "name": "Promuevo la participación e inclusión de todas las personas, sin discriminación alguna",
+     "description": "Proponer juegos y actividades en los que todas las personas puedan participar y sentirse incluidas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 24,
+     "name": "Ayudar a otras personas sin esperar nada a cambio",
+     "description": "Detectar oportunidades de servicio y hacer buenas acciones, individualmente o con su patrulla y Unidad."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 25,
+     "name": "Animar a otros a trabajar juntos por un cambio positivo",
+     "description": "Comprometerse con problemas de su comunidad y motivar a otras personas y grupos a actuar en conjunto."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 26,
+     "name": "Comprender las desigualdades y actuar para reducirlas",
+     "description": "Observar críticamente las desigualdades de su entorno, entender sus causas y actuar para mejorar el bienestar común."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 27,
+     "name": "Preguntarme por el origen y el misterio de la existencia",
+     "description": "Reflexionar sobre el sentido, la belleza y el misterio de la vida y del universo, desde la fe o la ciencia."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 28,
+     "name": "Diálogo respetuoso sobre creencias propias y ajenas",
+     "description": "Compartir sus creencias y conocer con respeto e interés otras opciones religiosas o espirituales."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 29,
+     "name": "Adhesión a los valores de la Ley y la Promesa Scout",
+     "description": "Comprender la Ley y la Promesa Scout y aplicarlas en su vida cotidiana, dentro y fuera de la Unidad."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 30,
+     "name": "Coherencia entre mis creencias, valores y acciones",
+     "description": "Reflexionar sobre sus creencias y prioridades, y procurar que se reflejen en lo que hace cada día."
+    },
+    {
+     "area": "Ambiente",
+     "number": 31,
+     "name": "Estilo de vida responsable y sostenible",
+     "description": "Reconocer su impacto ambiental y social, y adoptar hábitos sostenibles como reducir residuos y consumir con responsabilidad."
+    },
+    {
+     "area": "Ambiente",
+     "number": 32,
+     "name": "Uso consciente de los recursos naturales",
+     "description": "Usar con cuidado los recursos naturales y buscar alternativas que ayuden a conservar el ambiente."
+    },
+    {
+     "area": "Ambiente",
+     "number": 33,
+     "name": "Participo de iniciativas para construir una sociedad más respetuosa con el planeta",
+     "description": "Proponer y sumarse a acciones y campañas ambientales, propias o de otras organizaciones."
+    },
+    {
+     "area": "Ambiente",
+     "number": 34,
+     "name": "Causas y consecuencias del impacto ambiental",
+     "description": "Comprender problemas ambientales como el cambio climático y realizar acciones para proteger el ambiente."
+    },
+    {
+     "area": "Ambiente",
+     "number": 35,
+     "name": "Interdependencia entre seres vivos y ambiente",
+     "description": "Entender que dañar la naturaleza también nos afecta, valorando la biodiversidad y los saberes ancestrales."
+    },
+    {
+     "area": "Ambiente",
+     "number": 36,
+     "name": "Responsabilidad de cuidar la Tierra",
+     "description": "Asumir el cuidado del planeta como una tarea compartida, con acciones concretas de protección."
+    },
+    {
+     "area": "Ambiente",
+     "number": 37,
+     "name": "Explorar la naturaleza con mi patrulla",
+     "description": "Buscar con sus amigos oportunidades de vida en la naturaleza, cerca o lejos, cuidándola y protegiéndola."
+    },
+    {
+     "area": "Ambiente",
+     "number": 38,
+     "name": "Técnicas para disfrutar la vida en la naturaleza",
+     "description": "Adquirir habilidades de campismo, senderismo, fuego y uso seguro de herramientas para disfrutar el aire libre."
+    },
+    {
+     "area": "Ambiente",
+     "number": 39,
+     "name": "Contemplar la naturaleza y conectar con lo trascendente",
+     "description": "Vivir la naturaleza como un espacio de bienestar personal, reflexión y conexión espiritual."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 40,
+     "name": "Exploro temas de mi interés con la intención de mejorar cada día",
+     "description": "Identificar temas que le interesan, aprender sobre ellos y plantearse nuevas metas de mejora personal."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 41,
+     "name": "Medios y tecnologías para problemas cotidianos",
+     "description": "Probar herramientas, tecnologías y aplicaciones útiles para resolver situaciones de la vida diaria."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 42,
+     "name": "Aplicar mis conocimientos para resolver desafíos",
+     "description": "Usar lo que sabe hacer, como orientarse, estimar o reparar, para enfrentar situaciones concretas."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 43,
+     "name": "Compartir pasatiempos y especialidades con amigos",
+     "description": "Compartir sus aficiones y especialidades, descubrir intereses comunes y desarrollarlos junto a su patrulla."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 44,
+     "name": "Asumir un rol con responsabilidad en patrulla y Unidad",
+     "description": "Ejercer con compromiso un rol o tarea en actividades y proyectos, y apoyar a quienes asumen nuevos roles."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 45,
+     "name": "Lidero actividades y proyectos, acompañando y motivando a mis pares a sumarse",
+     "description": "Coordinar misiones, actividades o construcciones, motivando y ayudando a sus compañeros a participar."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 46,
+     "name": "Técnicas y tecnologías para soluciones creativas",
+     "description": "Experimentar con técnicas de supervivencia, orientación y tecnología para resolver problemas de forma creativa."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 47,
+     "name": "Buscar información y evaluar su veracidad",
+     "description": "Investigar en distintas fuentes, verificar su confiabilidad y usar la información de modo crítico y creativo."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 48,
+     "name": "Uso responsable y ético de la tecnología",
+     "description": "Comunicarse con respeto en entornos digitales, cuidar su identidad en línea y limitar el tiempo frente a pantallas."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 49,
+     "name": "Administro mis recursos y mi dinero de forma responsable",
+     "description": "Registrar gastos, ahorrar, armar presupuestos y colaborar en la gestión de fondos de la patrulla."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 50,
+     "name": "Organizar mi tiempo entre deberes y tiempo libre",
+     "description": "Planificar tareas, estudio, descanso y tiempo libre, estableciendo prioridades."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 51,
+     "name": "Superar dificultades y aprender de la experiencia",
+     "description": "Afrontar obstáculos con actitud positiva, revisar aciertos y errores, y aprender de ellos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 52,
+     "name": "Comunicación clara y escucha para trabajar en equipo",
+     "description": "Expresarse con claridad, escuchar y valorar las ideas de otros para alcanzar metas comunes."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 53,
+     "name": "Expresión artística de emociones y sentimientos",
+     "description": "Participar en música, teatro, danza u otras artes como forma de expresar lo que siente."
+    }
+   ],
+   "specialties": [
+    {
+     "area": "Ambiente",
+     "name": "Naturalista",
+     "description": "Observación e identificación de flora y fauna."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Montañismo",
+     "description": "Técnicas y seguridad para actividades de montaña."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Pesca",
+     "description": "Técnicas de pesca y cuidado de los ambientes acuáticos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Astronomía",
+     "description": "Observación del cielo nocturno, estrellas y constelaciones."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Meteorología",
+     "description": "Observación y pronóstico del tiempo."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Ornitología",
+     "description": "Observación e identificación de aves."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Orientación",
+     "description": "Uso de mapa, brújula e indicios naturales para orientarse."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Cocina rústica",
+     "description": "Cocinar al aire libre con fuego y sin utensilios convencionales."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Pionerismo",
+     "description": "Construcciones de campamento con troncos, cuerdas y amarres."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Senderismo",
+     "description": "Planificación y práctica de caminatas por senderos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Geología",
+     "description": "Rocas, minerales y formación del paisaje."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Habilidades de supervivencia",
+     "description": "Arreglarse en la naturaleza con recursos mínimos."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Espeleología",
+     "description": "Exploración segura de cuevas y cavernas."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Conservación ambiental",
+     "description": "Acciones de protección y cuidado del ambiente."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Horticultura y jardinería",
+     "description": "Cultivo de huertas, plantas y jardines."
+    },
+    {
+     "area": "Ambiente",
+     "name": "Forestal",
+     "description": "Árboles, bosques y su cuidado."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Cocina",
+     "description": "Preparación de comidas nutritivas para la casa y la patrulla."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Albañilería",
+     "description": "Trabajos básicos de construcción."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Electrónica",
+     "description": "Circuitos y dispositivos electrónicos básicos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Electricidad",
+     "description": "Instalaciones eléctricas básicas y su uso seguro."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Hojalatería",
+     "description": "Trabajo con chapa y metales livianos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Reparaciones",
+     "description": "Arreglos de objetos y equipos de uso cotidiano."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Puericultura",
+     "description": "Cuidado de bebés y niños pequeños."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Costura",
+     "description": "Coser, remendar y confeccionar prendas o equipo."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Carpintería",
+     "description": "Trabajos en madera con herramientas manuales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Fotografía",
+     "description": "Técnica y lenguaje de la imagen fotográfica."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Informática",
+     "description": "Uso de computadoras, programas y herramientas digitales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Tallado",
+     "description": "Tallado artesanal en madera u otros materiales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Mecánica",
+     "description": "Funcionamiento y mantenimiento de mecanismos y vehículos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Química",
+     "description": "Experimentos y conocimientos de química práctica."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Diseño gráfico",
+     "description": "Comunicación visual, piezas gráficas y diseño digital."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Videos",
+     "description": "Grabación y edición de contenidos audiovisuales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Redes sociales",
+     "description": "Uso responsable y creativo de las redes sociales."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Cuidado de mascotas",
+     "description": "Atención y bienestar de animales domésticos."
+    },
+    {
+     "area": "Habilidades para la vida",
+     "name": "Economía doméstica",
+     "description": "Organización de gastos, compras y tareas del hogar."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Deportes",
+     "description": "Práctica de una disciplina deportiva a elección."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Atletismo",
+     "description": "Carreras, saltos y lanzamientos."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Natación",
+     "description": "Técnicas de nado y seguridad en el agua."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Coleccionismo",
+     "description": "Armar y organizar una colección temática."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Primeros auxilios",
+     "description": "Atención inicial ante heridas, accidentes y emergencias."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Seguridad",
+     "description": "Prevención de riesgos y conductas seguras."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Defensa Civil",
+     "description": "Preparación y respuesta ante emergencias y desastres."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Modelismo",
+     "description": "Construcción de modelos y maquetas a escala."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Higiene y salud pública",
+     "description": "Hábitos de higiene y prevención de enfermedades en la comunidad."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Seguridad vial",
+     "description": "Normas de tránsito y circulación segura."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Navegación",
+     "description": "Manejo de embarcaciones y seguridad náutica."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Artes marciales",
+     "description": "Práctica de una disciplina de arte marcial."
+    },
+    {
+     "area": "Salud y bienestar",
+     "name": "Hobbies",
+     "description": "Desarrollo de un pasatiempo personal a elección."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Culturas originarias",
+     "description": "Historia, saberes y presente de los pueblos originarios."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Interpretación",
+     "description": "La guía no la describe; posiblemente interpretación o traducción de idiomas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Orientación urbana",
+     "description": "Moverse y orientarse en la ciudad con mapas, transporte y aplicaciones."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Cívica",
+     "description": "Instituciones, derechos y participación ciudadana."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Comunicación",
+     "description": "Medios y técnicas para comunicar ideas e información."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Mediación",
+     "description": "Herramientas para resolver conflictos de forma pacífica."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Alfabetización",
+     "description": "Apoyo a otras personas en el aprendizaje de la lectura y la escritura."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Animación espiritual",
+     "description": "Preparar y animar momentos de reflexión y celebración espiritual."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Folclore",
+     "description": "Música, danzas y tradiciones populares."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Lector/a",
+     "description": "Hábito de lectura y difusión de libros."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Teatro",
+     "description": "Actuación y puesta en escena."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Bellas artes",
+     "description": "Dibujo, pintura y otras artes plásticas."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Cerámica",
+     "description": "Modelado y trabajo artesanal con arcilla."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Música",
+     "description": "Canto o ejecución de un instrumento musical."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Circo",
+     "description": "Malabares, acrobacia y otras artes circenses."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Escritura",
+     "description": "Producción de textos y relatos propios."
+    },
+    {
+     "area": "Paz y desarrollo",
+     "name": "Periodismo",
+     "description": "Investigar, redactar y difundir noticias."
+    }
+   ]
+  },
+  {
+   "branch": "caminantes",
+   "replaceAreas": true,
+   "areas": [
+    {
+     "name": "Salud y bienestar",
+     "description": "Cuidado propio y de los demás con mirada integral: hábitos saludables, salud mental y sexual, resiliencia, actividad física y entornos seguros."
+    },
+    {
+     "name": "Paz y desarrollo",
+     "description": "Dignidad humana, resolución pacífica de conflictos, inclusión, derechos y participación ciudadana, compromiso solidario y búsqueda espiritual con diálogo entre creencias."
+    },
+    {
+     "name": "Ambiente",
+     "description": "Vida y disfrute en la naturaleza, mirada crítica sobre el impacto ambiental, consumo sostenible y recuperación de saberes ancestrales de cuidado de la tierra."
+    },
+    {
+     "name": "Habilidades para la vida",
+     "description": "Desarrollo del potencial personal: liderazgo, preparación para el trabajo, aprendizaje continuo, manejo crítico de información, comunicación, tecnología responsable y autoconocimiento."
+    }
+   ],
+   "scheme": {
+    "name": "Guía de la Rama Caminantes",
+    "stages": [
+     {
+      "name": "Primera etapa",
+      "description": "Desarrolla el primer grupo de competencias elegidas (0-25% de avance), hace un proyecto de Solidaridad y participa de un rally de aventura. Edad aproximada: 14-15 años."
+     },
+     {
+      "name": "Segunda etapa",
+      "description": "Reformula su Diario de Marcha con un segundo grupo de competencias (25-50%), hace un proyecto de Naturaleza y un rally de descubierta. Edad aproximada: 15-16 años."
+     },
+     {
+      "name": "Tercera etapa",
+      "description": "Tercer grupo de competencias (50-75%), proyecto de Viaje y aventura o Arte y cultura, y una tutoría o rol de liderazgo. Edad aproximada: 16-17 años."
+     },
+     {
+      "name": "Cuarta etapa",
+      "description": "Último cuarto de competencias (75-100%), proyecto de Vocación, lidera una actividad o proyecto con su equipo y prepara el pase a Rovers. Edad aproximada: 17-18 años."
+     }
+    ]
+   },
+   "competencies": [
+    {
+     "area": "Salud y bienestar",
+     "number": 1,
+     "name": "Adopto y promuevo hábitos de alimentación e higiene saludables",
+     "description": "Cuidar la alimentación, la higiene personal y el orden de los espacios, y promover esos hábitos en el equipo. (En la guía: Salud y bienestar 1.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 2,
+     "name": "Expreso mis emociones y entiendo cómo me afectan",
+     "description": "Reconocer y expresar las emociones de forma sana, escuchar a otras personas y pedir ayuda cuando haga falta. (En la guía: Salud y bienestar 2.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 3,
+     "name": "Mirada crítica sobre cuerpos y apariencias en medios y redes",
+     "description": "Analizar críticamente los mensajes sobre cuerpos e imagen que circulan en medios y redes, y su efecto en la autoestima. (En la guía: Salud y bienestar 3.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 4,
+     "name": "Acepto y valoro mi cuerpo sin compararlo",
+     "description": "Aceptar el propio cuerpo como único y valioso, sin compararse, cuidando la autoestima propia y la de los pares. (En la guía: Salud y bienestar 4.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 5,
+     "name": "Respeto la diversidad de identidades y géneros",
+     "description": "Respetar y promover el respeto a la diversidad de identidades y géneros, interviniendo ante situaciones de discriminación. (En la guía: Salud y bienestar 5.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 6,
+     "name": "Comprendo mi sexualidad como parte importante de mi vida",
+     "description": "Entender la sexualidad como dimensión natural de la vida personal y de los vínculos, sin presuponer la de otras personas. (En la guía: Salud y bienestar 6.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 7,
+     "name": "Decisiones informadas y responsables sobre mi salud sexual",
+     "description": "Informarse sobre salud sexual (ESI, anticoncepción, prevención) para decidir con responsabilidad y cuidar de sí y de otras personas. (En la guía: Salud y bienestar 7.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 8,
+     "name": "Valoro el diálogo y respeto mutuo para mantener relaciones de confianza y afecto",
+     "description": "Construir vínculos afectivos sanos basados en el diálogo, la escucha y el respeto de los límites. (En la guía: Salud y bienestar 8.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 9,
+     "name": "Sé dónde recurrir para proteger mis derechos sexuales y reproductivos",
+     "description": "Conocer instituciones, profesionales y recursos para ejercer y proteger los derechos sexuales y reproductivos con responsabilidad. (En la guía: Salud y bienestar 9.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 10,
+     "name": "Actividad física y deporte como parte de mi bienestar",
+     "description": "Practicar deporte y actividad física con regularidad, fijarse objetivos y conocer las propias capacidades sin sobreexigirse. (En la guía: Salud y bienestar 10.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 11,
+     "name": "Comparto actividades recreativas y lúdicas con mis amistades",
+     "description": "Proponer y compartir juegos, deportes y recreación con amistades, equipo y comunidad para crecer social y emocionalmente. (En la guía: Salud y bienestar 11.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 12,
+     "name": "Decisiones responsables que cuidan mi seguridad y la de otros",
+     "description": "Evaluar riesgos antes de decidir, conocer normas de seguridad (también en línea) y prevenir daños propios y ajenos. (En la guía: Salud y bienestar 12.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 13,
+     "name": "Me informo y preparo para enfrentar situaciones de emergencia",
+     "description": "Conocer planes de evacuación, practicar simulacros, mantener la calma y aprender primeros auxilios básicos. (En la guía: Salud y bienestar 13.)"
+    },
+    {
+     "area": "Salud y bienestar",
+     "number": 14,
+     "name": "Construyo redes de apoyo y ayuda mutua con mis pares",
+     "description": "Crear y sostener redes de apoyo con amistades, scouts de otros grupos y la familia. (En la guía: Salud y bienestar 14.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 15,
+     "name": "Resolución pacífica de conflictos, sin intolerancia ni violencia",
+     "description": "Contribuir a resolver conflictos de manera pacífica en equipo, comunidad y familia, rechazando la intolerancia y la violencia. (En la guía: Paz y desarrollo 1.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 16,
+     "name": "Valoro mi identidad y promuevo la herencia cultural de mi comunidad",
+     "description": "Conocer y difundir la cultura, tradiciones e historia de su comunidad, país, familia y grupo scout. (En la guía: Paz y desarrollo 2.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 17,
+     "name": "Desarrollo estrategias para promover y difundir los Derechos Humanos",
+     "description": "Conocer los derechos humanos y los organismos que los protegen, y realizar acciones de promoción y de denuncia de vulneraciones. (En la guía: Paz y desarrollo 3.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 18,
+     "name": "Ejerzo y promuevo mis derechos ciudadanos con mirada crítica",
+     "description": "Participar de forma informada en espacios democráticos y de gobierno (Comunidad, escuela, elecciones), conociendo derechos y obligaciones. (En la guía: Paz y desarrollo 4.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 19,
+     "name": "Fomento la participación democrática y respeto las decisiones",
+     "description": "Promover decisiones consensuadas y democráticas, aceptar resultados adversos y defender las propias ideas de forma pacífica. (En la guía: Paz y desarrollo 5.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 20,
+     "name": "Defiendo los derechos de infancias, juventudes y mujeres",
+     "description": "Participar en iniciativas colectivas que promuevan y garanticen esos derechos y difundir cómo denunciar vulneraciones. (En la guía: Paz y desarrollo 6.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 21,
+     "name": "Cuestiono mis prejuicios y estereotipos culturales",
+     "description": "Revisar los propios prejuicios y su efecto en los vínculos, y actuar contra la discriminación por género, edad u origen. (En la guía: Paz y desarrollo 7.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 22,
+     "name": "Promuevo la participación e inclusión de todas las personas",
+     "description": "Lograr que actividades y espacios sean inclusivos y accesibles, incluidas las personas con discapacidad. (En la guía: Paz y desarrollo 8.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 23,
+     "name": "Me involucro de forma empática y activa, en acciones solidarias en la comunidad",
+     "description": "Participar en proyectos y campañas solidarias con su equipo, vinculados a necesidades locales o a los ODS. (En la guía: Paz y desarrollo 9.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 24,
+     "name": "Me preocupo por las necesidades de quienes me rodean",
+     "description": "Empatizar con las necesidades de las personas cercanas y buscar formas concretas de ayudar en su vida cotidiana. (En la guía: Paz y desarrollo 10.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 25,
+     "name": "Analizo críticamente los problemas sociales y actúo en mi entorno",
+     "description": "Identificar las causas de problemas sociales de la comunidad local y actuar de manera coherente y responsable frente a ellos. (En la guía: Paz y desarrollo 11.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 26,
+     "name": "Me pregunto por el origen, el sentido y el misterio de la vida",
+     "description": "Reflexionar sobre las grandes preguntas existenciales y espirituales, explorando distintas opciones de respuesta. (En la guía: Paz y desarrollo 12.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 27,
+     "name": "Dialogo con las demás personas sobre lo que creo, promoviendo el entendimiento",
+     "description": "Compartir y conocer distintas opciones espirituales y religiosas, favoreciendo el diálogo y la convivencia pacífica. (En la guía: Paz y desarrollo 13.)"
+    },
+    {
+     "area": "Paz y desarrollo",
+     "number": 28,
+     "name": "Vivo con coherencia entre mis creencias, valores y decisiones",
+     "description": "Reconocer cómo creencias y valores guían las decisiones diarias; incluye reflexionar sobre la Ley Scout y el Compromiso Caminante. (En la guía: Paz y desarrollo 14.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 29,
+     "name": "Adopto un estilo de vida responsable y sostenible en mi consumo y producción",
+     "description": "Incorporar hábitos de consumo responsable, reducir desechos y plásticos, y promover lo sostenible en el hogar y el grupo. (En la guía: Ambiente 1.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 30,
+     "name": "Postura crítica y acciones ante decisiones con impacto ambiental",
+     "description": "Analizar críticamente decisiones que dañan el ambiente y responder con campañas o iniciativas de justicia ambiental. (En la guía: Ambiente 2.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 31,
+     "name": "Conexión e interdependencia entre todos los seres vivos",
+     "description": "Reconocer la interdependencia entre seres vivos, valorar saberes ancestrales y reflexionar sobre impactos éticos, por ejemplo de la alimentación. (En la guía: Ambiente 3.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 32,
+     "name": "Protejo la Tierra como casa común para todas las generaciones",
+     "description": "Asumir responsabilidad en el cuidado del planeta, denunciar daños a ecosistemas y aprender de prácticas ambientales de distintas culturas. (En la guía: Ambiente 4.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 33,
+     "name": "Valoro la naturaleza y disfruto las aventuras que vivo en ella",
+     "description": "Descubrir la biodiversidad local y vivir aventuras en la naturaleza: campamentos en lugares nuevos, rallies y raids. (En la guía: Ambiente 5.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 34,
+     "name": "Conecto con el mundo natural cuidándolo y protegiéndolo",
+     "description": "Desarrollar técnicas de campismo y vida al aire libre de bajo impacto: construcciones, fuego, cocina rústica y orientación. (En la guía: Ambiente 6.)"
+    },
+    {
+     "area": "Ambiente",
+     "number": 35,
+     "name": "La naturaleza como fuente de bienestar y de conexión con lo trascendente",
+     "description": "Aprovechar la naturaleza como espacio de introspección, relajación y conexión espiritual. (En la guía: Ambiente 7.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 36,
+     "name": "Trabajo en mi superación personal, enfocándome en mis intereses personales",
+     "description": "Gestionar su Diario de Marcha, evaluar avances cada ciclo, explorar insignias especiales y ampliar conocimientos según sus intereses. (En la guía: Habilidades para la vida 1.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 37,
+     "name": "Desarrollo habilidades y tecnologías útiles para mi vida",
+     "description": "Adquirir saberes prácticos y técnicos (oficios, arreglos, herramientas, cursos) útiles para la vida y el futuro profesional. (En la guía: Habilidades para la vida 2.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 38,
+     "name": "Afronto problemas con creatividad y soluciones innovadoras",
+     "description": "Aplicar creatividad, pensamiento innovador y tecnología para resolver desafíos del equipo o de la comunidad. (En la guía: Habilidades para la vida 3.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 39,
+     "name": "Exploro el mundo del trabajo según mis intereses",
+     "description": "Investigar profesiones, oficios y áreas de empleo, consultar a profesionales y practicar entrevistas; se vincula con el campo Vocación. (En la guía: Habilidades para la vida 4.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 40,
+     "name": "Motivo y oriento a otras personas a lograr objetivos comunes",
+     "description": "Asumir roles y coordinar grupos de trabajo, delegando y haciendo seguimiento de tareas hacia metas compartidas. (En la guía: Habilidades para la vida 5.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 41,
+     "name": "Apoyo a otras personas para colaborar en el desarrollo de su liderazgo",
+     "description": "Fortalecer el liderazgo de otras personas con tutorías y evaluación de roles, promoviendo un liderazgo rotativo y participativo. (En la guía: Habilidades para la vida 6.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 42,
+     "name": "Aplico técnicas y tecnologías disponibles en la vida cotidiana",
+     "description": "Manejar herramientas digitales y dispositivos de uso diario, y resolver problemas técnicos de manera autónoma. (En la guía: Habilidades para la vida 7.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 43,
+     "name": "Busco y evalúo críticamente diversas fuentes de información",
+     "description": "Verificar la confiabilidad de fuentes diversas, detectar desinformación, regular el tiempo digital y usar la información con creatividad. (En la guía: Habilidades para la vida 8.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 44,
+     "name": "Planifico y administro responsablemente mis recursos, de forma ética",
+     "description": "Organizar el presupuesto personal y del equipo, conocer herramientas financieras y prevenir riesgos como apuestas o estafas. (En la guía: Habilidades para la vida 9.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 45,
+     "name": "Priorizo tareas y administro mi tiempo y recursos",
+     "description": "Planificar objetivos medibles y usar técnicas de gestión del tiempo en proyectos y en la organización del ciclo de programa. (En la guía: Habilidades para la vida 10.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 46,
+     "name": "Me doy tiempo para descansar y disfrutar del tiempo libre",
+     "description": "Equilibrar obligaciones con descanso, recreación y desconexión, atendiendo señales de estrés o ansiedad. (En la guía: Habilidades para la vida 11.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 47,
+     "name": "Actúo de manera resiliente ante las dificultades, buscando la superación personal y colectiva",
+     "description": "Aceptar las dificultades como parte del crecimiento, pedir apoyo cuando hace falta y recibir evaluaciones de forma constructiva. (En la guía: Habilidades para la vida 12.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 48,
+     "name": "Me comunico de forma efectiva y respetuosa",
+     "description": "Practicar comunicación asertiva y escucha activa en asambleas, debates y órganos de gobierno, influyendo positivamente en el entorno. (En la guía: Habilidades para la vida 13.)"
+    },
+    {
+     "area": "Habilidades para la vida",
+     "number": 49,
+     "name": "Uso tecnologías de comunicación para llegar a públicos diversos",
+     "description": "Emplear plataformas y medios (redes, video, radio, JOTA-JOTI) para difundir ideas y creaciones y fomentar el diálogo. (En la guía: Habilidades para la vida 14.)"
+    }
+   ],
+   "specialties": []
+  },
+  {
+   "branch": "rovers",
+   "replaceAreas": true,
+   "areas": [
+    {
+     "name": "Corporalidad",
+     "description": "En Rovers se llama Ruta de la corporalidad. Cuidado integral del propio cuerpo y del de los demás, hábitos saludables y ambiente equilibrado."
+    },
+    {
+     "name": "Creatividad",
+     "description": "Ruta de la creatividad. Pensamiento crítico, búsqueda y validación de información, capacidad de innovar y exploración y definición de la vocación."
+    },
+    {
+     "name": "Carácter",
+     "description": "Ruta del carácter. Proyecto de vida apoyado en una escala de valores, resiliencia y superación personal."
+    },
+    {
+     "name": "Afectividad",
+     "description": "Ruta de la afectividad. Madurez emocional, inclusión de todas las personas, resolución pacífica de conflictos y revisión crítica de estereotipos."
+    },
+    {
+     "name": "Sociabilidad",
+     "description": "Ruta de la sociabilidad. Ciudadanía democrática, derechos humanos, diversidad, compromiso social, identidad cultural y responsabilidad ambiental y sostenibilidad."
+    },
+    {
+     "name": "Espiritualidad",
+     "description": "Ruta de la espiritualidad. Búsqueda de sentido, coherencia entre creencias y vida cotidiana, y diálogo entre distintas opciones espirituales."
+    }
+   ],
+   "scheme": {
+    "name": "Guía de la Rama Rovers",
+    "stages": [
+     {
+      "name": "Encuentro",
+      "description": "Primera etapa; empieza al presentar el primer Plan Personal. Dura unos 9 a 12 meses y cierra con la primera revisión del Plan. Edad aproximada: 18-19 años."
+     },
+     {
+      "name": "Compromiso",
+      "description": "Segunda etapa, con más autonomía en el manejo del Plan Personal. Dura unos 9 a 12 meses; cierra con la segunda revisión del Plan. Edad aproximada: 19-20 años."
+     },
+     {
+      "name": "Proyección",
+      "description": "Tercera y última etapa; arranca tras la Reflexión de la Ruta. Dura unos 9 a 12 meses y prepara la Partida. Edad aproximada: 20-22 años."
+     }
+    ]
+   },
+   "competencies": [
+    {
+     "area": "Corporalidad",
+     "number": 1,
+     "name": "Sostengo y promuevo hábitos de higiene y alimentación saludables.",
+     "description": "Mantener y difundir hábitos cotidianos de higiene y una alimentación sana. (En la guía: Corporalidad 1.)"
+    },
+    {
+     "area": "Corporalidad",
+     "number": 2,
+     "name": "Actividad física, recreación y bienestar integral",
+     "description": "Disfrutar y sumarse a actividades recreativas, de juego, físicas y deportivas como camino hacia el bienestar integral. (En la guía: Corporalidad 2.)"
+    },
+    {
+     "area": "Corporalidad",
+     "number": 3,
+     "name": "Organizo y administro el tiempo y los recursos disponibles para alcanzar mis metas.",
+     "description": "Gestionar el propio tiempo y los recursos con que se cuenta en función de los objetivos personales. (En la guía: Corporalidad 3.)"
+    },
+    {
+     "area": "Corporalidad",
+     "number": 4,
+     "name": "Disfruto de las oportunidades y experiencias que brinda la vida en la naturaleza.",
+     "description": "Aprovechar y valorar las vivencias al aire libre y en contacto con la naturaleza. (En la guía: Corporalidad 4.)"
+    },
+    {
+     "area": "Corporalidad",
+     "number": 5,
+     "name": "Prevención de conductas de riesgo propias y ajenas",
+     "description": "Analizar situaciones y evitar comportamientos que pongan en peligro a uno mismo o a otras personas. (En la guía: Corporalidad 5.)"
+    },
+    {
+     "area": "Creatividad",
+     "number": 6,
+     "name": "Exploro mis intereses vocacionales, descubro mis posibilidades y elijo en consecuencia.",
+     "description": "Indagar la propia vocación, reconocer capacidades y tomar decisiones vocacionales coherentes con ello. (En la guía: Creatividad 1.)"
+    },
+    {
+     "area": "Creatividad",
+     "number": 7,
+     "name": "Aplico técnicas y tecnologías de la información disponibles en la vida cotidiana.",
+     "description": "Usar en el día a día las herramientas y tecnologías de información a su alcance. (En la guía: Creatividad 2.)"
+    },
+    {
+     "area": "Creatividad",
+     "number": 8,
+     "name": "Búsqueda y uso crítico de fuentes de información diversas",
+     "description": "Buscar y valorar fuentes muy variadas (académicas, populares, ancestrales, etc.) y aplicarlas con criterio y creatividad según el contexto. (En la guía: Creatividad 3.)"
+    },
+    {
+     "area": "Creatividad",
+     "number": 9,
+     "name": "Mirada crítica sobre medios, redes y estereotipos corporales",
+     "description": "Tomar postura responsable frente a lo que medios y redes sociales difunden sobre el cuerpo y sus estereotipos. (En la guía: Creatividad 4.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 10,
+     "name": "Resolución pacífica de conflictos y promoción de la paz",
+     "description": "Aportar a resolver conflictos sin violencia ni intolerancia, promoviendo la paz. (En la guía: Afectividad 1.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 11,
+     "name": "Comunicación asertiva e inclusiva",
+     "description": "Comunicarse de forma clara y asertiva, en distintos formatos y medios, con mirada inclusiva. (En la guía: Afectividad 2.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 12,
+     "name": "Comunicación asertiva e inclusiva (repetida)",
+     "description": "La guía repite aquí el mismo texto de la competencia 2, probablemente por error de edición; conviene unificarla o descartarla. (En la guía: Afectividad 3.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 13,
+     "name": "Conciencia y expresión de las propias emociones",
+     "description": "Reconocer las propias emociones, expresarlas y entender su efecto en uno mismo y en el entorno. (En la guía: Afectividad 4.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 14,
+     "name": "Valoración del propio cuerpo y el de los demás",
+     "description": "Reconocer, aceptar y apreciar el cuerpo propio y ajeno de manera integral. (En la guía: Afectividad 5.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 15,
+     "name": "Sexualidad plena y vínculos sexoafectivos sanos",
+     "description": "Vivir la sexualidad de manera consciente, cuidando que las relaciones sexoafectivas sean sanas y seguras. (En la guía: Afectividad 6.)"
+    },
+    {
+     "area": "Afectividad",
+     "number": 16,
+     "name": "Cuestionamiento de estereotipos que discriminan",
+     "description": "Analizar actitudes y estereotipos culturales y comprender cómo sostienen la discriminación y la exclusión. (En la guía: Afectividad 7.)"
+    },
+    {
+     "area": "Carácter",
+     "number": 17,
+     "name": "Me responsabilizo por mi desarrollo personal, esforzándome por superarme constantemente.",
+     "description": "Hacerse cargo del propio crecimiento y buscar mejorar de forma continua. (En la guía: Carácter 1.)"
+    },
+    {
+     "area": "Carácter",
+     "number": 18,
+     "name": "Desarrollo habilidades para el mundo laboral.",
+     "description": "Adquirir capacidades útiles para insertarse y desempeñarse en el trabajo. (En la guía: Carácter 2.)"
+    },
+    {
+     "area": "Carácter",
+     "number": 19,
+     "name": "Decisiones económicas y financieras responsables",
+     "description": "Manejar el dinero y las decisiones económicas de modo consciente, al servicio del propio proyecto de vida. (En la guía: Carácter 3.)"
+    },
+    {
+     "area": "Carácter",
+     "number": 20,
+     "name": "Actúo de manera resiliente ante las dificultades, buscando la superación personal y colectiva.",
+     "description": "Sobreponerse a los obstáculos y transformarlos en crecimiento propio y del grupo. (En la guía: Carácter 4.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 21,
+     "name": "Identidad, herencia cultural y saberes ancestrales",
+     "description": "Valorar la propia identidad y difundir la cultura heredada, recuperando saberes ancestrales locales y del país. (En la guía: Sociabilidad 1.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 22,
+     "name": "Promuevo y defiendo los Derechos Humanos.",
+     "description": "Difundir y proteger activamente los derechos humanos. (En la guía: Sociabilidad 2.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 23,
+     "name": "Ejercicio pleno y crítico de la ciudadanía",
+     "description": "Ejercer los propios derechos ciudadanos en todos los ámbitos, con responsabilidad y lectura crítica de la realidad. (En la guía: Sociabilidad 3.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 24,
+     "name": "Defensa y construcción de la democracia",
+     "description": "Respetar y promover las reglas democráticas, aportando críticamente a fortalecerlas. (En la guía: Sociabilidad 4.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 25,
+     "name": "Perspectiva de derechos y convivencia igualitaria",
+     "description": "Mirar el mundo desde los derechos y promover en grupo experiencias igualitarias, integrales y seguras. (En la guía: Sociabilidad 5.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 26,
+     "name": "Diversidad e inclusión en todos los ámbitos",
+     "description": "Apreciar la diversidad y favorecer la inclusión en cada espacio donde se participa. (En la guía: Sociabilidad 6.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 27,
+     "name": "Acciones comunitarias sostenibles",
+     "description": "Involucrarse en acciones comunitarias, planificarlas y llevarlas a cabo buscando sostenibilidad e impacto socioambiental positivo. (En la guía: Sociabilidad 7.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 28,
+     "name": "Solidaridad, empatía y compromiso social",
+     "description": "Promover la solidaridad, la empatía y el compromiso social como base de la convivencia. (En la guía: Sociabilidad 8.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 29,
+     "name": "Compromiso frente a injusticias y desigualdades",
+     "description": "Investigar causas y efectos de problemas sociales y actuar con coherencia por una sociedad más justa e igualitaria. (En la guía: Sociabilidad 9.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 30,
+     "name": "Consumo y produzco de manera sostenible y sustentable.",
+     "description": "Elegir hábitos de consumo y producción que cuiden los recursos y el ambiente. (En la guía: Sociabilidad 10.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 31,
+     "name": "Preservación y protección ambiental",
+     "description": "Llevar adelante acciones de cuidado del ambiente, entendiendo críticamente las causas y efectos del impacto ambiental. (En la guía: Sociabilidad 11.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 32,
+     "name": "Interdependencia entre especies y cuidado de la madre tierra",
+     "description": "Reconocer que personas y demás especies dependen entre sí y actuar en consecuencia cuidando la tierra. (En la guía: Sociabilidad 12.)"
+    },
+    {
+     "area": "Sociabilidad",
+     "number": 33,
+     "name": "La Tierra como casa común",
+     "description": "Promover armonía con la naturaleza y equilibrio entre necesidades económicas, sociales y ambientales, presentes y futuras. (En la guía: Sociabilidad 13.)"
+    },
+    {
+     "area": "Espiritualidad",
+     "number": 34,
+     "name": "Me cuestiono sobre las grandes preguntas que dan sentido a la existencia.",
+     "description": "Reflexionar sobre las preguntas de fondo acerca del sentido de la vida. (En la guía: Espiritualidad 1.)"
+    },
+    {
+     "area": "Espiritualidad",
+     "number": 35,
+     "name": "Promuevo el diálogo y el entendimiento más allá de las creencias personales.",
+     "description": "Favorecer el encuentro y la comprensión entre personas de distintas creencias. (En la guía: Espiritualidad 2.)"
+    },
+    {
+     "area": "Espiritualidad",
+     "number": 36,
+     "name": "Asumo un estilo de vida en coherencia con mis creencias y valores.",
+     "description": "Vivir de forma consistente con lo que se cree y se valora. (En la guía: Espiritualidad 3.)"
+    },
+    {
+     "area": "Espiritualidad",
+     "number": 37,
+     "name": "La naturaleza como espacio de conexión personal y trascendente",
+     "description": "Valorar la naturaleza como oportunidad para conectarse consigo mismo y con lo trascendente. (En la guía: Espiritualidad 4.)"
+    }
+   ],
+   "specialties": []
+  },
+  {
+   "branch": "castores",
+   "scheme": {
+    "name": "Próximamente",
+    "stages": []
+   }
+  }
+ ]
+}

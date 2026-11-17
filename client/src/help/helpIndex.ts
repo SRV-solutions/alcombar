@@ -261,6 +261,26 @@ export const HELP_INDEX: HelpEntry[] = [
     show: can('progression', 'view'),
   },
 
+  {
+    id: 'seguimiento-progresion',
+    title: 'Seguimiento de la progresión (historial)',
+    description:
+      'En la progresión de cada protagonista, tarjeta "Seguimiento": anotá cómo viene y mirá el historial de todo lo que se hizo (etapas, competencias, revisiones, cambios de patrulla) con el adulto que lo hizo.',
+    path: '/progresion',
+    section: 'Programa',
+    keywords: ['seguimiento', 'historial', 'quién hizo', 'nota', 'anotar', 'bitácora', 'cómo viene', 'acompañamiento'],
+    show: can('progression', 'view'),
+  },
+  {
+    id: 'ficha-desde-competencia',
+    title: 'Crear una ficha desde una competencia',
+    description: 'Progresión → Esquemas y catálogos → Competencias: "Crear ficha" abre una ficha nueva con esa competencia y su área ya elegidas.',
+    path: '/progresion/esquemas',
+    section: 'Programa',
+    keywords: ['crear ficha', 'ficha desde competencia', 'trabajar competencia', 'actividad para una competencia'],
+    show: can('activities', 'create'),
+  },
+
   // --- Tesorería, eventos y campamentos (etapas 5 y 6) ---
   {
     id: 'contabilidad',
@@ -398,6 +418,16 @@ export const HELP_INDEX: HelpEntry[] = [
     section: 'Grupo',
     keywords: ['patrulla', 'patrullas', 'seisena', 'seisenas', 'equipo', 'equipos', 'pequeño grupo', 'pequeños grupos'],
     show: can('small_groups', 'view'),
+  },
+  {
+    id: 'mover-pequeno-grupo',
+    title: 'Cambiar a un chico de patrulla, seisena o equipo',
+    description:
+      'En la unidad, tabla de protagonistas: el desplegable de cada fila lo cambia al instante; con las casillas movés a varios juntos ("Mover a…"). Lo hacen los adultos de esa unidad, solo en su unidad.',
+    path: '/grupo/unidades',
+    section: 'Grupo',
+    keywords: ['mover', 'cambiar de patrulla', 'pasar de patrulla', 'cambiar de seisena', 'cambiar de equipo', 'armar patrullas', 'repartir'],
+    show: can('members', 'edit'),
   },
   {
     id: 'adultos',

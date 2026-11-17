@@ -1,5 +1,5 @@
 import { Router, type Request } from 'express';
-import { QueryTypes, type ModelStatic, type Model } from 'sequelize';
+import { Op, QueryTypes, type ModelStatic, type Model } from 'sequelize';
 import {
   can,
   chooseCompetenciesSchema,
@@ -171,7 +171,9 @@ progressionRouter.delete(
 progressionRouter.get(
   '/specialties',
   ah(async (req, res) => {
-    const where = req.query.active === 'all' ? {} : { active: true };
+    const where: Record<string | symbol, unknown> = req.query.active === 'all' ? {} : { active: true };
+    // Con ?branch= se ven las de esa rama y las que son para todas
+    if (req.query.branch) where[Op.or] = [{ branch: String(req.query.branch) }, { branch: null }];
     res.json(await Specialty.findAll({ where, order: [['name', 'ASC']] }));
   }),
 );
@@ -340,7 +342,7 @@ progressionRouter.get(
       branch
         ? Competency.findAll({ where: { branch, active: true }, order: [['number', 'ASC NULLS LAST'], ['name', 'ASC']] })
         : Promise.resolve([] as Competency[]),
-      Specialty.findAll({ where: { active: true }, order: [['name', 'ASC']] }),
+      Specialty.findAll({ where: { active: true, [Op.or]: [{ branch: member.branch }, { branch: null }] }, order: [['name', 'ASC']] }),
       member.unitId ? ProgramCycle.findAll({ where: { unitId: member.unitId }, attributes: ['id', 'name', 'startDate'], order: [['startDate', 'DESC NULLS LAST']] }) : Promise.resolve([] as ProgramCycle[]),
       sequelize.query<{ id: string; date: string; name: string; type: string }>(
         `SELECT s.id, s.date::text AS date, s.name, s.opportunity_type AS type

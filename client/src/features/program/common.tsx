@@ -5,7 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BRANCH_INFO,
   EXPLORATION_LABEL,
+  COMING_SOON_TEXT,
   formatDate,
+  isComingSoon,
   OBJECTIVES_HEADER,
   OPPORTUNITY_TYPE_LABELS,
   SHEET_SCOPE_LABELS,
@@ -117,6 +119,7 @@ export function CompetencyPicker({ branch, value, onChange }: { branch: string |
   if (comps.isLoading) return <p className="muted">Cargando competencias…</p>;
   const list = (comps.data ?? []).filter((c) => !q || norm(`${c.number ?? ''} ${c.name}`).includes(norm(q)));
   if (!comps.data?.length) {
+    if (isComingSoon(branch)) return <p className="muted" style={{ margin: 0 }}>{COMING_SOON_TEXT}</p>;
     return (
       <p className="muted" style={{ margin: 0 }}>
         Todavía no hay competencias cargadas para {branchOf(branch)?.label}. Las carga Jefatura o Programa en <strong>Progresión → Esquemas y catálogos</strong>.

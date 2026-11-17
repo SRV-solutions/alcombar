@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -80,9 +80,16 @@ export function SheetFormPage() {
   const adults = useAdults();
   const existing = useQuery({ queryKey: ['program-sheet', id], queryFn: () => api.get<Sheet>(`/program/sheets/${id}`), enabled: isEdit });
   const form = useForm<FormValues>({ defaultValues: EMPTY });
-  const { register, handleSubmit, watch, reset, setValue, setError, formState } = form;
+  const { register, handleSubmit, watch, reset, setValue, getValues, setError, formState } = form;
   const e = formState.errors;
   const [competencyIds, setCompetencyIds] = useState<string[]>([]);
+  // Ficha nueva desde una competencia del catálogo (?branch=&areaId=&competencyId=): se aplica al elegir una
+  // unidad de esa rama
+  const prefill = useRef(
+    !isEdit && params.get('competencyId')
+      ? { branch: params.get('branch'), areaId: params.get('areaId'), competencyId: params.get('competencyId') }
+      : null,
+  );
 
   const creatable = unitsWith('activities', 'create');
   const unitOptions = (units.data ?? []).filter((u) => u.active && (creatable === 'all' || creatable.includes(u.id)));
@@ -131,7 +138,11 @@ export function SheetFormPage() {
   useEffect(() => {
     if (isEdit || !units.data) return;
     const pre = params.get('unitId');
-    const u = (pre && unitOptions.find((o) => o.id === pre)) || (unitOptions.length === 1 ? unitOptions[0] : null);
+    const sameBranch = prefill.current?.branch ? unitOptions.filter((o) => o.branch === prefill.current!.branch) : [];
+    const u =
+      (pre && unitOptions.find((o) => o.id === pre)) ||
+      (sameBranch.length === 1 ? sameBranch[0] : null) ||
+      (unitOptions.length === 1 ? unitOptions[0] : null);
     if (u) setValue('unitId', u.id);
     const c = params.get('cycleId');
     if (c) setValue('cycleId', c);
@@ -151,7 +162,19 @@ export function SheetFormPage() {
       .catch(() => undefined);
     setValue('areaId', '');
     setCompetencyIds([]);
-  }, [unitId, isEdit, setValue]);
+    const p = prefill.current;
+    const u = units.data?.find((x) => x.id === unitId);
+    if (p && u && (!p.branch || u.branch === p.branch)) {
+      if (p.areaId) setValue('areaId', p.areaId);
+      if (p.competencyId) setCompetencyIds([p.competencyId]);
+      prefill.current = null;
+    }
+  }, [unitId, isEdit, setValue, units.data]);
+
+  // Las áreas llegan después de dibujar el desplegable: re-aplicar la elegida para que se vea
+  useEffect(() => {
+    if (areas.data) setValue('areaId', getValues('areaId'));
+  }, [areas.data, getValues, setValue]);
 
   const type = watch('opportunityType');
   const outside = watch('outside');

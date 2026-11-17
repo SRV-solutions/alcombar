@@ -26,13 +26,15 @@ export class BranchArea extends Model<InferAttributes<BranchArea>, InferCreation
   declare id: CreationOptional<string>;
   declare branch: string;
   declare name: string;
+  /** Cómo se llama en la rama (sendero, ruta…) y a qué refiere. */
+  declare description: CreationOptional<string | null>;
   declare sortOrder: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
 }
 BranchArea.init(
-  { id, branch: { type: STRING(20), allowNull: false }, name: { type: STRING(80), allowNull: false }, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, ...stamps },
+  { id, branch: { type: STRING(20), allowNull: false }, name: { type: STRING(80), allowNull: false }, description: TEXT, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, ...stamps },
   { sequelize, tableName: 'branch_areas', modelName: 'BranchArea' },
 );
 
@@ -346,13 +348,24 @@ export class Specialty extends Model<InferAttributes<Specialty>, InferCreationAt
   declare id: CreationOptional<string>;
   declare name: string;
   declare description: string | null;
+  /** Rama a la que pertenece (null = para todas) y área de desarrollo. */
+  declare branch: CreationOptional<string | null>;
+  declare areaId: CreationOptional<string | null>;
   declare active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
 }
 Specialty.init(
-  { id, name: { type: STRING(120), allowNull: false }, description: TEXT, active: { type: BOOLEAN, allowNull: false, defaultValue: true }, ...stamps },
+  {
+    id,
+    name: { type: STRING(120), allowNull: false },
+    description: TEXT,
+    branch: STRING(20),
+    areaId: UUID,
+    active: { type: BOOLEAN, allowNull: false, defaultValue: true },
+    ...stamps,
+  },
   { sequelize, tableName: 'specialties', modelName: 'Specialty' },
 );
 

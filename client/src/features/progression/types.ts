@@ -24,6 +24,9 @@ export interface Specialty {
   id: string;
   name: string;
   description: string | null;
+  /** null = sirve para todas las ramas */
+  branch: string | null;
+  areaId: string | null;
   active: boolean;
 }
 

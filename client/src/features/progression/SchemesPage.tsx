@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ClipboardPaste, Pencil, Plus, Trash2 } from 'lucide-react';
-import { BRANCHES, BRANCH_INFO, parseCompetencyLines, type Branch } from '@shared';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowDown, ArrowUp, ClipboardPaste, FilePlus2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BRANCHES, BRANCH_INFO, COMING_SOON_TEXT, isComingSoon, parseCompetencyLines, type Branch } from '@shared';
 import { api } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select, Tabs, Textarea } from '../../components/ui';
 import { useAreas, useCompetencies, useProgramUnit } from '../program/common';
@@ -92,6 +93,12 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
   const areas = useAreas(branch);
   const comps = useCompetencies(branch, true);
   const [bulk, setBulk] = useState(false);
+  // Crear una ficha de actividad directo desde la competencia (para quien puede crear fichas en alguna unidad)
+  const { unitsWith } = useAuth();
+  const creatable = unitsWith('activities', 'create');
+  const canCreateSheet = creatable === 'all' || creatable.length > 0;
+  const newSheetUrl = (c: CompetencyItem) =>
+    `/programa/fichas/nueva?branch=${branch}&competencyId=${c.id}${c.areaId ? `&areaId=${c.areaId}` : ''}`;
   const refresh = () => void qc.invalidateQueries({ queryKey: ['program-competencies'] });
   const areaOptions = [{ value: '', label: 'Sin área' }, ...(areas.data ?? []).map((a) => ({ value: a.id, label: a.name }))];
   const edit = (c?: CompetencyItem) =>
@@ -145,7 +152,9 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
         ) : null
       }
     >
-      {!list.length ? (
+      {!list.length && isComingSoon(branch) ? (
+        <Empty>{COMING_SOON_TEXT}</Empty>
+      ) : !list.length ? (
         <Empty>
           Todavía no hay competencias cargadas para {branchLabel(branch)}.{canEdit ? ' Usá «Importar lista» para pegarlas del cuadernillo de la rama.' : ''}
         </Empty>
@@ -170,6 +179,11 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
                       </p>
                     ) : null}
                   </div>
+                  {canCreateSheet && c.active ? (
+                    <Link to={newSheetUrl(c)} className="btn btn-ghost btn-sm comp-new-sheet" title="Crear una ficha de actividad para trabajar esta competencia">
+                      <FilePlus2 /> Crear ficha
+                    </Link>
+                  ) : null}
                   {canEdit ? (
                     <div className="row-actions">
                       <Button variant="ghost" size="sm" className="btn-icon" onClick={() => edit(c)} aria-label="Editar" title="Editar">
@@ -433,23 +447,42 @@ function StagesTab({ branch, schemes, canEdit, openDialog }: { branch: string; s
 }
 
 // ---------------------------------------------------------------- Especialidades
-function SpecialtiesTab({ canEdit, openDialog }: { canEdit: boolean; openDialog: (d: Dialog) => void }) {
+function SpecialtiesTab({ branch, canEdit, openDialog }: { branch: string; canEdit: boolean; openDialog: (d: Dialog) => void }) {
   const qc = useQueryClient();
   const toast = useToast();
-  const q = useQuery({ queryKey: ['progression-specialties', 'all'], queryFn: () => api.get<Specialty[]>('/progression/specialties?active=all') });
+  const areas = useAreas(branch);
+  const q = useQuery({
+    queryKey: ['progression-specialties', 'all', branch],
+    queryFn: () => api.get<Specialty[]>('/progression/specialties?active=all&branch=' + branch),
+  });
+  const areaOptions = [{ value: '', label: 'Sin área' }, ...(areas.data ?? []).map((a) => ({ value: a.id, label: a.name }))];
+  const areaName = (id: string | null) => areas.data?.find((a) => a.id === id)?.name ?? null;
+  const areaOrder = (id: string | null) => {
+    const i = (areas.data ?? []).findIndex((a) => a.id === id);
+    return i < 0 ? 99 : i;
+  };
   const refresh = () => void qc.invalidateQueries({ queryKey: ['progression-specialties'] });
   const edit = (s?: Specialty) =>
     openDialog({
       title: s ? 'Editar especialidad' : 'Nueva especialidad',
       fields: [
         { key: 'name', label: 'Nombre', required: true, full: true },
+        { key: 'areaId', label: 'Área', type: 'select', options: areaOptions },
+        { key: 'onlyBranch', label: `Solo para ${branchLabel(branch)}`, type: 'checkbox' },
         { key: 'description', label: 'Descripción', type: 'textarea' },
         { key: 'active', label: 'Activa', type: 'checkbox' },
       ],
-      initial: { name: s?.name ?? '', description: s?.description ?? '', active: s?.active ?? true },
+      initial: {
+        name: s?.name ?? '',
+        areaId: s?.areaId ?? '',
+        onlyBranch: s ? !!s.branch : true,
+        description: s?.description ?? '',
+        active: s?.active ?? true,
+      },
       onSave: async (v) => {
-        if (s) await api.put(`/progression/specialties/${s.id}`, v);
-        else await api.post('/progression/specialties', v);
+        const body = { name: v.name, description: v.description, active: v.active, areaId: v.areaId || null, branch: v.onlyBranch ? branch : null };
+        if (s) await api.put(`/progression/specialties/${s.id}`, body);
+        else await api.post('/progression/specialties', body);
         toast.ok('Especialidad guardada');
         refresh();
       },
@@ -468,15 +501,16 @@ function SpecialtiesTab({ canEdit, openDialog }: { canEdit: boolean; openDialog:
       }
     >
       <p className="muted" style={{ marginTop: 0 }}>
-        Catálogo común a todas las ramas. Después se registran en la progresión de cada protagonista.
+        Las especialidades de {branchLabel(branch)} y las que sirven para todas las ramas. Después se registran en la progresión de cada protagonista.
       </p>
       {!q.data?.length ? (
-        <Empty>Todavía no hay especialidades cargadas.</Empty>
+        <Empty>{isComingSoon(branch) ? COMING_SOON_TEXT : 'Todavía no hay especialidades cargadas para esta rama.'}</Empty>
       ) : (
-        q.data.map((s) => (
+        [...q.data].sort((a, b) => areaOrder(a.areaId) - areaOrder(b.areaId) || a.name.localeCompare(b.name)).map((s) => (
           <div key={s.id} className="item-row">
             <div className="body">
-              <strong>{s.name}</strong> {!s.active ? <Badge tone="neutral">Inactiva</Badge> : null}
+              <strong>{s.name}</strong> {areaName(s.areaId) ? <Badge tone="neutral">{areaName(s.areaId)}</Badge> : null}{' '}
+              {!s.branch ? <Badge tone="neutral">Todas las ramas</Badge> : null} {!s.active ? <Badge tone="neutral">Inactiva</Badge> : null}
               {s.description ? <p className="muted">{s.description}</p> : null}
             </div>
             {canEdit ? (
@@ -564,7 +598,7 @@ export function SchemesPage() {
             <StagesTab branch={branch} schemes={schemes.data?.schemes ?? []} canEdit={canEdit} openDialog={setDialog} />
           )
         ) : null}
-        {tab === 'especialidades' ? <SpecialtiesTab canEdit={canEdit} openDialog={setDialog} /> : null}
+        {tab === 'especialidades' ? <SpecialtiesTab branch={branch} canEdit={canEdit} openDialog={setDialog} /> : null}
       </div>
       {dialog ? <FormDialog {...dialog} onClose={() => setDialog(null)} /> : null}
     </>
