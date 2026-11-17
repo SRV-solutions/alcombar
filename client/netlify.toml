@@ -1,17 +1,21 @@
-# Frontend en Netlify (sitio estático + CDN).
-# Variable a configurar en Netlify → Site settings → Environment variables:
-#   API_URL = https://<tu-api>.up.railway.app   (la URL pública de la API en Railway, sin "/" al final)
-# Con eso el build genera dist/_redirects y Netlify redirige /api/* a Railway: el navegador ve un solo dominio,
-# las cookies de sesión funcionan sin configuración entre sitios y no hace falta CORS.
+# Frontend en Netlify (sitio estático + CDN). En Netlify: Base directory = client.
+# Netlify redirige /api/* a la API en Railway: el navegador ve un solo dominio,
+# las cookies httpOnly funcionan sin configuración entre sitios y no hace falta CORS.
+# Si se define API_URL en Netlify, el build genera dist/_redirects con esa URL y tiene prioridad sobre la de acá.
 [build]
-  base = "client"
-  command = "npm ci && npm run build"
+  command = "npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "22"
 
-# SPA: todas las rutas las resuelve React Router (las de /api/* van antes, en _redirects).
+[[redirects]]
+  from = "/api/*"
+  to = "https://alcombar-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+
+# SPA: todas las demás rutas las resuelve React Router.
 [[redirects]]
   from = "/*"
   to = "/index.html"

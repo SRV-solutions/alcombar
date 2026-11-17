@@ -222,10 +222,10 @@ client/src/
 | `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO` | Los mismos de `api/.env` |
 
 **Client → Netlify**
-- `netlify.toml` (en la raíz) ya tiene `base = "client"`, el build y las cabeceras.
-- Hay que configurar en Netlify una sola variable: `API_URL` = la URL pública de la API en Railway (por ejemplo,
-  `https://alcombar-api.up.railway.app`).
-- Con eso, el build genera `_redirects` y `/api/*` va a Railway como proxy: mismo dominio, cookies sin CORS.
+- En Netlify, *Base directory* = `client`. `client/netlify.toml` tiene el build, las cabeceras y el proxy
+  `/api/*` → `https://alcombar-production.up.railway.app`: mismo dominio para el navegador, cookies sin CORS.
+- Si la API cambia de URL, se puede definir `API_URL` en Netlify (el build genera `_redirects`, que tiene prioridad) o
+  editar la URL en `client/netlify.toml`.
 - El build lee `api/src/shared` del mismo repositorio, así que las dos carpetas tienen que estar juntas.
 
 **Pendiente**
