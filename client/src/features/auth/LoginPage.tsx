@@ -7,6 +7,7 @@ import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Button, Field, Input, PasswordInput } from '../../components/ui';
 import { Logo } from '../../components/Logo';
+import { PoweredBySrv } from '../../components/PoweredBy';
 
 export function AuthShell({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
   return (
@@ -20,9 +21,9 @@ export function AuthShell({ children, subtitle }: { children: React.ReactNode; s
           </div>
         </div>
         {children}
-        <a className="made-by made-by-auth" href="https://wearesrv.com" target="_blank" rel="noopener noreferrer">
-          Creada y desarrollada por <strong>wearesrv</strong>
-        </a>
+        <div className="auth-powered">
+          <PoweredBySrv variant="auth" />
+        </div>
       </div>
     </div>
   );

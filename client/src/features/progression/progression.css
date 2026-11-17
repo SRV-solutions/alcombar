@@ -76,3 +76,6 @@
 .history-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .history-note { white-space: pre-wrap; margin-top: 2px; }
 .history-detail { font-size: 0.88rem; margin-top: 2px; white-space: pre-wrap; }
+/* Catálogo: "Crear ficha" alineado a la derecha, junto a editar/eliminar */
+.item-row .body { flex: 1; }
+.item-row .comp-new-sheet { flex-shrink: 0; white-space: nowrap; }

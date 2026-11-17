@@ -8,6 +8,7 @@ import { Badge, Button, Card, Empty, Input, PageHeader } from '../../components/
 import { tutorialsFor } from '../../tutorials/catalog';
 import { startTutorial, useTutorialProgress } from '../../tutorials/TutorialHost';
 import '../../components/search.css';
+import { PoweredBySrv } from '../../components/PoweredBy';
 
 /** Índice de todo lo que se puede hacer, por sección, con buscador. Solo muestra lo que esta persona puede usar. */
 export function HelpPage() {
@@ -100,6 +101,9 @@ export function HelpPage() {
             </ul>
           </Card>
         ) : null}
+      </div>
+      <div className="page-powered">
+        <PoweredBySrv variant="page" />
       </div>
       <style>{`
         .help-list { list-style: none; margin: 0; padding: 0; }
