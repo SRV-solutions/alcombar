@@ -5,13 +5,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
-import { adultAssignmentSchema, adultCourseSchema, ageAt, BRANCH_INFO, COURSE_KIND_LABELS, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
+import { adultCourseSchema, ageAt, BRANCH_INFO, COURSE_KIND_LABELS, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
-import { adultName, useCourses, useUnits } from '../../lib/queries';
+import { adultName, useCourses } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
-import type { AdultCourse, AdultDetail, Assignment, SupportTeam } from '../../lib/types';
+import type { AdultCourse, AdultDetail, Assignment } from '../../lib/types';
 import {
   Badge,
   Button,
@@ -30,112 +30,7 @@ import {
   UnitBadge,
 } from '../../components/ui';
 import { AdultStatusBadge } from './AdultsPage';
-
-const POSITIONS = [
-  'Jefe/a de Grupo',
-  'Subjefe/a de Grupo',
-  'Jefe/a de Unidad',
-  'Educador/a',
-  'Asistente de Unidad',
-  'Tesorero/a',
-  'Secretario/a',
-  'Responsable de equipo',
-  'Integrante de equipo',
-  'Colaborador/a',
-];
-
-// ---------------- Cargos ----------------
-type AssignmentForm = z.input<typeof adultAssignmentSchema>;
-
-function AssignmentModal({ adultId, item, onClose }: { adultId: string; item?: Assignment; onClose: () => void }) {
-  const qc = useQueryClient();
-  const toast = useToast();
-  const units = useUnits();
-  const teams = useQuery({ queryKey: ['support-teams'], queryFn: () => api.get<SupportTeam[]>('/group/support-teams') });
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<AssignmentForm>({
-    resolver: zodResolver(adultAssignmentSchema),
-    defaultValues: item
-      ? { year: item.year, position: item.position, unitId: item.unitId ?? '', supportTeamId: item.supportTeamId ?? '', notes: item.notes ?? '' }
-      : { year: new Date().getFullYear(), position: '', unitId: '', supportTeamId: '', notes: '' },
-  });
-
-  const onSubmit = async (values: AssignmentForm) => {
-    try {
-      if (item) await api.put(`/adults/assignments/${item.id}`, values);
-      else await api.post(`/adults/${adultId}/assignments`, values);
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ['adult', adultId] }),
-        qc.invalidateQueries({ queryKey: ['adults'] }),
-        qc.invalidateQueries({ queryKey: ['units'] }),
-        qc.invalidateQueries({ queryKey: ['support-teams'] }),
-        qc.invalidateQueries({ queryKey: ['organigrama'] }),
-      ]);
-      toast.ok(item ? 'Cargo actualizado' : 'Cargo agregado');
-      onClose();
-    } catch (e) {
-      if (!applyServerErrors(e, setError)) toast.error(e);
-    }
-  };
-
-  return (
-    <Modal
-      title={item ? 'Editar cargo' : 'Agregar cargo'}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="assignment-form" loading={isSubmitting}>
-            Guardar
-          </Button>
-        </>
-      }
-    >
-      <form id="assignment-form" className="form-grid" onSubmit={handleSubmit(onSubmit)}>
-        <Field label="Año" required error={errors.year?.message}>
-          <Input type="number" min={1950} max={2100} {...register('year')} invalid={!!errors.year} />
-        </Field>
-        <Field label="Cargo" required error={errors.position?.message}>
-          <Input list="positions-list" {...register('position')} invalid={!!errors.position} placeholder="Educador/a" />
-          <datalist id="positions-list">
-            {POSITIONS.map((p) => (
-              <option key={p} value={p} />
-            ))}
-          </datalist>
-        </Field>
-        <Field label="Unidad" error={errors.unitId?.message} hint="Dejar vacío si el cargo es del Grupo">
-          <Select {...register('unitId')}>
-            <option value="">— Ninguna —</option>
-            {(units.data ?? []).map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Equipo de apoyo" error={errors.supportTeamId?.message}>
-          <Select {...register('supportTeamId')}>
-            <option value="">— Ninguno —</option>
-            {(teams.data ?? []).map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Notas" error={errors.notes?.message} full>
-          <Textarea {...register('notes')} style={{ minHeight: 60 }} />
-        </Field>
-      </form>
-    </Modal>
-  );
-}
+import { AssignmentModal } from './AssignmentModal';
 
 // ---------------- Formación ----------------
 const courseFormSchema = adultCourseSchema.extend({ courseId: z.string().uuid('Elegí un curso') });

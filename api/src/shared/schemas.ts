@@ -171,6 +171,8 @@ export const adultAssignmentSchema = z.object({
   position: reqStr(120),
   unitId: optUuid,
   supportTeamId: optUuid,
+  /** Rama del cargo cuando no hay unidad (referente de Programa o cargo por asignar). Si no viene, no se toca. */
+  branch: z.union([z.enum(BRANCHES), z.literal(''), z.null()]).optional(),
   notes: optStr(500),
 });
 export const adultCourseSchema = z.object({

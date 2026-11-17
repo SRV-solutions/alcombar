@@ -9,3 +9,4 @@ export * from './program';
 export * from './treasury';
 export * from './operations';
 export * from './support';
+export * from './cargos';

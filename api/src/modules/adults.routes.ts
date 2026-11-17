@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Op, type WhereOptions } from 'sequelize';
-import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, formatDate, type AdultStatus } from '../shared';
+import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, formatDate, isTeamLeaderPosition, type AdultStatus } from '../shared';
 import { Adult, AdultAssignment, AdultCourse, Course, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
 import { personSearchWhere } from '../lib/personSearch';
@@ -22,15 +22,50 @@ export function unitRoleForPosition(position: string): 'jefe_unidad' | 'educador
   if (/^(sub\s*-?\s*jef[ea]|ayudante|colaborador)/i.test(position)) return 'educador';
   return null;
 }
-async function grantUnitRole(adultId: string, position: string, unitId: string | null) {
-  if (!unitId) return;
-  const key = unitRoleForPosition(position);
-  if (!key) return;
-  const [user, role] = await Promise.all([User.findOne({ where: { adultId } }), Role.findOne({ where: { key } })]);
-  if (!user || !role) return;
-  await UserRole.findOrCreate({ where: { userId: user.id, roleId: role.id, unitId }, defaults: { userId: user.id, roleId: role.id, unitId } });
-}
 const currentYear = () => new Date().getFullYear();
+const UNIT_ROLE_KEYS = ['jefe_unidad', 'educador'] as const;
+
+/**
+ * Los roles de unidad siguen a los cargos del año: en cada unidad tocada, el usuario del adulto queda con el rol
+ * que piden sus cargos ahí (Jefe → jefe de unidad; subjefe, ayudante o colaborador → educador) y pierde el que
+ * ya no corresponde. Solo se mira el año en curso (o los siguientes): editar cargos viejos no cambia permisos.
+ */
+async function syncUnitRoles(adultId: string, unitIds: (string | null | undefined)[]) {
+  const ids = [...new Set(unitIds.filter((x): x is string => !!x))];
+  if (!ids.length) return;
+  const user = await User.findOne({ where: { adultId } });
+  if (!user) return;
+  const roles = await Role.findAll({ where: { key: [...UNIT_ROLE_KEYS] } });
+  const cargos = await AdultAssignment.findAll({ where: { adultId, unitId: ids, year: { [Op.gte]: currentYear() } } });
+  for (const unitId of ids) {
+    const want = new Set(cargos.filter((c) => c.unitId === unitId).map((c) => unitRoleForPosition(c.position)));
+    for (const role of roles) {
+      const has = await UserRole.findOne({ where: { userId: user.id, roleId: role.id, unitId } });
+      if (want.has(role.key as (typeof UNIT_ROLE_KEYS)[number]) && !has) await UserRole.create({ userId: user.id, roleId: role.id, unitId });
+      else if (!want.has(role.key as (typeof UNIT_ROLE_KEYS)[number]) && has) await has.destroy();
+    }
+  }
+}
+
+/** "Encargado/a de equipo" del año en curso = responsable del equipo. Si deja de serlo, el equipo queda sin responsable. */
+async function syncTeamLeader(adultId: string, before: { supportTeamId: string | null; position: string; year: number } | null, after: { supportTeamId: string | null; position: string; year: number } | null) {
+  const leads = (x: typeof before) => !!x && !!x.supportTeamId && x.year === currentYear() && isTeamLeaderPosition(x.position);
+  if (leads(before) && (!leads(after) || after!.supportTeamId !== before!.supportTeamId)) {
+    await SupportTeam.update({ leaderAdultId: null }, { where: { id: before!.supportTeamId!, leaderAdultId: adultId } });
+  }
+  if (leads(after)) {
+    const team = await SupportTeam.findByPk(after!.supportTeamId!);
+    if (team && team.leaderAdultId !== adultId) await team.update({ leaderAdultId: adultId });
+  }
+}
+
+/** Unidad o equipo, no los dos; la rama solo vale sin unidad. */
+function cargoData(data: ReturnType<typeof adultAssignmentSchema.parse>, current?: AdultAssignment) {
+  if (data.unitId && data.supportTeamId) throw badRequest('Revisá los datos', { supportTeamId: 'Elegí una unidad o un equipo, no los dos' });
+  const { branch, ...rest } = data;
+  const nextBranch = data.unitId ? null : branch === undefined ? (current?.branch ?? null) : branch || null;
+  return { ...rest, branch: nextBranch };
+}
 
 const assignmentInclude = [
   { model: Unit, as: 'unit', attributes: ['id', 'name', 'code', 'branch'] },
@@ -171,9 +206,10 @@ adultsRouter.post(
   ah(async (req, res) => {
     const adult = await Adult.findByPk(req.params.id);
     if (!adult) throw notFound();
-    const data = parse(adultAssignmentSchema, req.body);
+    const data = cargoData(parse(adultAssignmentSchema, req.body));
     const created = await AdultAssignment.create({ ...data, adultId: adult.id });
-    await grantUnitRole(adult.id, created.position, created.unitId);
+    if (created.year >= currentYear()) await syncUnitRoles(adult.id, [created.unitId]);
+    await syncTeamLeader(adult.id, null, created);
     res.status(201).json(created);
   }),
 );
@@ -183,11 +219,11 @@ adultsRouter.put(
   ah(async (req, res) => {
     const a = await AdultAssignment.findByPk(req.params.aid);
     if (!a) throw notFound();
-    const data = parse(adultAssignmentSchema, req.body);
-    const hadUnit = a.unitId;
+    const before = { unitId: a.unitId, supportTeamId: a.supportTeamId, position: a.position, year: a.year };
     // Con unidad elegida, la rama "por asignar" ya no hace falta
-    await a.update({ ...data, ...(data.unitId ? { branch: null } : {}) });
-    if (a.unitId && a.unitId !== hadUnit) await grantUnitRole(a.adultId, a.position, a.unitId);
+    await a.update(cargoData(parse(adultAssignmentSchema, req.body), a));
+    if (Math.max(before.year, a.year) >= currentYear()) await syncUnitRoles(a.adultId, [before.unitId, a.unitId]);
+    await syncTeamLeader(a.adultId, before, a);
     res.json(a);
   }),
 );
@@ -198,6 +234,8 @@ adultsRouter.delete(
     const a = await AdultAssignment.findByPk(req.params.aid);
     if (!a) throw notFound();
     await a.destroy();
+    if (a.year >= currentYear()) await syncUnitRoles(a.adultId, [a.unitId]);
+    await syncTeamLeader(a.adultId, a, null);
     res.json({ ok: true });
   }),
 );
