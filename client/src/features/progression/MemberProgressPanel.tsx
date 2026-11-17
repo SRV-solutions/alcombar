@@ -11,6 +11,7 @@ import { AreaBalance } from './BoardPage';
 import { FormDialog, type FieldDef, type FormValue } from './FormDialog';
 import type { MemberCompetencyRow, MemberProgressData } from './types';
 import './progression.css';
+import { HistoryCard, historyKey } from './HistoryCard';
 
 type Dialog = { title: string; fields: FieldDef[]; initial: Record<string, FormValue>; onSave: (v: Record<string, FormValue>) => Promise<unknown>; intro?: React.ReactNode; wide?: boolean };
 
@@ -148,6 +149,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['progression-member', memberId] });
     void qc.invalidateQueries({ queryKey: ['progression-board'] });
+    void qc.invalidateQueries({ queryKey: historyKey(memberId) });
   };
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     try {
@@ -646,6 +648,10 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
             )}
           </Card>
         </div>
+      </div>
+
+      <div className="mt">
+        <HistoryCard memberId={memberId} canEdit={canEdit} />
       </div>
 
       {dialog ? <FormDialog key={dialog.title} {...dialog} onClose={() => setDialog(null)} /> : null}

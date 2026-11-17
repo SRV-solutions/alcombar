@@ -3,19 +3,23 @@ import { QueryTypes, type ModelStatic, type Model } from 'sequelize';
 import {
   can,
   chooseCompetenciesSchema,
+  COMPETENCY_STATUS_LABELS,
+  type CompetencyStatus,
   cycleReviewSchema,
+  formatDate,
   memberCompetencySchema,
   memberMomentsSchema,
   memberRoleSchema,
   memberSpecialtySchema,
   memberStageSchema,
+  progressionNoteSchema,
   schemeSchema,
   SCOUT_STANDARDS,
   specialtySchema,
   stageSchema,
 } from '../shared';
 import { sequelize } from '../db';
-import { Member, SmallGroup, Unit } from '../models';
+import { Adult, Member, SmallGroup, Unit, User } from '../models';
 import {
   BranchArea,
   Competency,
@@ -26,6 +30,7 @@ import {
   MemberSpecialty,
   MemberStage,
   ProgramCycle,
+  ProgressionNote,
   ProgressionScheme,
   ProgressionStage,
   Specialty,
@@ -573,5 +578,217 @@ progressionRouter.delete(
     const r = await findChild(MemberSpecialty, req.params.id);
     await r.destroy();
     res.json({ ok: true });
+  }),
+);
+
+// =====================================================================
+// Seguimiento: notas de los adultos + historial de quién hizo cada cosa
+// =====================================================================
+/** Registros de la progresión cuyos cambios (de la auditoría) forman el historial de cada protagonista. */
+const HISTORY_ENTITIES = ['MemberStage', 'MemberCompetency', 'MemberRole', 'CycleReview', 'MemberSpecialty', 'MemberProgress'];
+type Changes = { before?: Record<string, unknown>; after?: Record<string, unknown> } | null;
+type HistoryItem = {
+  id: string;
+  at: string;
+  date: string | null;
+  kind: 'nota' | 'etapa' | 'competencia' | 'rol' | 'revision' | 'especialidad' | 'momentos' | 'grupo';
+  author: { userId: string | null; name: string };
+  text: string;
+  detail: string | null;
+  noteId?: string;
+  canDelete?: boolean;
+};
+
+progressionRouter.post(
+  '/members/:memberId/notes',
+  authorize('progression', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const d = parse(progressionNoteSchema, req.body);
+    const note = await ProgressionNote.create({ ...d, memberId: req.params.memberId, authorUserId: req.user!.id });
+    res.status(201).json(note);
+  }),
+);
+
+progressionRouter.delete(
+  '/notes/:id',
+  authorize('progression', 'edit', childUnit(ProgressionNote)),
+  ah(async (req, res) => {
+    const n = await findChild(ProgressionNote, req.params.id);
+    if (n.authorUserId !== req.user!.id && !req.auth!.isSuperadmin) throw forbidden('Solo quien escribió la nota la puede borrar');
+    await n.destroy();
+    res.json({ ok: true });
+  }),
+);
+
+/** Historial de seguimiento: notas de los adultos y cada cambio de la progresión, con el adulto que lo hizo. */
+progressionRouter.get(
+  '/members/:memberId/history',
+  authorize('progression', 'view', memberUnit),
+  ah(async (req, res) => {
+    const memberId = req.params.memberId;
+    const [logs, notes] = await Promise.all([
+      sequelize.query<{ id: string; user_id: string | null; action: string; entity: string; entity_id: string; changes: Changes; created_at: Date }>(
+        `WITH own AS (
+           SELECT DISTINCT entity_id FROM audit_logs
+           WHERE entity IN (:entities) AND (changes->'after'->>'memberId' = :memberId OR changes->'before'->>'memberId' = :memberId)
+         )
+         SELECT id, user_id, action, entity, entity_id, changes, created_at FROM audit_logs
+         WHERE (entity IN (:entities) AND entity_id IN (SELECT entity_id FROM own))
+            OR (entity = 'Member' AND entity_id = :memberId AND action = 'update' AND changes->'after'->'smallGroupId' IS NOT NULL)
+         ORDER BY created_at DESC
+         LIMIT 300`,
+        { type: QueryTypes.SELECT, replacements: { entities: HISTORY_ENTITIES, memberId } },
+      ),
+      ProgressionNote.findAll({ where: { memberId }, order: [['date', 'DESC'], ['createdAt', 'DESC']], limit: 300 }),
+    ]);
+
+    // A qué apunta cada registro (etapa, competencia…): sale del alta (o de la baja) en la auditoría
+    const ref = new Map<string, Record<string, unknown>>();
+    for (const l of [...logs].reverse()) if (l.changes?.after) ref.set(l.entity_id, { ...(ref.get(l.entity_id) ?? {}), ...l.changes.after });
+    for (const l of logs) if (l.action === 'delete' && l.changes?.before) ref.set(l.entity_id, { ...l.changes.before, ...(ref.get(l.entity_id) ?? {}) });
+    const idsOf = (key: string) => [...new Set([...ref.values()].map((r) => r[key]).filter((v): v is string => typeof v === 'string'))];
+    const groupIds = [
+      ...new Set(
+        logs
+          .filter((l) => l.entity === 'Member')
+          .flatMap((l) => [l.changes?.before?.smallGroupId, l.changes?.after?.smallGroupId])
+          .filter((v): v is string => typeof v === 'string'),
+      ),
+    ];
+    const userIds = [...new Set([...logs.map((l) => l.user_id), ...notes.map((n) => n.authorUserId)].filter((v): v is string => !!v))];
+    const [stages, comps, specs, cycles, groups, users] = await Promise.all([
+      ProgressionStage.findAll({ where: { id: idsOf('stageId') }, attributes: ['id', 'name'], paranoid: false }),
+      Competency.findAll({ where: { id: idsOf('competencyId') }, attributes: ['id', 'name', 'number'], paranoid: false }),
+      Specialty.findAll({ where: { id: idsOf('specialtyId') }, attributes: ['id', 'name'], paranoid: false }),
+      ProgramCycle.findAll({ where: { id: idsOf('cycleId') }, attributes: ['id', 'name'], paranoid: false }),
+      SmallGroup.findAll({ where: { id: groupIds }, attributes: ['id', 'name'], paranoid: false }),
+      User.findAll({ where: { id: userIds }, attributes: ['id', 'name', 'adultId'], paranoid: false }),
+    ]);
+    const adults = await Adult.findAll({
+      where: { id: users.map((u) => u.adultId).filter((v): v is string => !!v) },
+      attributes: ['id', 'firstName', 'lastName', 'totem'],
+      paranoid: false,
+    });
+    const nameOf = (list: { id: string; name: string }[], id: unknown) => list.find((x) => x.id === id)?.name ?? null;
+    const compName = (id: unknown) => {
+      const c = comps.find((x) => x.id === id);
+      return c ? `${c.number ? `${c.number}. ` : ''}${c.name}` : 'una competencia';
+    };
+    const authorOf = (userId: string | null) => {
+      const u = users.find((x) => x.id === userId);
+      if (!u) return { userId, name: 'Sistema' };
+      const ad = adults.find((x) => x.id === u.adultId);
+      return { userId, name: ad ? `${ad.firstName} ${ad.lastName}${ad.totem ? ` («${ad.totem}»)` : ''}` : u.name };
+    };
+    const day = (v: unknown) => (typeof v === 'string' && v ? formatDate(v) : null);
+    const q = (s: string | null) => (s ? `«${s}»` : '');
+
+    const items: HistoryItem[] = [];
+    for (const l of logs) {
+      const a = l.changes?.after ?? {};
+      const b = l.changes?.before ?? {};
+      const r = ref.get(l.entity_id) ?? {};
+      const base = { id: l.id, at: new Date(l.created_at).toISOString(), date: null, author: authorOf(l.user_id), detail: null as string | null };
+      const verb = (create: string, update: string, del: string) => (l.action === 'create' ? create : l.action === 'delete' ? del : update);
+      switch (l.entity) {
+        case 'MemberStage': {
+          const n = q(nameOf(stages, r.stageId)) || 'una etapa';
+          let text = verb(`Registró la etapa ${n}`, `Editó la etapa ${n}`, `Borró la etapa ${n}`);
+          let detail = l.action === 'create' && day(a.startedAt) ? `Desde el ${day(a.startedAt)}` : null;
+          if (l.action === 'update' && a.insigniaAt) text = `Registró la insignia de ${n} (${day(a.insigniaAt)})`;
+          else if (l.action === 'update' && a.endedAt) text = `Cerró la etapa ${n} (${day(a.endedAt)})`;
+          if (typeof a.notes === 'string' && a.notes) detail = a.notes;
+          items.push({ ...base, kind: 'etapa', text, detail });
+          break;
+        }
+        case 'MemberCompetency': {
+          const n = `«${compName(r.competencyId)}»`;
+          let text = verb(`Eligió la competencia ${n}`, `Editó la competencia ${n}`, `Quitó la competencia ${n}`);
+          let detail: string | null = null;
+          if (l.action === 'update' && typeof a.status === 'string') {
+            text = `Marcó la competencia ${n} como «${COMPETENCY_STATUS_LABELS[a.status as CompetencyStatus] ?? a.status}»`;
+          } else if (l.action === 'update' && 'notes' in a) {
+            text = `Anotó en la competencia ${n}`;
+            detail = typeof a.notes === 'string' ? a.notes : null;
+          }
+          items.push({ ...base, kind: 'competencia', text, detail });
+          break;
+        }
+        case 'MemberRole': {
+          const role = typeof r.role === 'string' ? `«${r.role}»` : 'un rol';
+          const cycle = nameOf(cycles, r.cycleId);
+          items.push({
+            ...base,
+            kind: 'rol',
+            text: verb(`Le asignó el rol ${role}`, `Editó el rol ${role}`, `Quitó el rol ${role}`) + (cycle ? ` (${cycle})` : ''),
+            detail: typeof a.notes === 'string' && a.notes ? a.notes : null,
+          });
+          break;
+        }
+        case 'CycleReview': {
+          const cycle = nameOf(cycles, r.cycleId);
+          items.push({
+            ...base,
+            kind: 'revision',
+            text: verb('Hizo la revisión de fin de ciclo', 'Editó la revisión de fin de ciclo', 'Borró la revisión de fin de ciclo') + (cycle ? ` (${cycle})` : ''),
+            detail: typeof a.educatorReview === 'string' && a.educatorReview ? a.educatorReview : null,
+          });
+          break;
+        }
+        case 'MemberSpecialty': {
+          const n = q(nameOf(specs, r.specialtyId)) || 'una especialidad';
+          items.push({ ...base, kind: 'especialidad', text: verb(`Registró la especialidad ${n}`, `Editó la especialidad ${n}`, `Quitó la especialidad ${n}`) });
+          break;
+        }
+        case 'MemberProgress': {
+          const parts: string[] = [];
+          if (day(a.ambientacionSince)) parts.push(`ambientación desde el ${day(a.ambientacionSince)}`);
+          if (a.transition === true) parts.push('en transición');
+          if (a.transition === false && l.action === 'update') parts.push('terminó la transición');
+          items.push({
+            ...base,
+            kind: 'momentos',
+            text: 'Actualizó los momentos de la progresión',
+            detail: parts.join(' · ') || (typeof a.notes === 'string' ? a.notes : null),
+          });
+          break;
+        }
+        case 'Member': {
+          const from = nameOf(groups, b.smallGroupId);
+          const to = nameOf(groups, a.smallGroupId);
+          items.push({
+            ...base,
+            kind: 'grupo',
+            text: to ? `Pasó a ${q(to)}${from ? ` (antes ${q(from)})` : ''}` : `Quedó sin pequeño grupo${from ? ` (antes ${q(from)})` : ''}`,
+          });
+          break;
+        }
+      }
+    }
+    for (const n of notes) {
+      items.push({
+        id: `nota-${n.id}`,
+        at: n.createdAt.toISOString(),
+        date: n.date,
+        kind: 'nota',
+        author: authorOf(n.authorUserId),
+        text: n.note,
+        detail: null,
+        noteId: n.id,
+        canDelete: n.authorUserId === req.user!.id || req.auth!.isSuperadmin,
+      });
+    }
+    // Las notas van por su fecha (se pueden anotar después); los cambios, por cuándo se hicieron
+    const key = (i: HistoryItem) => (i.date ? `${i.date}T23:59:59.999Z` : i.at);
+    items.sort((x, y) => key(y).localeCompare(key(x)) || y.at.localeCompare(x.at));
+
+    const byAuthor = new Map<string, { name: string; count: number; last: string }>();
+    for (const i of items) {
+      const k = i.author.userId ?? i.author.name;
+      const cur = byAuthor.get(k);
+      if (cur) cur.count++;
+      else byAuthor.set(k, { name: i.author.name, count: 1, last: i.date ?? i.at.slice(0, 10) });
+    }
+    res.json({ items, authors: [...byAuthor.values()].sort((x, y) => y.count - x.count) });
   }),
 );

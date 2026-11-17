@@ -10,6 +10,7 @@ import {
   memberDocumentSchema,
   memberImportSchema,
   memberSchema,
+  moveSmallGroupSchema,
   optUuid,
   todayIso,
   transferSchema,
@@ -242,6 +243,36 @@ membersRouter.get(
 );
 
 // ---------------- Ficha ----------------
+/**
+ * Mover protagonistas de pequeño grupo (patrulla, seisena, equipo) en cualquier momento. Lo pueden hacer los
+ * adultos con permiso de editar protagonistas en esa unidad (jefes y ayudantes), solo en su propia unidad.
+ */
+membersRouter.post(
+  '/small-group',
+  ah(async (req, res) => {
+    const { memberIds, smallGroupId } = parse(moveSmallGroupSchema, req.body);
+    const ids = [...new Set(memberIds)];
+    const members = await Member.findAll({ where: { id: ids } });
+    if (members.length !== ids.length) throw badRequest('Hay protagonistas que no existen');
+    const sg = smallGroupId ? await SmallGroup.findByPk(smallGroupId) : null;
+    if (smallGroupId && (!sg || !sg.active)) throw badRequest('Ese pequeño grupo no existe o está inactivo');
+    for (const m of members) {
+      if (!m.unitId) throw badRequest(`${m.firstName} ${m.lastName} todavía no tiene unidad`);
+      assertCan(req, 'members', 'edit', m.unitId);
+      if (sg && sg.unitId !== m.unitId) throw badRequest(`${sg.name} no es de la unidad de ${m.firstName} ${m.lastName}`);
+    }
+    let moved = 0;
+    await sequelize.transaction(async (transaction) => {
+      for (const m of members) {
+        if (m.smallGroupId === (sg?.id ?? null)) continue;
+        await m.update({ smallGroupId: sg?.id ?? null }, { transaction });
+        moved++;
+      }
+    });
+    res.json({ moved });
+  }),
+);
+
 membersRouter.get(
   '/:id',
   authorize('members', 'view', memberUnit),

@@ -10,13 +10,19 @@ import { authorize } from '../middlewares/auth';
 export const adultsRouter = Router();
 
 /**
- * Cuando un cargo de unidad ("Jefe/a de …", "Ayudante de …") queda con su unidad, el usuario de ese adulto
- * recibe el rol que corresponde en esa unidad (si no lo tenía). Así, al repartir a los educadores
- * importados de Mi Rincón, ya pueden trabajar con su unidad.
+ * Cuando un cargo de unidad ("Jefe/a de …", "Subjefe/a", "Ayudante de …", "Colaborador/a") queda con su unidad,
+ * el usuario de ese adulto recibe el rol que corresponde en esa unidad (si no lo tenía). Así cualquier adulto de
+ * la unidad puede mover a los chicos de pequeño grupo y llevar su progresión, solo en su unidad.
  */
+export function unitRoleForPosition(position: string): 'jefe_unidad' | 'educador' | null {
+  if (/de grupo/i.test(position)) return null;
+  if (/^jef[ea]/i.test(position)) return 'jefe_unidad';
+  if (/^(sub\s*-?\s*jef[ea]|ayudante|colaborador)/i.test(position)) return 'educador';
+  return null;
+}
 async function grantUnitRole(adultId: string, position: string, unitId: string | null) {
   if (!unitId) return;
-  const key = /de grupo/i.test(position) ? null : /^jef[ea]/i.test(position) ? 'jefe_unidad' : /^ayudante/i.test(position) ? 'educador' : null;
+  const key = unitRoleForPosition(position);
   if (!key) return;
   const [user, role] = await Promise.all([User.findOne({ where: { adultId } }), Role.findOne({ where: { key } })]);
   if (!user || !role) return;

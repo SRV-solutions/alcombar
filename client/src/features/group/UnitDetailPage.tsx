@@ -1,25 +1,17 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { z } from "zod";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
-import {
-  ageAt,
-  BRANCH_INFO,
-  defaultSmallGroupKind,
-  formatDate,
-  SMALL_GROUP_KINDS,
-  smallGroupSchema,
-  type Branch,
-} from "@shared";
-import { api, qs } from "../../lib/api";
-import { useAuth } from "../../lib/auth";
-import { applyServerErrors } from "../../lib/forms";
-import { adultName, useUnits } from "../../lib/queries";
-import { useToast } from "../../lib/toast";
-import type { Adult, MemberListItem, SmallGroup, Unit } from "../../lib/types";
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { z } from 'zod';
+import { Pencil, Plus, Search, Shuffle, Trash2 } from 'lucide-react';
+import { ageAt, BRANCH_INFO, defaultSmallGroupKind, formatDate, SMALL_GROUP_KINDS, smallGroupSchema, type Branch } from '@shared';
+import { api, qs } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
+import { applyServerErrors } from '../../lib/forms';
+import { adultName, useUnits } from '../../lib/queries';
+import { useToast } from '../../lib/toast';
+import type { Adult, MemberListItem, SmallGroup, Unit } from '../../lib/types';
 import {
   Badge,
   Button,
@@ -35,27 +27,19 @@ import {
   PageHeader,
   Select,
   UnitBadge,
-} from "../../components/ui";
-import { UnitFormModal } from "./UnitsPage";
-import { normalize } from "../../help/helpIndex";
+} from '../../components/ui';
+import { UnitFormModal } from './UnitsPage';
+import { normalize } from '../../help/helpIndex';
 
 type SmallGroupForm = z.input<typeof smallGroupSchema>;
 
 const KIND_LABELS: Record<string, string> = {
-  equipo: "Equipo",
-  seisena: "Seisena",
-  patrulla: "Patrulla",
+  equipo: 'Equipo',
+  seisena: 'Seisena',
+  patrulla: 'Patrulla',
 };
 
-function SmallGroupModal({
-  unit,
-  group,
-  onClose,
-}: {
-  unit: Unit;
-  group?: SmallGroup;
-  onClose: () => void;
-}) {
+function SmallGroupModal({ unit, group, onClose }: { unit: Unit; group?: SmallGroup; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const {
@@ -69,12 +53,12 @@ function SmallGroupModal({
       ? {
           unitId: unit.id,
           name: group.name,
-          kind: group.kind as SmallGroupForm["kind"],
+          kind: group.kind as SmallGroupForm['kind'],
           active: group.active,
         }
       : {
           unitId: unit.id,
-          name: "",
+          name: '',
           kind: defaultSmallGroupKind(unit.branch as Branch),
           active: true,
         },
@@ -83,18 +67,17 @@ function SmallGroupModal({
   const onSubmit = async (values: SmallGroupForm) => {
     try {
       if (group) await api.put(`/group/small-groups/${group.id}`, values);
-      else await api.post("/group/small-groups", values);
-      await qc.invalidateQueries({ queryKey: ["units"] });
-      await qc.invalidateQueries({ queryKey: ["members"] });
-      toast.ok(group ? "Pequeño grupo actualizado" : "Pequeño grupo creado");
+      else await api.post('/group/small-groups', values);
+      await qc.invalidateQueries({ queryKey: ['units'] });
+      await qc.invalidateQueries({ queryKey: ['members'] });
+      toast.ok(group ? 'Pequeño grupo actualizado' : 'Pequeño grupo creado');
       onClose();
     } catch (e) {
       if (!applyServerErrors(e, setError)) toast.error(e);
     }
   };
 
-  const label =
-    BRANCH_INFO[unit.branch as Branch]?.smallGroup.one ?? "Pequeño grupo";
+  const label = BRANCH_INFO[unit.branch as Branch]?.smallGroup.one ?? 'Pequeño grupo';
   return (
     <Modal
       title={group ? `Editar ${group.name}` : `Nuevo/a ${label.toLowerCase()}`}
@@ -110,22 +93,13 @@ function SmallGroupModal({
         </>
       }
     >
-      <form
-        id="sg-form"
-        className="form-grid"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-        <input type="hidden" {...register("unitId")} />
+      <form id="sg-form" className="form-grid" onSubmit={handleSubmit(onSubmit)}>
+        <input type="hidden" {...register('unitId')} />
         <Field label="Nombre" required error={errors.name?.message} full>
-          <Input
-            {...register("name")}
-            invalid={!!errors.name}
-            placeholder="Halcones"
-            autoFocus
-          />
+          <Input {...register('name')} invalid={!!errors.name} placeholder="Halcones" autoFocus />
         </Field>
         <Field label="Tipo" required error={errors.kind?.message}>
-          <Select {...register("kind")}>
+          <Select {...register('kind')}>
             {SMALL_GROUP_KINDS.map((k) => (
               <option key={k} value={k}>
                 {KIND_LABELS[k]}
@@ -133,8 +107,8 @@ function SmallGroupModal({
             ))}
           </Select>
         </Field>
-        <div className="field" style={{ justifyContent: "flex-end" }}>
-          <Checkbox {...register("active")} label="Activo" />
+        <div className="field" style={{ justifyContent: 'flex-end' }}>
+          <Checkbox {...register('active')} label="Activo" />
         </div>
       </form>
     </Modal>
@@ -142,28 +116,32 @@ function SmallGroupModal({
 }
 
 export function UnitDetailPage() {
-  const { id = "" } = useParams();
+  const { id = '' } = useParams();
   const { can } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
   const units = useUnits();
   const unit = units.data?.find((u) => u.id === id);
   const [editUnit, setEditUnit] = useState(false);
-  const [sgModal, setSgModal] = useState<SmallGroup | "new" | null>(null);
+  const [sgModal, setSgModal] = useState<SmallGroup | 'new' | null>(null);
   // Filtros de las tablas: pequeño grupo ('' = todos, 'sin' = sin asignar) y buscadores
-  const [sgFilter, setSgFilter] = useState("");
-  const [memberQ, setMemberQ] = useState("");
-  const [adultQ, setAdultQ] = useState("");
+  const [sgFilter, setSgFilter] = useState('');
+  const [memberQ, setMemberQ] = useState('');
+  const [adultQ, setAdultQ] = useState('');
+  // Selección para mover varios de pequeño grupo a la vez
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [moveTo, setMoveTo] = useState('');
+  const [moving, setMoving] = useState(false);
 
-  const canMembers = can("members", "view");
-  const canAdults = can("adults", "view");
+  const canMembers = can('members', 'view');
+  const canAdults = can('adults', 'view');
   const members = useQuery({
-    queryKey: ["members", { unitId: id }],
+    queryKey: ['members', { unitId: id }],
     queryFn: () => api.get<MemberListItem[]>(`/members${qs({ unitId: id })}`),
     enabled: canMembers && !!unit,
   });
   const adults = useQuery({
-    queryKey: ["adults", { unitId: id }],
+    queryKey: ['adults', { unitId: id }],
     queryFn: () => api.get<Adult[]>(`/adults${qs({ unitId: id })}`),
     enabled: canAdults && !!unit,
   });
@@ -174,50 +152,69 @@ export function UnitDetailPage() {
 
   const info = BRANCH_INFO[unit.branch as Branch];
   const sgLabel = info?.smallGroup ?? {
-    one: "Pequeño grupo",
-    many: "Pequeños grupos",
+    one: 'Pequeño grupo',
+    many: 'Pequeños grupos',
   };
-  const groups = [...unit.smallGroups].sort(
-    (a, b) =>
-      Number(b.active) - Number(a.active) || a.name.localeCompare(b.name),
-  );
-  const countIn = (sgId: string) =>
-    (members.data ?? []).filter((m) => m.smallGroup?.id === sgId).length;
+  const groups = [...unit.smallGroups].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name));
+  const countIn = (sgId: string) => (members.data ?? []).filter((m) => m.smallGroup?.id === sgId).length;
   const withoutGroup = (members.data ?? []).filter((m) => !m.smallGroup).length;
   const mq = normalize(memberQ);
   const shownMembers = (members.data ?? []).filter(
     (m) =>
-      (!sgFilter ||
-        (sgFilter === "sin" ? !m.smallGroup : m.smallGroup?.id === sgFilter)) &&
-      (!mq ||
-        normalize(
-          `${m.lastName} ${m.firstName} ${m.firstName} ${m.lastName} ${m.dni ?? ""}`,
-        ).includes(mq)),
+      (!sgFilter || (sgFilter === 'sin' ? !m.smallGroup : m.smallGroup?.id === sgFilter)) &&
+      (!mq || normalize(`${m.lastName} ${m.firstName} ${m.firstName} ${m.lastName} ${m.dni ?? ''}`).includes(mq)),
   );
   const aq = normalize(adultQ);
   const shownAdults = (adults.data ?? []).filter(
     (a) =>
       !aq ||
       normalize(
-        `${adultName(a)} ${a.firstName} ${a.lastName} ${a.totem ?? ""} ${a.assignments
+        `${adultName(a)} ${a.firstName} ${a.lastName} ${a.totem ?? ''} ${a.assignments
           .filter((x) => x.unitId === id)
           .map((x) => x.position)
-          .join(" ")}`,
+          .join(' ')}`,
       ).includes(aq),
   );
   const showGroup = (key: string) => {
     setSgFilter(key);
-    document
-      .getElementById("unit-members")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById('unit-members')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // Mover de pequeño grupo: los adultos con permiso de editar protagonistas en esta unidad (jefes y ayudantes)
+  const canMove = can('members', 'edit', unit.id);
+  const activeGroups = groups.filter((g) => g.active);
+  const shownSelected = shownMembers.filter((m) => selected.has(m.id));
+  const allShownSelected = shownMembers.length > 0 && shownSelected.length === shownMembers.length;
+  const toggle = (memberId: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      return next;
+    });
+  const move = async (memberIds: string[], smallGroupId: string | null) => {
+    setMoving(true);
+    try {
+      const r = await api.post<{ moved: number }>('/members/small-group', { memberIds, smallGroupId });
+      const dest = smallGroupId ? groups.find((g) => g.id === smallGroupId)?.name : `sin ${sgLabel.one.toLowerCase()}`;
+      toast.ok(r.moved === 1 ? `Movido a ${dest}` : `${r.moved} protagonistas movidos a ${dest}`);
+      setSelected(new Set());
+      setMoveTo('');
+      await qc.invalidateQueries({ queryKey: ['members'] });
+      await qc.invalidateQueries({ queryKey: ['units'] });
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setMoving(false);
+    }
   };
 
   const deleteGroup = async (sg: SmallGroup) => {
     try {
       await api.del(`/group/small-groups/${sg.id}`);
-      await qc.invalidateQueries({ queryKey: ["units"] });
-      await qc.invalidateQueries({ queryKey: ["members"] });
-      toast.ok("Pequeño grupo eliminado");
+      await qc.invalidateQueries({ queryKey: ['units'] });
+      await qc.invalidateQueries({ queryKey: ['members'] });
+      toast.ok('Pequeño grupo eliminado');
     } catch (e) {
       toast.error(e);
     }
@@ -226,16 +223,15 @@ export function UnitDetailPage() {
   return (
     <>
       <PageHeader
-        crumbs={[{ to: "/grupo/unidades", label: "Unidades" }]}
+        crumbs={[{ to: '/grupo/unidades', label: 'Unidades' }]}
         title={<UnitBadge unit={unit} />}
         sub={
           <>
-            {info?.label} · <code>{unit.code}</code> ·{" "}
-            {unit.active ? "Activa" : "Inactiva"}
+            {info?.label} · <code>{unit.code}</code> · {unit.active ? 'Activa' : 'Inactiva'}
           </>
         }
         actions={
-          can("group", "edit") ? (
+          can('group', 'edit') ? (
             <Button variant="secondary" onClick={() => setEditUnit(true)}>
               <Pencil /> Editar unidad
             </Button>
@@ -258,20 +254,13 @@ export function UnitDetailPage() {
           <div className="value">{unit.adultCount}</div>
           {unit.minAdults !== null ? (
             <div className="hint">
-              Mínimo: {unit.minAdults}{" "}
-              {unit.adultCount < unit.minAdults ? (
-                <Badge tone="warn">Faltan</Badge>
-              ) : (
-                <Badge tone="ok">Cumple</Badge>
-              )}
+              Mínimo: {unit.minAdults} {unit.adultCount < unit.minAdults ? <Badge tone="warn">Faltan</Badge> : <Badge tone="ok">Cumple</Badge>}
             </div>
           ) : null}
         </div>
         <div className="card stat">
           <div className="label">{sgLabel.many}</div>
-          <div className="value">
-            {unit.smallGroups.filter((s) => s.active).length}
-          </div>
+          <div className="value">{unit.smallGroups.filter((s) => s.active).length}</div>
         </div>
       </div>
 
@@ -279,8 +268,8 @@ export function UnitDetailPage() {
         <Card
           title={sgLabel.many}
           actions={
-            can("small_groups", "create", unit.id) ? (
-              <Button size="sm" onClick={() => setSgModal("new")}>
+            can('small_groups', 'create', unit.id) ? (
+              <Button size="sm" onClick={() => setSgModal('new')}>
                 <Plus /> Agregar
               </Button>
             ) : null
@@ -288,9 +277,7 @@ export function UnitDetailPage() {
           bodyClass=""
         >
           {!groups.length ? (
-            <Empty>
-              Esta unidad todavía no tiene {sgLabel.many.toLowerCase()}.
-            </Empty>
+            <Empty>Esta unidad todavía no tiene {sgLabel.many.toLowerCase()}.</Empty>
           ) : (
             <div className="table-wrap">
               <table className="table">
@@ -308,12 +295,7 @@ export function UnitDetailPage() {
                     <tr key={sg.id}>
                       <td>
                         {canMembers ? (
-                          <button
-                            type="button"
-                            className="link-btn"
-                            onClick={() => showGroup(sg.id)}
-                            title={`Ver los protagonistas de ${sg.name}`}
-                          >
+                          <button type="button" className="link-btn" onClick={() => showGroup(sg.id)} title={`Ver los protagonistas de ${sg.name}`}>
                             {sg.name}
                           </button>
                         ) : (
@@ -321,36 +303,19 @@ export function UnitDetailPage() {
                         )}
                       </td>
                       <td>{KIND_LABELS[sg.kind] ?? sg.kind}</td>
-                      {canMembers ? (
-                        <td className="num">{countIn(sg.id)}</td>
-                      ) : null}
-                      <td>
-                        {sg.active ? (
-                          <Badge tone="ok">Activo</Badge>
-                        ) : (
-                          <Badge>Inactivo</Badge>
-                        )}
-                      </td>
+                      {canMembers ? <td className="num">{countIn(sg.id)}</td> : null}
+                      <td>{sg.active ? <Badge tone="ok">Activo</Badge> : <Badge>Inactivo</Badge>}</td>
                       <td className="num nowrap">
-                        {can("small_groups", "edit", unit.id) ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSgModal(sg)}
-                          >
+                        {can('small_groups', 'edit', unit.id) ? (
+                          <Button variant="ghost" size="sm" onClick={() => setSgModal(sg)}>
                             <Pencil /> Editar
                           </Button>
                         ) : null}
-                        {can("small_groups", "delete", unit.id) ? (
+                        {can('small_groups', 'delete', unit.id) ? (
                           <ConfirmButton
                             size="sm"
                             title={`Eliminar ${sg.name}`}
-                            message={
-                              <p>
-                                Los protagonistas de este pequeño grupo van a
-                                quedar sin asignar. ¿Querés eliminarlo?
-                              </p>
-                            }
+                            message={<p>Los protagonistas de este pequeño grupo van a quedar sin asignar. ¿Querés eliminarlo?</p>}
                             confirmLabel="Eliminar"
                             onConfirm={() => deleteGroup(sg)}
                           >
@@ -363,11 +328,7 @@ export function UnitDetailPage() {
                   {canMembers && withoutGroup > 0 ? (
                     <tr>
                       <td colSpan={2} className="muted">
-                        <button
-                          type="button"
-                          className="link-btn muted"
-                          onClick={() => showGroup("sin")}
-                        >
+                        <button type="button" className="link-btn muted" onClick={() => showGroup('sin')}>
                           Sin pequeño grupo asignado
                         </button>
                       </td>
@@ -384,12 +345,9 @@ export function UnitDetailPage() {
         {canMembers ? (
           <div id="unit-members">
             <Card
-              title={`Protagonistas (${members.data && (sgFilter || mq) ? `${shownMembers.length} de ${members.data.length}` : (members.data?.length ?? "…")})`}
+              title={`Protagonistas (${members.data && (sgFilter || mq) ? `${shownMembers.length} de ${members.data.length}` : (members.data?.length ?? '…')})`}
               actions={
-                <Link
-                  to={`/protagonistas?unitId=${unit.id}`}
-                  className="btn btn-secondary btn-sm"
-                >
+                <Link to={`/protagonistas?unitId=${unit.id}`} className="btn btn-secondary btn-sm">
                   Ver en el padrón
                 </Link>
               }
@@ -406,15 +364,8 @@ export function UnitDetailPage() {
               ) : (
                 <>
                   <div className="toolbar table-toolbar">
-                    <Select
-                      value={sgFilter}
-                      onChange={(e) => setSgFilter(e.target.value)}
-                      aria-label={sgLabel.one}
-                      style={{ width: "auto" }}
-                    >
-                      <option value="">
-                        Todos los {sgLabel.many.toLowerCase()}
-                      </option>
+                    <Select value={sgFilter} onChange={(e) => setSgFilter(e.target.value)} aria-label={sgLabel.one} style={{ width: 'auto' }}>
+                      <option value="">Todos los {sgLabel.many.toLowerCase()}</option>
                       {groups.map((sg) => (
                         <option key={sg.id} value={sg.id}>
                           {sg.name} ({countIn(sg.id)})
@@ -436,6 +387,38 @@ export function UnitDetailPage() {
                       />
                     </div>
                   </div>
+                  {canMove && shownSelected.length ? (
+                    <div className="toolbar table-toolbar move-bar">
+                      <strong>
+                        {shownSelected.length} seleccionado{shownSelected.length === 1 ? '' : 's'}
+                      </strong>
+                      <Select value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label="Mover a" style={{ width: 'auto' }}>
+                        <option value="">Mover a…</option>
+                        {activeGroups.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                        <option value="sin">Sin {sgLabel.one.toLowerCase()}</option>
+                      </Select>
+                      <Button
+                        size="sm"
+                        disabled={!moveTo}
+                        loading={moving}
+                        onClick={() =>
+                          void move(
+                            shownSelected.map((m) => m.id),
+                            moveTo === 'sin' ? null : moveTo,
+                          )
+                        }
+                      >
+                        <Shuffle /> Mover
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : null}
                   {!shownMembers.length ? (
                     <Empty>Nadie coincide con el filtro.</Empty>
                   ) : (
@@ -443,6 +426,16 @@ export function UnitDetailPage() {
                       <table className="table">
                         <thead>
                           <tr>
+                            {canMove ? (
+                              <th style={{ width: 32 }}>
+                                <input
+                                  type="checkbox"
+                                  aria-label="Seleccionar todos"
+                                  checked={allShownSelected}
+                                  onChange={() => setSelected(allShownSelected ? new Set() : new Set(shownMembers.map((m) => m.id)))}
+                                />
+                              </th>
+                            ) : null}
                             <th>Apellido y nombre</th>
                             <th>{sgLabel.one}</th>
                             <th>Nacimiento</th>
@@ -452,24 +445,45 @@ export function UnitDetailPage() {
                         <tbody>
                           {shownMembers.map((m) => (
                             <tr key={m.id}>
+                              {canMove ? (
+                                <td>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`Seleccionar a ${m.firstName} ${m.lastName}`}
+                                    checked={selected.has(m.id)}
+                                    onChange={() => toggle(m.id)}
+                                  />
+                                </td>
+                              ) : null}
                               <td>
                                 <Link to={`/protagonistas/${m.id}`}>
                                   {m.lastName}, {m.firstName}
                                 </Link>
                               </td>
                               <td>
-                                {m.smallGroup?.name ?? (
-                                  <span className="muted">—</span>
+                                {canMove && activeGroups.length ? (
+                                  <Select
+                                    className="select-inline"
+                                    value={m.smallGroup?.id ?? ''}
+                                    disabled={moving}
+                                    aria-label={`${sgLabel.one} de ${m.firstName} ${m.lastName}`}
+                                    onChange={(e) => void move([m.id], e.target.value || null)}
+                                  >
+                                    <option value="">Sin {sgLabel.one.toLowerCase()}</option>
+                                    {groups
+                                      .filter((g) => g.active || g.id === m.smallGroup?.id)
+                                      .map((g) => (
+                                        <option key={g.id} value={g.id}>
+                                          {g.name}
+                                        </option>
+                                      ))}
+                                  </Select>
+                                ) : (
+                                  (m.smallGroup?.name ?? <span className="muted">—</span>)
                                 )}
                               </td>
-                              <td className="nowrap">
-                                {formatDate(m.birthDate) || (
-                                  <span className="muted">—</span>
-                                )}
-                              </td>
-                              <td className="num">
-                                {ageAt(m.birthDate) ?? "—"}
-                              </td>
+                              <td className="nowrap">{formatDate(m.birthDate) || <span className="muted">—</span>}</td>
+                              <td className="num">{ageAt(m.birthDate) ?? '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -484,7 +498,7 @@ export function UnitDetailPage() {
 
         {canAdults ? (
           <Card
-            title={`Adultos ${new Date().getFullYear()}${adults.data && aq ? ` (${shownAdults.length} de ${adults.data.length})` : ""}`}
+            title={`Adultos ${new Date().getFullYear()}${adults.data && aq ? ` (${shownAdults.length} de ${adults.data.length})` : ''}`}
             bodyClass=""
           >
             {adults.isLoading ? (
@@ -524,21 +538,19 @@ export function UnitDetailPage() {
                         {shownAdults.map((a) => (
                           <tr key={a.id}>
                             <td>
-                              <Link to={`/adultos/${a.id}`}>
-                                {adultName(a)}
-                              </Link>
+                              <Link to={`/adultos/${a.id}`}>{adultName(a)}</Link>
                             </td>
                             <td>
                               {a.assignments
                                 .filter((x) => x.unitId === unit.id)
                                 .map((x) => x.position)
-                                .join(", ")}
+                                .join(', ')}
                             </td>
                             <td>
                               {a.courses.length ? (
                                 <Badge tone="ok">
                                   {a.courses.length} registrada
-                                  {a.courses.length === 1 ? "" : "s"}
+                                  {a.courses.length === 1 ? '' : 's'}
                                 </Badge>
                               ) : (
                                 <Badge tone="warn">Sin formación</Badge>
@@ -556,16 +568,8 @@ export function UnitDetailPage() {
         ) : null}
       </div>
 
-      {editUnit ? (
-        <UnitFormModal unit={unit} onClose={() => setEditUnit(false)} />
-      ) : null}
-      {sgModal ? (
-        <SmallGroupModal
-          unit={unit}
-          group={sgModal === "new" ? undefined : sgModal}
-          onClose={() => setSgModal(null)}
-        />
-      ) : null}
+      {editUnit ? <UnitFormModal unit={unit} onClose={() => setEditUnit(false)} /> : null}
+      {sgModal ? <SmallGroupModal unit={unit} group={sgModal === 'new' ? undefined : sgModal} onClose={() => setSgModal(null)} /> : null}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -246,6 +246,12 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'roles' });
   const roleRows = watch('roles');
+  // Los roles, unidades y adultos llegan después de abrir el formulario: hasta que estén, no se dibujan las filas
+  // de roles (si no, el desplegable queda en "Elegí un rol…" aunque el usuario ya tenga ese rol)
+  const catalogsReady = !!roles.data && !!units.data;
+  useEffect(() => {
+    if (adults.data) setValue('adultId', getValues('adultId'));
+  }, [adults.data, getValues, setValue]);
   const roleById = (id: string) => roles.data?.find((r) => r.id === id);
   const isSelf = user?.id === me?.user.id;
 
@@ -355,10 +361,28 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
         <h3 className="mt" style={{ marginTop: 22 }}>
           Roles
         </h3>
-        <p className="muted">Los roles de alcance Unidad se limitan a la unidad elegida. Una persona puede tener varios roles.</p>
+        {user ? (
+          <div className="current-roles">
+            <span className="muted">Roles que tiene ahora:</span>
+            {user.userRoles.length ? (
+              user.userRoles.map((ur) => (
+                <Badge key={ur.id} tone={ur.role.key === 'superadmin' ? 'bordo' : 'neutral'}>
+                  {ur.role.name}
+                  {ur.unit ? ` (${ur.unit.code})` : ''}
+                </Badge>
+              ))
+            ) : (
+              <strong>ninguno</strong>
+            )}
+          </div>
+        ) : null}
+        <p className="muted">
+          Abajo los podés cambiar, quitar o sumar otros. Los roles de alcance Unidad se limitan a la unidad elegida. Una persona puede tener varios roles.
+        </p>
         {errors.roles?.message ? <div className="alert alert-error mb">{errors.roles.message}</div> : null}
-        <div className="stack" style={{ marginTop: 8 }}>
-          {fields.map((f, i) => {
+        {!catalogsReady ? <Loading /> : null}
+        <div className="stack" style={{ marginTop: 8, display: catalogsReady ? undefined : 'none' }}>
+          {catalogsReady && fields.map((f, i) => {
             const row = roleRows?.[i];
             const role = row ? roleById(row.roleId) : undefined;
             const roleOptions = (roles.data ?? []).filter((r) => r.key !== 'superadmin' || me?.isSuperadmin || r.id === f.roleId);

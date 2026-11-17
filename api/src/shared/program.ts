@@ -235,3 +235,15 @@ export const cycleReviewSchema = z.object({
   educatorReview: optStr(6000),
 });
 export const memberSpecialtySchema = z.object({ specialtyId: z.string().uuid('Elegí la especialidad'), achievedAt: optDate, notes: optStr(1000) });
+
+// ---- Seguimiento de la progresión (notas de los adultos) ----
+export const progressionNoteSchema = z.object({ date: reqDate, note: reqStr(3000) });
+export type ProgressionNoteInput = z.infer<typeof progressionNoteSchema>;
+
+// ---- Mover protagonistas de pequeño grupo (patrulla, seisena, equipo) ----
+export const moveSmallGroupSchema = z.object({
+  memberIds: z.array(z.string().uuid()).min(1, 'Elegí al menos un protagonista').max(200),
+  /** null = sin pequeño grupo */
+  smallGroupId: z.string().uuid().nullable(),
+});
+export type MoveSmallGroupInput = z.infer<typeof moveSmallGroupSchema>;

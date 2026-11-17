@@ -369,6 +369,23 @@ export class MemberSpecialty extends Model<InferAttributes<MemberSpecialty>, Inf
 }
 MemberSpecialty.init({ id, achievedAt: DATEONLY, notes: TEXT, ...stamps }, { sequelize, tableName: 'member_specialties', modelName: 'MemberSpecialty' });
 
+/** Nota de seguimiento de un adulto sobre la progresión de un protagonista. */
+export class ProgressionNote extends Model<InferAttributes<ProgressionNote>, InferCreationAttributes<ProgressionNote>> {
+  declare id: CreationOptional<string>;
+  declare memberId: ForeignKey<Member['id']>;
+  declare authorUserId: ForeignKey<User['id']> | null;
+  declare date: string;
+  declare note: string;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+  declare deletedAt: CreationOptional<Date | null>;
+  declare author?: NonAttribute<User | null>;
+}
+ProgressionNote.init(
+  { id, date: { type: DATEONLY, allowNull: false }, note: { type: TEXT, allowNull: false }, ...stamps },
+  { sequelize, tableName: 'progression_notes', modelName: 'ProgressionNote' },
+);
+
 // ======================= RELACIONES =======================
 BranchArea.hasMany(Competency, { as: 'competencies', foreignKey: 'areaId' });
 Competency.belongsTo(BranchArea, { as: 'area', foreignKey: 'areaId' });
@@ -405,5 +422,7 @@ CycleReview.belongsTo(ProgramCycle, { as: 'cycle', foreignKey: 'cycleId' });
 CycleReview.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
 MemberSpecialty.belongsTo(Specialty, { as: 'specialty', foreignKey: 'specialtyId' });
 MemberSpecialty.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+ProgressionNote.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+ProgressionNote.belongsTo(User, { as: 'author', foreignKey: 'authorUserId' });
 
 export type { Stamps, SoftStamps };

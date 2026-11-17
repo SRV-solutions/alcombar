@@ -456,3 +456,10 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--link); cursor: pointer; text-align: left; }
 .link-btn:hover { text-decoration: underline; }
 .link-btn.muted { color: var(--muted); }
+
+/* Mover de pequeño grupo desde la unidad */
+.move-bar { background: var(--surface-2); border-radius: 8px; margin: 0 16px 12px; padding: 8px 12px; }
+.select-inline { width: auto; min-width: 140px; padding-top: 4px; padding-bottom: 4px; }
+
+/* Editar usuario: los roles que ya tiene */
+.current-roles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 8px; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
