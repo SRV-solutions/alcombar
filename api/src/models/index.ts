@@ -358,7 +358,7 @@ export class PasswordToken extends Model<InferAttributes<PasswordToken>, InferCr
   declare id: CreationOptional<string>;
   declare userId: ForeignKey<User['id']>;
   declare tokenHash: string;
-  declare purpose: 'invite' | 'reset';
+  declare purpose: 'invite' | 'reset' | 'qr_login';
   declare expiresAt: Date;
   declare usedAt: Date | null;
   declare createdAt: CreationOptional<Date>;

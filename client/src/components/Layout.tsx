@@ -39,6 +39,7 @@ import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { ReportProblemButton } from './ReportProblem';
+import { OpenOnPhoneButton } from './OpenOnPhone';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import './layout-extra.css';
@@ -182,6 +183,7 @@ export function Layout() {
               <LogOut /> Salir
             </button>
           </div>
+          <OpenOnPhoneButton />
           <ReportProblemButton />
           <a className="made-by" href="https://wearesrv.com" target="_blank" rel="noopener noreferrer">
             Creada y desarrollada por <strong>wearesrv</strong>

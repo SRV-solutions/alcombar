@@ -810,6 +810,31 @@ export const TUTORIALS: Tutorial[] = [
       { pose: 'cheer', title: '¡Siempre listos!', text: 'Cualquier duda, buscá en el buscador o en Ayuda.' },
     ],
   },
+  {
+    id: 'app-en-el-celular',
+    title: 'La app en tu celular',
+    description: 'Abrir ALCOMBAR en el celular escaneando un código QR, sin escribir la contraseña.',
+    keywords: ['celular', 'qr', 'app', 'instalar', 'teléfono'],
+    audience: (c) => c.loggedIn,
+    steps: [
+      {
+        target: { selector: '.sidebar .open-phone-btn' },
+        pose: 'point',
+        title: 'Abrir en el celular',
+        text: 'Desde la compu, tocá acá y te muestro un código QR. También está en Mi perfil.',
+      },
+      {
+        pose: 'think',
+        title: 'Escaneá con la cámara',
+        text: 'Apuntá la cámara del celular al código y tocá el enlace: se abre ALCOMBAR con tu sesión iniciada. El código sirve una sola vez y vence en 3 minutos.',
+      },
+      {
+        pose: 'cheer',
+        title: '¡Como una app!',
+        text: 'En el celular, agregala a la pantalla de inicio (Android: menú ⋮; iPhone: Compartir → Agregar a inicio) y la abrís con mi cara 😄.',
+      },
+    ],
+  },
   // ---------- Grupo: inventario, calendario y actas ----------
   {
     id: 'inventario-y-prestamos',

@@ -5,7 +5,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { loginSchema, type LoginInput } from '@shared';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { Button, Field, Input } from '../../components/ui';
+import { Button, Field, Input, PasswordInput } from '../../components/ui';
 import { Logo } from '../../components/Logo';
 
 export function AuthShell({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
@@ -57,7 +57,7 @@ export function LoginPage() {
           <Input type="email" autoComplete="username" autoFocus {...register('email')} invalid={!!formState.errors.email} />
         </Field>
         <Field label="Contraseña" error={formState.errors.password?.message}>
-          <Input type="password" autoComplete="current-password" {...register('password')} invalid={!!formState.errors.password} />
+          <PasswordInput autoComplete="current-password" {...register('password')} invalid={!!formState.errors.password} />
         </Field>
         <Button type="submit" loading={formState.isSubmitting} style={{ width: '100%', padding: '10px' }}>
           Ingresar

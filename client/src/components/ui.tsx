@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Link } from 'react-router-dom';
-import { Inbox, X } from 'lucide-react';
+import { Eye, EyeOff, Inbox, X } from 'lucide-react';
 import { BRANCH_INFO, DOC_STATUS_LABELS, type Branch, type DocStatus } from '@shared';
 import { errorMessage } from '../lib/api';
 
@@ -67,6 +67,29 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   ref,
 ) {
   return <input ref={ref} className={`input ${invalid ? 'invalid' : ''} ${className}`} {...rest} />;
+});
+
+/** Campo de contraseña con el ojito para ver lo que se escribió. */
+export const PasswordInput = forwardRef<HTMLInputElement, Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & { invalid?: boolean }>(function PasswordInput(
+  { invalid, className = '', ...rest },
+  ref,
+) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="password-field">
+      <input ref={ref} type={show ? 'text' : 'password'} className={`input ${invalid ? 'invalid' : ''} ${className}`} {...rest} />
+      <button
+        type="button"
+        className="password-toggle"
+        onClick={() => setShow((s) => !s)}
+        aria-label={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+        aria-pressed={show}
+        title={show ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+      >
+        {show ? <EyeOff /> : <Eye />}
+      </button>
+    </span>
+  );
 });
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }>(function Select(

@@ -6,6 +6,7 @@ import { Layout } from './components/Layout';
 import { Empty, Loading } from './components/ui';
 import { LoginPage } from './features/auth/LoginPage';
 import { SetPasswordPage } from './features/auth/SetPasswordPage';
+import { QrLoginPage } from './features/auth/QrLoginPage';
 import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage';
 import { ProfilePage } from './features/auth/ProfilePage';
 import { HelpPage } from './features/help/HelpPage';
@@ -58,6 +59,7 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/definir-clave" element={<SetPasswordPage />} />
+      <Route path="/qr" element={<QrLoginPage />} />
       <Route path="/olvide-clave" element={<ForgotPasswordPage />} />
       <Route
         element={

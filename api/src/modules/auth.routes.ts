@@ -6,9 +6,9 @@ import { config } from '../config';
 import { Adult, PasswordToken, Unit, User } from '../models';
 import { writeAudit } from '../lib/audit';
 import { currentContext } from '../lib/context';
-import { ah, badRequest, HttpError, parse, unauthorized } from '../lib/errors';
-import { createPasswordLink, findValidToken, sendReset } from '../lib/passwordTokens';
-import { DUMMY_HASH, hashPassword, verifyPassword } from '../lib/security';
+import { ah, badRequest, HttpError, notFound, parse, unauthorized } from '../lib/errors';
+import { createPasswordLink, createQrLogin, findValidToken, QR_LOGIN_MINUTES, sendReset } from '../lib/passwordTokens';
+import { DUMMY_HASH, hashPassword, sha256, verifyPassword } from '../lib/security';
 import { endSession, revokeAllSessions, rotateSession, startSession } from '../lib/session';
 import { authenticate } from '../middlewares/auth';
 import { sequelize } from '../db';
@@ -209,6 +209,60 @@ authRouter.post(
     });
     await revokeAllSessions(user.id);
     await startSession(req, res, user);
+    res.json({ ok: true });
+  }),
+);
+
+// ---- Abrir en el celular: código QR de un solo uso (vence en pocos minutos) que inicia sesión en el celu ----
+const qrLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Generaste demasiados códigos. Probá de nuevo en unos minutos.' },
+});
+
+authRouter.post(
+  '/qr',
+  authenticate,
+  qrLimiter,
+  ah(async (req, res) => {
+    res.json({ ...(await createQrLogin(req.user!)), minutes: QR_LOGIN_MINUTES });
+  }),
+);
+
+/** La computadora pregunta si el código ya se usó (para avisar "¡Listo!"). */
+authRouter.get(
+  '/qr/:id',
+  authenticate,
+  ah(async (req, res) => {
+    const id = parse(z.string().uuid(), req.params.id);
+    const pt = await PasswordToken.findOne({ where: { id, userId: req.user!.id, purpose: 'qr_login' } });
+    if (!pt) throw notFound();
+    res.json({ used: Boolean(pt.usedAt), expired: !pt.usedAt && pt.expiresAt.getTime() <= Date.now() });
+  }),
+);
+
+authRouter.post(
+  '/qr-login',
+  loginLimiter,
+  ah(async (req, res) => {
+    const { token } = parse(z.object({ token: z.string().min(20).max(200) }), req.body);
+    const invalid = 'El código venció o ya se usó. Generá otro desde la computadora.';
+    const user = await sequelize.transaction(async (transaction) => {
+      const pt = await PasswordToken.findOne({ where: { tokenHash: sha256(token), purpose: 'qr_login' }, transaction, lock: true });
+      if (!pt || pt.usedAt || pt.expiresAt.getTime() <= Date.now()) throw badRequest(invalid);
+      const u = await User.findByPk(pt.userId, { transaction });
+      if (!u || !u.active) throw badRequest(invalid);
+      pt.usedAt = new Date();
+      await pt.save({ transaction });
+      u.lastLoginAt = new Date();
+      await u.save({ transaction });
+      return u;
+    });
+    await startSession(req, res, user);
+    currentContext().userId = user.id;
+    await writeAudit({ action: 'login', entity: 'User', entityId: user.id, summary: `${user.email} (con código QR)` });
     res.json({ ok: true });
   }),
 );

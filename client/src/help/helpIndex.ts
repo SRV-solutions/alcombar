@@ -565,6 +565,15 @@ export const HELP_INDEX: HelpEntry[] = [
     keywords: ['contraseña', 'clave', 'password', 'cambiar contraseña', 'cambiar clave', 'seguridad'],
   },
 
+  {
+    id: 'celular',
+    title: 'Usar la app en el celular',
+    description: 'Botón "Abrir en el celular" (abajo en el menú) o Mi perfil → ALCOMBAR en tu celular: escaneás un código QR y se abre la app con tu sesión iniciada. Después la agregás a la pantalla de inicio.',
+    path: '/perfil#celular',
+    section: 'Mi cuenta',
+    keywords: ['celular', 'celu', 'teléfono', 'móvil', 'qr', 'código qr', 'escanear', 'app', 'instalar', 'pantalla de inicio', 'android', 'iphone'],
+  },
+
   // --- Soporte ---
   {
     id: 'reportar-problema',

@@ -1,0 +1,16 @@
+{
+  "name": "ALCOMBAR Gestión",
+  "short_name": "ALCOMBAR",
+  "description": "Gestión del Grupo Scout 155 Divina Providencia",
+  "lang": "es-AR",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAF6EE",
+  "theme_color": "#7A1F2B",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

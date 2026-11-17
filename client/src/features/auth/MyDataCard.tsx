@@ -9,7 +9,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors, toFormValues } from '../../lib/forms';
 import { useToast } from '../../lib/toast';
-import { Badge, Button, Card, Field, Input, Loading } from '../../components/ui';
+import { Badge, Button, Card, Field, Input, Loading, PasswordInput } from '../../components/ui';
 
 interface MyProfile {
   name: string;
@@ -100,7 +100,7 @@ export function MyDataCard() {
             </Field>
             {emailChanged && p.hasPassword ? (
               <Field label="Tu contraseña actual" required error={e.currentPassword?.message} hint="Para cambiar el email te pedimos la contraseña." full>
-                <Input type="password" autoComplete="current-password" {...register('currentPassword')} invalid={!!e.currentPassword} />
+                <PasswordInput autoComplete="current-password" {...register('currentPassword')} invalid={!!e.currentPassword} />
               </Field>
             ) : null}
             {p.adult ? (

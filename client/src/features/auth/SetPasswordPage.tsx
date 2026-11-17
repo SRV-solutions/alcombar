@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { Button, Field, Input, Loading } from '../../components/ui';
+import { Button, Field, Input, Loading, PasswordInput } from '../../components/ui';
 import { AuthShell } from './LoginPage';
 
 interface TokenInfo {
@@ -64,8 +64,7 @@ export function SetPasswordPage() {
         </p>
         {error ? <div className="alert alert-error">{error}</div> : null}
         <Field label="Nueva contraseña" error={formState.errors.password?.message} hint="Mínimo 10 caracteres. Una frase corta es fácil de recordar y segura.">
-          <Input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             autoFocus
             invalid={!!formState.errors.password}
@@ -73,8 +72,7 @@ export function SetPasswordPage() {
           />
         </Field>
         <Field label="Repetir contraseña" error={formState.errors.repeat?.message}>
-          <Input
-            type="password"
+          <PasswordInput
             autoComplete="new-password"
             invalid={!!formState.errors.repeat}
             {...register('repeat', { validate: (v) => v === watch('password') || 'Las contraseñas no coinciden' })}
