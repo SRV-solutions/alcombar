@@ -1,0 +1,61 @@
+/* Calendario: grilla mensual (escritorio) y agenda (celular) */
+.cal-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.cal-month-nav { display: inline-flex; align-items: center; gap: 4px; }
+.cal-month-label { font-weight: 700; font-size: 1.1rem; min-width: 160px; text-align: center; text-transform: capitalize; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
+.cal-head { padding: 6px 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cal-cell { min-height: 108px; padding: 4px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cal-cell.out { background: var(--surface-2); }
+.cal-cell.out .cal-daynum { color: var(--muted); opacity: 0.6; }
+.cal-cell.today .cal-daynum { background: var(--primary); color: var(--on-primary); }
+.cal-daynum { align-self: flex-start; font-size: 0.8rem; font-weight: 700; border: none; background: none; color: var(--text); border-radius: 999px; min-width: 24px; height: 24px; padding: 0 6px; cursor: default; font: inherit; font-size: 0.8rem; font-weight: 700; }
+.cal-daynum.can-add { cursor: pointer; }
+.cal-daynum.can-add:hover { background: var(--primary-soft); }
+.cal-more { font-size: 0.75rem; color: var(--link); background: none; border: none; text-align: left; cursor: pointer; padding: 0 4px; font: inherit; font-size: 0.75rem; }
+
+.cal-chip {
+  --c: var(--muted);
+  display: block; width: 100%; text-align: left; border: none; cursor: pointer; font: inherit; font-size: 0.75rem; line-height: 1.25;
+  padding: 2px 5px; border-radius: 5px; border-left: 3px solid var(--c);
+  background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cal-chip:hover { background: color-mix(in srgb, var(--c) 28%, var(--surface)); }
+.cal-chip .cal-time { font-weight: 700; margin-right: 3px; }
+.cal-chip .cal-unit { opacity: 0.75; margin-right: 3px; }
+.cal-type-reunion { --c: var(--info); }
+.cal-type-servicio { --c: var(--accent); }
+.cal-type-consejo { --c: var(--primary); }
+.cal-type-evento { --c: var(--ok); }
+.cal-type-campamento { --c: var(--warn); }
+.cal-type-formacion { --c: var(--link); }
+.cal-type-feriado { --c: var(--danger); }
+.cal-type-otro { --c: var(--muted); }
+
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 0.8rem; color: var(--muted); margin-top: 10px; }
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cal-legend i { --c: var(--muted); width: 10px; height: 10px; border-radius: 3px; background: var(--c); display: inline-block; }
+
+/* Agenda */
+.cal-agenda { display: flex; flex-direction: column; }
+.cal-agenda-day { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.cal-agenda-day:last-child { border-bottom: none; }
+.cal-agenda-date { font-weight: 700; text-transform: capitalize; margin-bottom: 6px; }
+.cal-agenda-date.today { color: var(--link); }
+.cal-agenda-item { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 10px; padding: 6px 0; cursor: pointer; border: none; background: none; text-align: left; font: inherit; color: inherit; width: 100%; border-left: 3px solid var(--c); padding-left: 8px; margin: 3px 0; --c: var(--muted); border-radius: 4px; }
+.cal-agenda-item:hover { background: var(--surface-2); }
+.cal-agenda-item .when { color: var(--muted); font-size: 0.85rem; }
+.cal-agenda-item .what { min-width: 0; }
+.cal-agenda-item .meta { font-size: 0.8rem; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+
+/* Servicio rotativo */
+.rot-units { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; }
+.rot-unit { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; }
+.rot-order { display: inline-flex; width: 22px; height: 22px; border-radius: 999px; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; background: var(--surface-2); color: var(--muted); flex-shrink: 0; }
+.rot-order.on { background: var(--primary); color: var(--on-primary); }
+
+@media (max-width: 700px) {
+  .cal-month-label { min-width: 0; flex: 1; }
+  .cal-agenda-item { grid-template-columns: 70px minmax(0, 1fr); }
+}

@@ -1,0 +1,52 @@
+/* Programa (fichas, ciclos, sábado). Usa los tokens del tema: anda en claro y oscuro. */
+.sheet-status { white-space: nowrap; }
+.sheet-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 0.88rem; }
+.sheet-section { margin-top: 16px; }
+.sheet-section h3 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+.sheet-section p, .sheet-section li { white-space: pre-wrap; overflow-wrap: anywhere; }
+.sheet-section ul { margin: 0; padding-left: 20px; }
+.sheet-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 18px; }
+@media (max-width: 800px) { .sheet-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .sheet-grid { grid-template-columns: 1fr; } }
+.sheet-grid .k { font-size: 0.78rem; color: var(--muted); }
+.sheet-grid .v { font-weight: 600; overflow-wrap: anywhere; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 0.8rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+
+/* Selector de competencias */
+.comp-picker { border: 1px solid var(--border); border-radius: 10px; max-height: 340px; overflow-y: auto; background: var(--surface); }
+.comp-picker .area { padding: 6px 12px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--surface-2); position: sticky; top: 0; z-index: 1; }
+.comp-picker label { display: flex; gap: 8px; align-items: flex-start; padding: 6px 12px; cursor: pointer; font-size: 0.9rem; border-top: 1px solid var(--border); }
+.comp-picker label:hover { background: var(--surface-2); }
+.comp-picker input { margin-top: 3px; accent-color: var(--primary); }
+
+/* Línea de tiempo de estados */
+.status-steps { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0 2px; }
+.status-steps span { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.status-steps span.done { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.status-steps span.now { background: var(--primary); color: var(--on-primary); border-color: transparent; font-weight: 700; }
+
+/* Programa del sábado */
+.meeting-row { display: grid; grid-template-columns: 90px minmax(0, 2fr) minmax(0, 1.4fr) 80px auto; gap: 8px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.meeting-row:last-child { border-bottom: none; }
+.meeting-row .row-actions { display: flex; gap: 2px; }
+@media (max-width: 760px) {
+  .meeting-row { grid-template-columns: 1fr 1fr; }
+  .meeting-row .what { grid-column: 1 / -1; }
+}
+
+/* Impresión de la ficha (formato del Grupo) */
+.print-sheet { background: var(--surface); }
+.print-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 3px solid var(--primary); padding-bottom: 8px; margin-bottom: 12px; }
+.print-head .brand { font-weight: 800; color: var(--primary); letter-spacing: 0.04em; }
+.print-head .code { font-family: ui-monospace, monospace; font-size: 0.9rem; color: var(--muted); }
+.print-table { width: 100%; border-collapse: collapse; }
+.print-table th, .print-table td { border: 1px solid var(--border-strong, var(--border)); padding: 6px 8px; vertical-align: top; text-align: left; font-size: 0.9rem; }
+.print-table th { width: 26%; background: var(--surface-2); font-weight: 650; }
+.print-table td { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media print {
+  .print-sheet { padding: 0; }
+  .print-table th { background: #f2f2f2 !important; }
+  .print-table th, .print-table td { border-color: #999 !important; color: #000 !important; }
+  .print-head { border-bottom-color: #7a1f2b !important; }
+}

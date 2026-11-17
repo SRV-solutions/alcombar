@@ -14,11 +14,22 @@ import { adultsRouter } from './modules/adults.routes';
 import { membersRouter } from './modules/members.routes';
 import { attendanceRouter, documentsRouter } from './modules/attendance.routes';
 import { auditRouter, dashboardRouter } from './modules/dashboard.routes';
+import { programRouter } from './modules/program.routes';
+import { progressionRouter } from './modules/progression.routes';
+import { accountingRouter } from './modules/accounting.routes';
+import { eventsRouter } from './modules/events.routes';
+import { campsRouter } from './modules/camps.routes';
+import { inventoryRouter } from './modules/inventory.routes';
+import { calendarRouter } from './modules/calendar.routes';
+import './modules/calendar.sources'; // campamentos, eventos y salidas en el calendario
+import { libraryRouter } from './modules/library.routes';
+import { supportRouter } from './modules/support.routes';
 
 export function createApp() {
   const app = express();
-  // Netlify (o Vite en desarrollo) hace de proxy: confiar en el primer salto para la IP real.
-  app.set('trust proxy', 1);
+  // Proxies delante de la API (Vite en desarrollo; Netlify + Railway en producción = 2 saltos).
+  // Sirve para que el límite de intentos de login vea la IP real de cada persona.
+  app.set('trust proxy', config.trustProxy);
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(express.json({ limit: '5mb' }));
@@ -38,6 +49,16 @@ export function createApp() {
   api.use('/documents', documentsRouter);
   api.use('/dashboard', dashboardRouter);
   api.use('/audit', auditRouter);
+  // Etapas 3 a 8
+  api.use('/program', programRouter);
+  api.use('/progression', progressionRouter);
+  api.use('/accounting', accountingRouter);
+  api.use('/events', eventsRouter);
+  api.use('/camps', campsRouter);
+  api.use('/inventory', inventoryRouter);
+  api.use('/calendar', calendarRouter);
+  api.use('/library', libraryRouter);
+  api.use('/support', supportRouter);
   app.use('/api/v1', api);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta inexistente' }));

@@ -15,6 +15,14 @@ import { MemberDetailPage } from './features/members/MemberDetailPage';
 import { MemberFormPage } from './features/members/MemberFormPage';
 import { MemberImportPage } from './features/members/MemberImportPage';
 import { TransfersPage } from './features/members/TransfersPage';
+import { ProgramRoutes } from './features/program/ProgramRoutes';
+import { ProgressionRoutes } from './features/progression/ProgressionRoutes';
+import { AccountingRoutes } from './features/accounting/AccountingRoutes';
+import { EventsRoutes } from './features/events/EventsRoutes';
+import { CampsRoutes } from './features/camps/CampsRoutes';
+import { InventoryRoutes } from './features/inventory/InventoryRoutes';
+import { CalendarRoutes } from './features/calendar/CalendarRoutes';
+import { LibraryRoutes } from './features/library/LibraryRoutes';
 import { AttendancePage } from './features/attendance/AttendancePage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
 import { UnitsPage } from './features/group/UnitsPage';
@@ -28,6 +36,7 @@ import { UsersPage } from './features/admin/UsersPage';
 import { RolesPage } from './features/admin/RolesPage';
 import { AuditPage } from './features/admin/AuditPage';
 import { CatalogsPage } from './features/admin/CatalogsPage';
+import { SupportReportsPage } from './features/admin/SupportReportsPage';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { me, loading } = useAuth();
@@ -71,6 +80,16 @@ export function App() {
         <Route path="asistencia" element={<Guard perm={['attendance', 'view']}><AttendancePage /></Guard>} />
         <Route path="documentacion" element={<Guard perm={['member_documents', 'view']}><DocumentsPage /></Guard>} />
 
+        {/* Etapas 3 a 8: cada módulo maneja sus rutas internas */}
+        <Route path="programa/*" element={<Guard perm={['activities', 'view']}><ProgramRoutes /></Guard>} />
+        <Route path="progresion/*" element={<Guard perm={['progression', 'view']}><ProgressionRoutes /></Guard>} />
+        <Route path="contabilidad/*" element={<Guard anyOf={[['accounting', 'view'], ['fees', 'view']]}><AccountingRoutes /></Guard>} />
+        <Route path="eventos/*" element={<Guard perm={['events', 'view']}><EventsRoutes /></Guard>} />
+        <Route path="campamentos/*" element={<Guard perm={['camps', 'view']}><CampsRoutes /></Guard>} />
+        <Route path="inventario/*" element={<Guard perm={['inventory', 'view']}><InventoryRoutes /></Guard>} />
+        <Route path="calendario/*" element={<Guard perm={['calendar', 'view']}><CalendarRoutes /></Guard>} />
+        <Route path="actas/*" element={<Guard perm={['documents', 'view']}><LibraryRoutes /></Guard>} />
+
         <Route path="grupo/unidades" element={<Guard perm={['group', 'view']}><UnitsPage /></Guard>} />
         <Route path="grupo/unidades/:id" element={<Guard perm={['group', 'view']}><UnitDetailPage /></Guard>} />
         <Route path="grupo/equipos" element={<Guard perm={['group', 'view']}><SupportTeamsPage /></Guard>} />
@@ -86,6 +105,7 @@ export function App() {
         <Route path="admin/auditoria" element={<Guard perm={['audit', 'view']}><AuditPage /></Guard>} />
         <Route path="admin/catalogos" element={<Guard anyOf={[['group', 'edit'], ['training', 'create'], ['training', 'edit']]}><CatalogsPage /></Guard>} />
 
+        <Route path="admin/reportes" element={<SupportReportsPage />} />
         <Route path="*" element={<Empty>Página no encontrada.</Empty>} />
       </Route>
     </Routes>

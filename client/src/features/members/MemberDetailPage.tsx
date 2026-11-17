@@ -21,10 +21,12 @@ import type { Guardian, MemberDetail, MemberDoc } from '../../lib/types';
 import { Badge, Button, Card, ConfirmButton, DocDot, Empty, ErrorBox, LinkButton, Loading, PageHeader, Tabs, UnitBadge, type Tone } from '../../components/ui';
 import { AffiliationDialog, DocumentDialog, GuardianDialog, TransferDialog } from './MemberDialogs';
 import { AssignUnitDialog } from './AssignUnitDialog';
+import { MemberProgressTab } from '../progression/MemberProgressTab';
+import { MemberPaymentsTab } from '../accounting/MemberPaymentsTab';
 import { PendingBadge } from './MembersPage';
 import { useAuth } from '../../lib/auth';
 
-type TabKey = 'datos' | 'familia' | 'docs' | 'historial' | 'asistencia';
+type TabKey = 'datos' | 'familia' | 'docs' | 'historial' | 'asistencia' | 'progresion' | 'pagos';
 
 const ATT_TONE: Record<AttendanceStatus, Tone> = { presente: 'ok', ausente: 'danger', tarde: 'warn', justificado: 'info' };
 const DOC_TONE = { ok: 'ok', expiring: 'warn', expired: 'danger', missing: 'neutral' } as const;
@@ -74,6 +76,8 @@ export function MemberDetailPage() {
     ...(m.documents ? [{ key: 'docs' as const, label: <>Documentación {pendingDocs ? <Badge tone="warn">{pendingDocs}</Badge> : null}</> }] : []),
     { key: 'historial', label: 'Pases y afiliación' },
     ...(m.canViewAttendance ? [{ key: 'asistencia' as const, label: 'Asistencia' }] : []),
+    ...(can('progression', 'view', m.unitId) ? [{ key: 'progresion' as const, label: 'Progresión' }] : []),
+    ...(can('fees', 'view', m.unitId) ? [{ key: 'pagos' as const, label: 'Pagos' }] : []),
   ];
 
   return (
@@ -384,6 +388,9 @@ export function MemberDetailPage() {
           )}
         </Card>
       ) : null}
+
+      {tab === 'progresion' ? <MemberProgressTab memberId={m.id} unitId={m.unitId} branch={m.unit?.branch ?? m.branch} /> : null}
+      {tab === 'pagos' ? <MemberPaymentsTab memberId={m.id} unitId={m.unitId} /> : null}
 
       {dialog?.kind === 'guardian' ? <GuardianDialog memberId={m.id} guardian={dialog.guardian} onClose={() => setDialog(null)} onSaved={refresh} /> : null}
       {dialog?.kind === 'doc' ? <DocumentDialog memberId={m.id} doc={dialog.doc} onClose={() => setDialog(null)} onSaved={refresh} /> : null}

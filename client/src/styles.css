@@ -398,3 +398,30 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
 
 /* Fila de rama en tablas (Unidades): rótulo con el color de la rama como borde */
 .branch-row td { background: var(--surface-2); font-weight: 650; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text); }
+
+/* ---------- Crédito ---------- */
+.made-by { display: block; margin-top: 10px; font-size: 0.72rem; color: var(--sidebar-muted); text-decoration: none; opacity: 0.85; }
+.made-by strong { color: var(--accent); font-weight: 700; }
+.made-by:hover { opacity: 1; text-decoration: underline; }
+.made-by-auth { text-align: center; color: var(--muted); margin-top: 18px; }
+.made-by-auth strong { color: var(--link); }
+
+/* ---------- Impresión / PDF (fichas, recibos, rendiciones) ----------
+   Las vistas "Imprimir" usan window.print(): se oculta la app y queda solo el contenido. */
+.print-only { display: none; }
+@media print {
+  @page { margin: 14mm; }
+  :root { color-scheme: light; }
+  body { background: #fff !important; color: #000 !important; }
+  .sidebar, .topbar, .appbar, .backdrop, .toasts, .no-print, .tour-layer, .page-header .actions { display: none !important; }
+  .main, .content { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .card { box-shadow: none !important; border-color: #ccc !important; background: #fff !important; break-inside: avoid; }
+  .print-only { display: block; }
+  a { color: #000 !important; text-decoration: none !important; }
+}
+
+/* ---------- Contadores del menú y reportes ---------- */
+.nav-badge { margin-left: auto; background: var(--accent); color: var(--on-accent); border-radius: 999px; font-size: 0.7rem; font-weight: 700; padding: 1px 7px; line-height: 1.4; }
+.report-problem-btn { margin-top: 6px; }
+.sidebar .report-problem-btn { color: var(--sidebar-text); padding-left: 0; }
+.report-categories { flex-wrap: wrap; }

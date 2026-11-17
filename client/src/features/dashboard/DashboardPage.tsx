@@ -5,6 +5,7 @@ import { BRANCH_INFO, type Branch } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Card, ErrorBox, LinkButton, Loading, PageHeader, UnitBadge } from '../../components/ui';
+import { PendingCard, UpcomingCard } from './DashboardExtras';
 
 interface Dashboard {
   year: number;
@@ -173,6 +174,11 @@ export function DashboardPage() {
             <p className="muted">No hay cumpleaños cargados para este mes.</p>
           )}
         </Card>
+      </div>
+
+      <div className="split mt">
+        <UpcomingCard />
+        <PendingCard />
       </div>
     </>
   );

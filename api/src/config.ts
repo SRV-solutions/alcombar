@@ -11,6 +11,8 @@ const isProd = process.env.NODE_ENV === 'production';
 export const config = {
   isProd,
   port: Number(process.env.PORT ?? 3000),
+  /** Cantidad de proxies delante de la API (1 en local con Vite; 2 en Railway detrás de Netlify). */
+  trustProxy: Number(process.env.TRUST_PROXY ?? 1),
   appUrl: (process.env.APP_URL ?? 'http://localhost:5173').replace(/\/$/, ''),
   databaseUrl: required('DATABASE_URL'),
   databaseSsl: process.env.DATABASE_SSL === 'true',
@@ -25,7 +27,11 @@ export const config = {
   resetTokenMinutes: 60,
   maxFailedLogins: 5,
   lockMinutes: 15,
-  // Email (SMTP; Gmail por defecto, con contraseña de aplicación)
+  // Email: Resend (API HTTPS, funciona en Railway) o, como alternativa, SMTP (Gmail con contraseña de aplicación)
+  resendApiKey: (process.env.RESEND_API_KEY || '').trim(),
+  mailReplyTo: process.env.MAIL_REPLY_TO || '',
+  /** Adónde avisar por mail cada reporte nuevo de "Reportar un problema" (opcional). */
+  supportEmail: (process.env.SUPPORT_EMAIL || '').trim(),
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: Number(process.env.SMTP_PORT || 465),
   smtpUser: process.env.SMTP_USER || '',

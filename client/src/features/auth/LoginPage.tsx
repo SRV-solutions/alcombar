@@ -20,6 +20,9 @@ export function AuthShell({ children, subtitle }: { children: React.ReactNode; s
           </div>
         </div>
         {children}
+        <a className="made-by made-by-auth" href="https://wearesrv.com" target="_blank" rel="noopener noreferrer">
+          Creada y desarrollada por <strong>wearesrv</strong>
+        </a>
       </div>
     </div>
   );

@@ -67,8 +67,12 @@ pide la contraseña actual.
 
 ### Emails
 
-Salen por Gmail desde la cuenta de `SMTP_USER`, a nombre de **ALCOMBAR Gestión** (`MAIL_FROM_NAME`).
-- `SMTP_PASS` es una *contraseña de aplicación* de Google, no la clave normal de la cuenta.
+Salen por **Resend** (`RESEND_API_KEY`), a nombre de **ALCOMBAR Gestión** (`MAIL_FROM_NAME`).
+- Resend usa la API por HTTPS, que funciona en Railway (Railway bloquea el SMTP).
+- El remitente (`MAIL_FROM`) tiene que ser de un dominio verificado en Resend; hoy es `info@wearesrv.com`.
+- Las respuestas van a `MAIL_REPLY_TO`.
+- **Alternativa:** si no hay clave de Resend, se usa SMTP (`SMTP_USER`/`SMTP_PASS`, por ejemplo Gmail con una
+  *contraseña de aplicación*).
 - Se usan para las invitaciones («Nuevo usuario» y «Generar enlace») y para «Olvidé mi contraseña».
 - Si el envío falla, la app igual muestra el enlace para mandarlo a mano.
 
@@ -200,20 +204,30 @@ client/src/
 - Un único middleware: `authorize(módulo, acción, unidadDelRecurso)`, en `api/src/middlewares/auth.ts`.
 - La función `can()` es la misma en la API y en el client.
 
-## Despliegue (después del MVP)
+## Despliegue (automático desde `main`, igual que sentryx)
 
 **API → Railway**
-- Root directory: `api`.
-- Variables: las de `api/.env.example`, con `NODE_ENV=production` y un `JWT_SECRET` largo.
-- Build: `npm run build`. Start: `npm run migrate && npm start`.
+- El servicio usa la raíz del repositorio. El `Procfile` instala, compila, aplica migraciones, corre el seed y arranca
+  la API. El seed es idempotente: en el primer despliegue crea permisos, roles, unidades y el superadmin.
+- Agregar una base **PostgreSQL** en Railway y estas variables:
+
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL` | La de la base de Railway (referencia `${{Postgres.DATABASE_URL}}`) |
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | Una cadena larga y aleatoria (mínimo 32 caracteres) |
+| `APP_URL` | La URL pública del front en Netlify (se usa en los enlaces de los mails) |
+| `TRUST_PROXY` | `2` (Netlify + Railway delante de la API) |
+| `SUPERADMIN_EMAIL`, `SUPERADMIN_NAME`, `SUPERADMIN_PASSWORD` | El primer superadmin (solo se usa si la base está vacía) |
+| `RESEND_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO` | Los mismos de `api/.env` |
 
 **Client → Netlify**
-- Base directory: `client`.
-- `client/netlify.toml` redirige `/api/*` a Railway, así no hace falta CORS. Hay que poner ahí la URL real de Railway.
-- El build lee `api/src/shared` del mismo repositorio, así que tienen que estar juntos.
+- `netlify.toml` (en la raíz) ya tiene `base = "client"`, el build y las cabeceras.
+- Hay que configurar en Netlify una sola variable: `API_URL` = la URL pública de la API en Railway (por ejemplo,
+  `https://alcombar-api.up.railway.app`).
+- Con eso, el build genera `_redirects` y `/api/*` va a Railway como proxy: mismo dominio, cookies sin CORS.
+- El build lee `api/src/shared` del mismo repositorio, así que las dos carpetas tienen que estar juntas.
 
 **Pendiente**
-- **Emails:** configurar `RESEND_API_KEY` y `MAIL_FROM` para que las invitaciones y la recuperación de contraseña salgan
-  por email.
-- **Archivos adjuntos** (certificados, comprobantes): por ahora se guarda un enlace al Drive. El almacenamiento S3/R2
-  llega con Contabilidad.
+- **Archivos adjuntos** (certificados, comprobantes): por ahora se guarda un enlace al Drive. Más adelante se puede sumar
+  Cloudflare R2, como en sentryx.

@@ -1,0 +1,28 @@
+/* Inventario y préstamos */
+.inv-alerts { border-left: 4px solid var(--warn); }
+.inv-alerts .card-body { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 800px) { .inv-alerts .card-body { grid-template-columns: minmax(0, 1fr); } }
+.inv-alerts h3 { font-size: 0.9rem; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+.inv-alerts ul { list-style: none; margin: 0; padding: 0; }
+.inv-alerts li { padding: 4px 0; border-bottom: 1px dashed var(--border); font-size: 0.9rem; }
+.inv-alerts li:last-child { border-bottom: none; }
+
+.inv-qty-zero { color: var(--danger); font-weight: 700; }
+.inv-item-photo { max-width: 100%; max-height: 220px; border-radius: 8px; border: 1px solid var(--border); object-fit: cover; }
+
+.loan-items-editor { display: flex; flex-direction: column; gap: 8px; }
+.loan-item-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; gap: 8px; align-items: start; }
+@media (max-width: 560px) { .loan-item-row { grid-template-columns: minmax(0, 1fr) 70px auto; } }
+
+.loan-return-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.loan-return-row:last-child { border-bottom: none; }
+@media (max-width: 640px) { .loan-return-row { grid-template-columns: minmax(0, 1fr); } }
+
+.catalog-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.catalog-row:last-child { border-bottom: none; }
+
+/* Comprobante impreso */
+.loan-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px; }
+.loan-signatures div { border-top: 1px solid #000; padding-top: 6px; text-align: center; font-size: 0.85rem; }
+.print-head { margin-bottom: 14px; }
+.print-head strong { font-size: 1.1rem; }

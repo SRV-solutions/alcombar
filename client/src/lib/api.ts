@@ -1,3 +1,5 @@
+import { recordClientError } from './clientErrors';
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -38,6 +40,8 @@ async function request(path: string, init: RequestInit): Promise<Response> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     if (res.status === 401 && !path.startsWith('/auth/')) onSessionLost?.();
+    // Errores del servidor: quedan para adjuntarlos si la persona reporta el problema
+    if (res.status >= 500) recordClientError(`API ${res.status} ${init.method ?? 'GET'} ${path}: ${body.error ?? ''}`, 'api');
     throw new ApiError(res.status, body.error ?? `Error ${res.status}`, body.code, body.details);
   }
   return res;

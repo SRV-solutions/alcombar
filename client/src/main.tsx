@@ -7,6 +7,7 @@ import { AuthProvider } from './lib/auth';
 import { ToastProvider } from './lib/toast';
 import { ThemeProvider } from './lib/theme';
 import { App } from './App';
+import { installClientErrorCapture } from './lib/clientErrors';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -17,6 +18,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+installClientErrorCapture();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

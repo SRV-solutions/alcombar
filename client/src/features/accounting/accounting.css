@@ -1,0 +1,49 @@
+/* Tesorería: contabilidad, cuotas, eventos y campamentos. Solo tokens del tema (claro/oscuro). */
+.money { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money-in { color: var(--ok); }
+.money-out { color: var(--danger); }
+.money-strong { font-weight: 700; }
+.voided td { opacity: 0.55; }
+.voided td.desc { text-decoration: line-through; }
+
+.acc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.acc-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.acc-stat .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.acc-stat .value { font-size: 1.35rem; font-weight: 750; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.acc-stat .hint { font-size: 0.8rem; color: var(--muted); }
+.acc-stat.ok .value { color: var(--ok); }
+.acc-stat.danger .value { color: var(--danger); }
+.acc-stat.warn .value { color: var(--warn); }
+
+.bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; min-width: 80px; }
+.bar > span { display: block; height: 100%; background: var(--primary); }
+.bar.over > span { background: var(--danger); }
+
+.month-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 700px) { .month-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.month-chip { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; font-size: 0.82rem; background: var(--surface); text-align: center; cursor: pointer; color: var(--text); }
+.month-chip.on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.month-chip:disabled { cursor: default; }
+
+.semaforo { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; }
+.semaforo .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.semaforo .dot.ok { background: var(--ok); }
+.semaforo .dot.bad { background: var(--danger); }
+.semaforo .dot.warn { background: var(--warn); }
+.check-cell { text-align: center; }
+.check-cell .yes { color: var(--ok); font-weight: 700; }
+.check-cell .no { color: var(--danger); font-weight: 700; }
+
+/* ---------- Recibo y rendiciones (para imprimir) ---------- */
+.receipt { max-width: 640px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px 30px; }
+.receipt-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border-bottom: 2px solid var(--primary); padding-bottom: 12px; margin-bottom: 16px; }
+.receipt-head .group { font-weight: 800; color: var(--link); font-size: 1.05rem; }
+.receipt-head .number { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.receipt-total { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+.receipt-void { border: 3px solid var(--danger); color: var(--danger); font-weight: 900; text-align: center; padding: 6px; margin-bottom: 12px; letter-spacing: 0.2em; }
+.receipt-sign { margin-top: 48px; display: flex; justify-content: flex-end; }
+.receipt-sign div { border-top: 1px solid var(--muted); padding-top: 4px; min-width: 220px; text-align: center; font-size: 0.85rem; color: var(--muted); }
+@media print {
+  .receipt { border: none; padding: 0; max-width: none; }
+  .receipt-head { border-bottom-color: #000; }
+}

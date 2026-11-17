@@ -1,0 +1,19 @@
+/* Campamentos y salidas: complementa accounting.css. Solo tokens del tema. */
+.stars { display: inline-flex; gap: 2px; color: var(--accent); }
+.stars .off { color: var(--border); }
+.stars button { background: none; border: none; padding: 0; cursor: pointer; color: inherit; font-size: 1.3rem; line-height: 1; }
+.stars button.off { color: var(--border); }
+.camp-status-steps { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 0.82rem; }
+.camp-status-steps .step { padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); background: var(--surface); }
+.camp-status-steps .step.done { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.camp-status-steps .step.current { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.legajo-name { font-weight: 600; }
+.menu-day { margin-bottom: 14px; }
+.menu-day h3 { font-size: 0.95rem; margin: 0 0 6px; text-transform: capitalize; }
+.pick-list { max-height: 50vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.pick-list label { display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border-soft, var(--border)); cursor: pointer; }
+.pick-list label:last-child { border-bottom: none; }
+.pick-list label.disabled { opacity: 0.5; cursor: default; }
+@media print {
+  .camp-status-steps { display: none; }
+}

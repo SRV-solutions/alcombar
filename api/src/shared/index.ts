@@ -5,3 +5,7 @@ export * from './schemas';
 export * from './catalogs';
 export * from './text';
 export * from './documents';
+export * from './program';
+export * from './treasury';
+export * from './operations';
+export * from './support';

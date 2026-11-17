@@ -8,8 +8,8 @@ import { emailLayout, sendMail, verifyMail } from '../lib/mailer';
 
 async function main() {
   const to = process.argv[2];
-  await verifyMail();
-  console.log(`✓ SMTP OK: ${config.smtpUser} (los mails salen como "${config.mailFromName}")`);
+  const status = await verifyMail();
+  console.log(`✓ ${status}. Los mails salen como "${config.mailFromName}" <${config.mailFrom || config.smtpUser}>`);
   if (!to) return;
   const ok = await sendMail(
     to,

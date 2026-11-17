@@ -1,29 +1,31 @@
 /**
- * Envío de emails por SMTP (mismo esquema que sentryx: nodemailer, Gmail por defecto).
- * Variables: SMTP_USER, SMTP_PASS (contraseña de aplicación de Gmail), MAIL_FROM_NAME, MAIL_FROM y,
- * opcionalmente, SMTP_HOST / SMTP_PORT para otro proveedor. Sin SMTP_USER/SMTP_PASS, el mail se muestra
- * en la consola (desarrollo) y la app muestra el enlace en pantalla.
+ * Envío de emails.
+ * - Resend (recomendado, y el que funciona en Railway): API HTTPS con RESEND_API_KEY.
+ *   El remitente (MAIL_FROM) tiene que ser de un dominio verificado en Resend (ej: info@wearesrv.com).
+ * - SMTP (alternativa local, ej. Gmail con contraseña de aplicación): SMTP_USER / SMTP_PASS [/ SMTP_HOST / SMTP_PORT].
+ * Sin ninguno, el mail se muestra en la consola y la app muestra el enlace en pantalla.
+ * MAIL_FROM_NAME es el nombre con que llega ("ALCOMBAR Gestión") y MAIL_REPLY_TO adónde van las respuestas.
  */
 import nodemailer, { type Transporter } from 'nodemailer';
 import { config } from '../config';
 
+type Provider = 'resend' | 'smtp' | null;
+export const mailProvider = (): Provider => (config.resendApiKey ? 'resend' : config.smtpUser && config.smtpPass ? 'smtp' : null);
+export const mailEnabled = () => mailProvider() !== null;
+
 let transporter: Transporter | null = null;
-
-export const mailEnabled = () => Boolean(config.smtpUser && config.smtpPass);
-
-function getTransporter(): Transporter {
+function smtp(): Transporter {
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      ...(config.smtpHost
-        ? { host: config.smtpHost, port: config.smtpPort, secure: config.smtpPort === 465 }
-        : { service: 'gmail' }),
+      ...(config.smtpHost ? { host: config.smtpHost, port: config.smtpPort, secure: config.smtpPort === 465 } : { service: 'gmail' }),
       auth: { user: config.smtpUser, pass: config.smtpPass },
     });
   }
   return transporter;
 }
 
-const from = () => `"${config.mailFromName}" <${config.mailFrom || config.smtpUser}>`;
+const fromAddress = () => config.mailFrom || config.smtpUser;
+const from = () => `${config.mailFromName} <${fromAddress()}>`;
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -51,14 +53,32 @@ export function emailLayout({ title, paragraphs, button, footnote }: { title: st
   </td></tr></table></body></html>`;
 }
 
+async function sendWithResend(to: string, subject: string, text: string, html?: string) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.resendApiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: from(),
+      to: [to],
+      subject,
+      text,
+      ...(html ? { html } : {}),
+      ...(config.mailReplyTo ? { reply_to: config.mailReplyTo } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+}
+
 /** Envía un email al instante. Devuelve true si salió; si falla, lo registra y devuelve false (la app muestra el enlace). */
 export async function sendMail(to: string, subject: string, text: string, html?: string): Promise<boolean> {
-  if (!mailEnabled()) {
-    console.log(`\n✉  [email no enviado: falta configurar SMTP_USER/SMTP_PASS]\n   Para: ${to}\n   Asunto: ${subject}\n   ${text.replace(/\n/g, '\n   ')}\n`);
+  const provider = mailProvider();
+  if (!provider) {
+    console.log(`\n✉  [email no enviado: falta configurar RESEND_API_KEY o SMTP]\n   Para: ${to}\n   Asunto: ${subject}\n   ${text.replace(/\n/g, '\n   ')}\n`);
     return false;
   }
   try {
-    await getTransporter().sendMail({ from: from(), to, subject, text, ...(html ? { html } : {}) });
+    if (provider === 'resend') await sendWithResend(to, subject, text, html);
+    else await smtp().sendMail({ from: from(), to, subject, text, ...(html ? { html } : {}), ...(config.mailReplyTo ? { replyTo: config.mailReplyTo } : {}) });
     return true;
   } catch (e) {
     console.error('[mail] error enviando a', to, (e as Error).message);
@@ -66,8 +86,23 @@ export async function sendMail(to: string, subject: string, text: string, html?:
   }
 }
 
-/** Comprueba usuario y contraseña SMTP sin mandar ningún mail. */
-export async function verifyMail(): Promise<void> {
-  if (!mailEnabled()) throw new Error('Falta configurar SMTP_USER y SMTP_PASS en api/.env');
-  await getTransporter().verify();
+/** Comprueba la configuración sin mandar ningún mail. Devuelve una descripción de lo verificado. */
+export async function verifyMail(): Promise<string> {
+  const provider = mailProvider();
+  if (!provider) throw new Error('Falta configurar RESEND_API_KEY (o SMTP_USER y SMTP_PASS) en api/.env');
+  if (provider === 'smtp') {
+    await smtp().verify();
+    return `SMTP OK: ${config.smtpUser}`;
+  }
+  const res = await fetch('https://api.resend.com/domains', { headers: { Authorization: `Bearer ${config.resendApiKey}` } });
+  const body = (await res.json().catch(() => ({}))) as { name?: string; message?: string; data?: { name: string; status: string }[] };
+  if (res.status === 401 && body.name === 'restricted_api_key') {
+    return 'Resend: la clave es válida (de solo envío, no permite listar dominios)';
+  }
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${body.message ?? 'clave inválida'}`);
+  const domain = fromAddress().split('@')[1];
+  const d = body.data?.find((x) => x.name === domain);
+  if (!d) throw new Error(`Resend: el dominio ${domain} (de MAIL_FROM) no está cargado en esta cuenta`);
+  if (d.status !== 'verified') throw new Error(`Resend: el dominio ${domain} está "${d.status}", tiene que estar verificado`);
+  return `Resend OK: dominio ${domain} verificado`;
 }

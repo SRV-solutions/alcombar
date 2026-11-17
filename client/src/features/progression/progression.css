@@ -1,0 +1,64 @@
+/* Progresión (tablero, esquemas, progresión de cada protagonista). Usa los tokens del tema: anda en claro y oscuro. */
+
+/* Barra de avance (estándares, competencias logradas) */
+.meter { height: 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; margin-top: 8px; }
+.meter > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width 0.3s; }
+.meter.ok > span { background: var(--ok); }
+
+/* Estándares anuales */
+.std-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .std-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.std { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+.std .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.std .value { font-size: 1.6rem; font-weight: 750; color: var(--link); line-height: 1.15; margin-top: 2px; }
+.std .value small { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+.std.done { border-color: var(--ok); background: var(--ok-soft); }
+
+/* Balance por área (tablero y ficha) */
+.area-balance { display: grid; gap: 3px; min-width: 150px; }
+.area-balance .ab { display: grid; grid-template-columns: 46px 1fr 22px; gap: 6px; align-items: center; font-size: 0.72rem; color: var(--muted); }
+.area-balance .ab .track { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; position: relative; }
+.area-balance .ab .track > span { position: absolute; inset: 0 auto 0 0; background: var(--info); border-radius: 999px; }
+.area-balance .ab .track > span.got { background: var(--ok); }
+.area-balance .ab .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.area-balance.wide { min-width: 0; }
+.area-balance.wide .ab { grid-template-columns: minmax(110px, 180px) 1fr 54px; font-size: 0.82rem; }
+
+/* Secciones de la progresión de un protagonista */
+.prog-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .prog-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.prog-summary .std .value { font-size: 1.15rem; color: var(--text); }
+.prog-sections { display: grid; gap: 16px; margin-top: 16px; }
+.prog-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .prog-two { grid-template-columns: 1fr; } }
+
+/* Historial de etapas */
+.stage-timeline { list-style: none; margin: 0; padding: 0; }
+.stage-timeline li { position: relative; padding: 4px 0 12px 22px; }
+.stage-timeline li::before { content: ''; position: absolute; left: 6px; top: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong, var(--border)); }
+.stage-timeline li::after { content: ''; position: absolute; left: 10px; top: 22px; bottom: -2px; width: 2px; background: var(--border); }
+.stage-timeline li:last-child::after { display: none; }
+.stage-timeline li.current::before { background: var(--primary); box-shadow: 0 0 0 3px var(--surface-2); }
+
+/* Lista de competencias del protagonista */
+.comp-list .area-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 14px 0 4px; }
+.comp-list .area-title:first-child { margin-top: 0; }
+.comp-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+.comp-row .name { overflow-wrap: anywhere; }
+.comp-row .name .muted { font-size: 0.8rem; }
+.comp-row .row-actions { display: flex; gap: 2px; }
+@media (max-width: 600px) {
+  .comp-row { grid-template-columns: 1fr auto; }
+  .comp-row .name { grid-column: 1 / -1; }
+}
+
+/* Listas editables (roles, revisiones, especialidades, catálogos) */
+.item-row { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--border); }
+.item-row:first-child { border-top: none; }
+.item-row .body { min-width: 0; overflow-wrap: anywhere; }
+.item-row .body p { margin: 2px 0 0; white-space: pre-wrap; }
+.item-row .row-actions { display: flex; gap: 2px; flex-shrink: 0; }
+
+/* Importador de competencias */
+.bulk-preview { max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; background: var(--surface-2); font-size: 0.88rem; }
+.bulk-preview div { padding: 2px 0; }
