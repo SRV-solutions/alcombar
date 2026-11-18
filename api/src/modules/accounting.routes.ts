@@ -693,7 +693,7 @@ async function siblingOrder(memberIds: string[]) {
 accountingRouter.post(
   '/fees/generate',
   ah(async (req, res) => {
-    if (!canGroupWide(req.auth, 'fees', 'create')) throw forbidden('Generar cuotas lo hace Tesorería');
+    if (!canGroupWide(req.auth, 'fees', 'create') || !canGroupWide(req.auth, 'fees', 'edit')) throw forbidden('Generar cuotas lo hace Tesorería');
     const data = parse(generateChargesSchema, req.body);
     const preview = req.query.preview === '1' || req.body?.preview === true;
     const plan = await FeePlan.findOne({ where: { year: data.year } });

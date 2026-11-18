@@ -73,6 +73,8 @@ export interface Sheet extends SheetSummary {
   evalAttendance: number | null;
   evaluatedAt: string | null;
   sourceSheetId: string | null;
+  /** Momentos de programas del día (y campamentos) donde se usa esta ficha. */
+  schedule?: { date: string; time: string | null; unitId: string; camp: { id: string; name: string } | null }[];
   competencies: { id: string; number: number | null; name: string; areaId: string | null; area: { id: string; name: string } | null }[];
 }
 export interface Cycle {
@@ -118,4 +120,6 @@ export interface MeetingItemRow {
 export interface MeetingResponse {
   program: { id: string; unitId: string; date: string; notes: string | null; items: MeetingItemRow[] } | null;
   canEdit: boolean;
+  /** Campamentos de la unidad que incluyen esa fecha. */
+  camps?: { id: string; name: string; type: string; startDate: string; endDate: string }[];
 }

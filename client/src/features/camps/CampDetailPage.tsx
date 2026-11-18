@@ -25,12 +25,13 @@ import type { MemberListItem } from '../../lib/types';
 import { Money, Stat } from '../accounting/common';
 import { CAMP_STATUS_TONE, CampDialog, campDates } from './CampsPage';
 import { BudgetRenderTab, LogisticsTab } from './CampTabs';
+import { CampProgramTab } from './CampProgramTab';
 import { Stars } from './CampSitesPage';
 import type { CampDetail, LegajoRow } from './types';
 import '../accounting/accounting.css';
 import './camps.css';
 
-type Tab = 'datos' | 'legajo' | 'presupuesto' | 'logistica';
+type Tab = 'datos' | 'programa' | 'legajo' | 'presupuesto' | 'logistica';
 
 export function CampDetailPage() {
   const { id } = useParams();
@@ -122,6 +123,7 @@ export function CampDetailPage() {
         <Tabs
           tabs={[
             { key: 'datos', label: 'Datos' },
+            { key: 'programa', label: 'Programa y cronograma' },
             { key: 'legajo', label: `Inscripción y legajo (${c.legajo.length})` },
             { key: 'presupuesto', label: 'Presupuesto y rendición' },
             { key: 'logistica', label: 'Logística' },
@@ -131,6 +133,7 @@ export function CampDetailPage() {
         />
       </div>
       {tab === 'datos' ? <DataTab c={c} /> : null}
+      {tab === 'programa' ? <CampProgramTab c={c} /> : null}
       {tab === 'legajo' ? <LegajoTab c={c} refetch={q.refetch} /> : null}
       {tab === 'presupuesto' ? <BudgetRenderTab c={c} refetch={q.refetch} /> : null}
       {tab === 'logistica' ? <LogisticsTab c={c} refetch={q.refetch} /> : null}

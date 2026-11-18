@@ -17,3 +17,27 @@
 @media print {
   .camp-status-steps { display: none; }
 }
+
+/* Programa y cronograma del campamento */
+.camp-pre { white-space: pre-wrap; line-height: 1.5; }
+.camp-sub { margin: 14px 0 6px; font-size: 0.9rem; }
+.camp-days { display: flex; flex-direction: column; gap: 18px; }
+.camp-day h3 { margin: 0 0 8px; font-size: 1rem; padding-bottom: 6px; border-bottom: 2px solid var(--primary-soft); }
+.camp-day-unit { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-bottom: 8px; }
+.camp-items { list-style: none; margin: 0; padding: 0; width: 100%; }
+.camp-item { display: grid; grid-template-columns: 52px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.camp-item:last-child { border-bottom: 0; }
+.camp-item .time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--primary); }
+.camp-item .what { min-width: 0; }
+.camp-item .sheet { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; flex-wrap: wrap; }
+.camp-item .sheet svg { width: 15px; height: 15px; color: var(--primary); flex-shrink: 0; }
+.camp-item .title { font-weight: 600; }
+.camp-item .code, .camp-sheets .code { font-family: ui-monospace, monospace; font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.camp-item .meta { font-size: 0.82rem; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.camp-empty, .camp-day-notes { margin: 0; font-size: 0.88rem; }
+.camp-sheets { list-style: none; margin: 0; padding: 0; }
+.camp-sheets li { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.camp-sheets li:last-child { border-bottom: 0; }
+.camp-sheets .name { font-weight: 600; min-width: 0; }
+.camp-banner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sheet-schedule { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }

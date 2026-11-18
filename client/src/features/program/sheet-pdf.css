@@ -1,0 +1,59 @@
+/* Ficha de actividades con el formato oficial de Scouts de Argentina (ficha REME) */
+.saac-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.saac-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; max-width: 210mm; }
+
+/* La hoja: siempre blanca, como el papel, también en modo oscuro */
+.saac-sheet {
+  width: 100%;
+  max-width: 210mm;
+  border-collapse: collapse;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+}
+.saac-sheet > thead > tr > td,
+.saac-sheet > tbody > tr > td { padding: 10mm 12mm 0; }
+.saac-sheet > tbody > tr > td { padding-top: 4mm; padding-bottom: 10mm; }
+
+.saac-logos { display: flex; align-items: center; justify-content: space-between; gap: 8mm; }
+.saac-logos .side { width: 21mm; height: 21mm; object-fit: contain; }
+.saac-logos .center { width: 62mm; height: auto; }
+
+.saac-form { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.saac-form th,
+.saac-form td { border: 1px solid #000; padding: 4px 7px; vertical-align: top; overflow-wrap: anywhere; }
+.saac-form th { font-weight: 700; text-align: center; font-size: 10pt; }
+.saac-form th.title { padding: 7px; font-size: 10.5pt; }
+.saac-form tr.center td { text-align: center; vertical-align: middle; }
+.saac-form ul { margin: 0; padding-left: 22px; }
+.saac-form li { margin: 1px 0; }
+.saac-form .txt { white-space: pre-wrap; text-align: justify; }
+.saac-form tr.center .txt { text-align: center; }
+.saac-form .empty { color: #888; }
+.saac-foot { margin: 6px 0 0; font-size: 7.5pt; color: #666; text-align: right; }
+
+@media (max-width: 700px) {
+  .saac-sheet > thead > tr > td,
+  .saac-sheet > tbody > tr > td { padding-left: 10px; padding-right: 10px; }
+  .saac-sheet { font-size: 9.5pt; }
+  .saac-form th { font-size: 8.5pt; }
+  .saac-form th, .saac-form td { padding: 3px 4px; }
+  .saac-logos .side { width: 48px; height: 48px; }
+  .saac-logos .center { width: 46%; }
+}
+
+@media print {
+  @page { size: A4; margin: 10mm 12mm 12mm; }
+  @page { @bottom-center { content: counter(page); font-family: Arial, sans-serif; font-size: 9pt; color: #1f4e79; } }
+  .saac-wrap { display: block; }
+  .saac-sheet { max-width: none; box-shadow: none; }
+  .saac-sheet > thead > tr > td { padding: 0 0 5mm; }
+  .saac-sheet > tbody > tr > td { padding: 0; }
+  .saac-sheet, .saac-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .saac-form tr { break-inside: avoid; }
+  .saac-form tr.keep { break-after: avoid; }
+  .saac-foot { color: #888; }
+}

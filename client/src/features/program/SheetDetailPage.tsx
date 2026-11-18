@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ClipboardCheck, Copy, Pencil, Printer, Send, Trash2, Undo2 } from 'lucide-react';
-import { BRANCH_INFO, todayIso, type Branch } from '@shared';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CheckCircle2, ClipboardCheck, Copy, Download, Pencil, Send, Trash2, Undo2 } from 'lucide-react';
+import { BRANCH_INFO, formatDate, todayIso, type Branch } from '@shared';
 import { LinkedLoansCard } from '../inventory/LinkedLoans';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -257,8 +257,8 @@ export function SheetDetailPage() {
                 <Copy /> Duplicar
               </Button>
             ) : null}
-            <LinkButton to={`/programa/fichas/${s.id}/imprimir`} variant="secondary">
-              <Printer /> Imprimir
+            <LinkButton to={`/programa/fichas/${s.id}/imprimir?descargar=1`} variant="secondary">
+              <Download /> Descargar PDF
             </LinkButton>
             {s.canDelete ? (
               <ConfirmButton
@@ -292,6 +292,22 @@ export function SheetDetailPage() {
           Aprobada por {s.approvedBy.name} el {new Date(s.approvedAt).toLocaleDateString('es-AR')}
           {s.reviewNotes ? ` · ${s.reviewNotes}` : ''}
         </p>
+      ) : null}
+      {s.schedule?.length ? (
+        <div className="alert alert-info mb">
+          <strong>En el cronograma:</strong>{' '}
+          {s.schedule.map((x, i) => (
+            <span key={i}>
+              {i ? ' · ' : ''}
+              {x.camp ? (
+                <Link to={`/campamentos/${x.camp.id}`}>{x.camp.name}</Link>
+              ) : (
+                <Link to={`/programa/sabado?unitId=${x.unitId}&date=${x.date}`}>Programa del {formatDate(x.date)}</Link>
+              )}
+              {x.camp ? ` (${formatDate(x.date)}${x.time ? ` ${x.time}` : ''})` : x.time ? ` ${x.time}` : ''}
+            </span>
+          ))}
+        </div>
       ) : null}
       <Card>
         <SheetView sheet={s} />

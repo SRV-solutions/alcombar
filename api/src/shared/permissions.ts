@@ -321,7 +321,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     key: 'secretaria',
     name: 'Secretaría',
     scope: 'group',
-    description: 'Altas y bajas de protagonistas y adultos, afiliaciones, documentación y legajos.',
+    description: 'Altas y bajas de protagonistas y adultos, afiliaciones, documentación, legajos y cobros (registrar pagos y emitir recibos).',
     permissions: [
       'group:view',
       ...all('small_groups'),
@@ -333,6 +333,8 @@ export const ROLE_SEEDS: RoleSeed[] = [
       'attendance:view',
       // Etapas 3 a 8
       'fees:view',
+      // Cobra: registra pagos y emite recibos (generar las cuotas del año sigue siendo de Tesorería)
+      'fees:create',
       'events:view',
       'camps:view',
       ...all('calendar'),

@@ -21,7 +21,7 @@ export function FeesPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'deudores', label: 'Deudores' },
     { key: 'plan', label: 'Plan de cuotas' },
-    ...(canAll('fees', 'create') ? [{ key: 'generar' as const, label: 'Generar cuotas' }] : []),
+    ...(canAll('fees', 'create') && canAll('fees', 'edit') ? [{ key: 'generar' as const, label: 'Generar cuotas' }] : []),
     { key: 'becas', label: 'Becas' },
   ];
   return (

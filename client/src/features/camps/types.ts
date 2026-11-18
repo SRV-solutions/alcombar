@@ -102,6 +102,7 @@ export interface CampDetail {
   site: CampSiteRow | null;
   responsible: AdultMini | null;
   legajo: LegajoRow[];
+  program: CampProgram;
   budgetLines: CampBudgetRow[];
   byRubro: { rubro: CampRubro; planned: number; actual: number }[];
   menu: CampMenuRow[];
@@ -121,4 +122,20 @@ export interface CampDetail {
   canDelete: boolean;
   canApprove: boolean;
   canRecord: boolean;
+}
+
+/** Programa y cronograma: cada día del campamento es el programa del día de la unidad. */
+export interface CampProgramItem {
+  id: string;
+  time: string | null;
+  title: string | null;
+  durationMin: number | null;
+  notes: string | null;
+  responsible: AdultMini | null;
+  sheet: { id: string; code: string; name: string; status: string } | null;
+}
+export interface CampProgram {
+  units: { unit: UnitRef; canView: boolean; canEdit: boolean }[];
+  days: { id: string; unitId: string; date: string; notes: string | null; items: CampProgramItem[] }[];
+  sheets: { id: string; code: string; name: string; date: string | null; status: string; unitId: string | null; inSchedule: boolean }[];
 }

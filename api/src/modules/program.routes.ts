@@ -33,6 +33,7 @@ import {
   ProgramCycle,
 } from '../models/program';
 import { writeAudit } from '../lib/audit';
+import { campsOn, sheetSchedule } from '../lib/campProgram';
 import { notifyReferents } from '../lib/notify';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
@@ -367,7 +368,7 @@ programRouter.get(
   ah(async (req, res) => {
     const s = await ActivitySheet.findByPk(req.params.id, { include: sheetIncludes(true) });
     if (!s) throw notFound();
-    res.json(serializeSheet(s, req));
+    res.json({ ...serializeSheet(s, req), schedule: await sheetSchedule(s.id) });
   }),
 );
 
@@ -671,7 +672,7 @@ programRouter.get(
       ],
       order: [[{ model: MeetingItem, as: 'items' }, 'sortOrder', 'ASC']],
     });
-    res.json({ program, canEdit: can(req.auth, 'activities', 'edit', unitId) });
+    res.json({ program, canEdit: can(req.auth, 'activities', 'edit', unitId), camps: await campsOn(unitId, date) });
   }),
 );
 

@@ -48,6 +48,7 @@ import { writeAudit } from '../lib/audit';
 import { notifyReferents } from '../lib/notify';
 import { currentContext } from '../lib/context';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
+import { campProgram } from '../lib/campProgram';
 import { assertCan, authorize } from '../middlewares/auth';
 
 export const campsRouter = Router();
@@ -470,8 +471,10 @@ campsRouter.get(
         })
       : [];
     const u = camp.ownerUnitId;
+    const program = await campProgram(req.auth, camp);
     res.json({
       ...camp.toJSON(),
+      program,
       nights: campNights(camp.startDate, camp.endDate),
       units: (camp.campUnits ?? []).map((cu) => (cu as unknown as { unit: Unit }).unit).filter(Boolean),
       legajo,

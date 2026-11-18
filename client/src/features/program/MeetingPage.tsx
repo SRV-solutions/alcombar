@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, CalendarDays, Plus, Printer, Save, Trash2, X } from 'lucide-react';
 import { formatDate, meetingSchema } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
@@ -241,6 +241,18 @@ export function MeetingPage() {
         ) : null}
       </div>
 
+      {q.data?.camps?.length ? (
+        <div className="alert alert-info mb no-print">
+          Este día es parte de{' '}
+          {q.data.camps.map((c, i) => (
+            <span key={c.id}>
+              {i ? ' y ' : ''}
+              <Link to={`/campamentos/${c.id}`}>«{c.name}»</Link>
+            </span>
+          ))}
+          : lo que cargues acá es el cronograma de ese día y se ve en el campamento.
+        </div>
+      ) : null}
       {q.isLoading || !q.data ? (
         q.error ? <ErrorBox error={q.error} /> : <Loading />
       ) : canEdit ? (
