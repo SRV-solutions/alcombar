@@ -505,10 +505,10 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'equipos',
     title: 'Equipos de apoyo',
-    description: 'Equipos del Comité Ejecutivo (intendencia, tesorería, etc.) con su responsable e integrantes.',
+    description: 'Equipos del Comité Ejecutivo (intendencia, tesorería, etc.) con su encargado/a e integrantes.',
     path: '/grupo/equipos',
     section: 'Grupo',
-    keywords: ['equipos de apoyo', 'comité ejecutivo', 'intendencia', 'tesorería', 'secretaría', 'responsable'],
+    keywords: ['equipos de apoyo', 'comité ejecutivo', 'intendencia', 'tesorería', 'secretaría', 'responsable', 'encargado de equipo'],
     show: can('group', 'view'),
   },
   {

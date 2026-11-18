@@ -63,9 +63,9 @@ function TeamModal({ team, onClose }: { team?: SupportTeam; onClose: () => void 
         <Field label="Nombre" required error={errors.name?.message} full>
           <Input {...register('name')} invalid={!!errors.name} placeholder="Equipo de Programa" autoFocus />
         </Field>
-        <Field label="Responsable" error={errors.leaderAdultId?.message} full>
+        <Field label="Encargado/a" error={errors.leaderAdultId?.message} full hint="Se completa solo si a alguien le cargás el cargo «Encargado/a de equipo» de este año.">
           <Select {...register('leaderAdultId')}>
-            <option value="">— Sin responsable —</option>
+            <option value="">— Sin encargado/a —</option>
             {(adults.data ?? [])
               .filter((a) => a.status !== 'baja')
               .map((a) => (
@@ -79,7 +79,7 @@ function TeamModal({ team, onClose }: { team?: SupportTeam; onClose: () => void 
         <Field label="Descripción" error={errors.description?.message} full>
           <Textarea {...register('description')} placeholder="Qué hace el equipo" />
         </Field>
-        <Field label="Avisos" full hint="Todo el equipo (responsable e integrantes del año) recibe en la campanita y por mail cada alta o baja que hay que cargar en Cruz del Sur.">
+        <Field label="Avisos" full hint="Todo el equipo (encargado/a e integrantes del año) recibe en la campanita y por mail cada alta o baja que hay que cargar en Cruz del Sur.">
           <Checkbox {...register('receivesRegistryAlerts')} label="Recibe los avisos de altas y bajas para Cruz del Sur" />
         </Field>
       </form>
@@ -108,7 +108,7 @@ export function SupportTeamsPage() {
     <>
       <PageHeader
         title="Equipos de apoyo"
-        sub="Equipos del Comité Ejecutivo con su responsable. Los integrantes salen de los cargos del año de cada adulto."
+        sub="Equipos del Comité Ejecutivo con su encargado/a. Los integrantes salen de los cargos del año de cada adulto."
         actions={
           can('group', 'create') ? (
             <Button onClick={() => setEditing('new')}>
@@ -156,13 +156,14 @@ export function SupportTeamsPage() {
                   </p>
                 ) : null}
                 <dl className="dl">
-                  <dt>Responsable</dt>
+                  <dt>Encargado/a</dt>
                   <dd>{t.leader ? <Link to={`/adultos/${t.leader.id}`}>{adultName(t.leader)}</Link> : <span className="muted">Sin asignar</span>}</dd>
                   <dt>Integrantes {new Date().getFullYear()}</dt>
                   <dd>
-                    {t.members.length ? (
+                    {/* El encargado/a ya figura arriba: no se repite en la lista */}
+                    {t.members.some((m) => m.id !== t.leader?.id) ? (
                       <ul className="list-plain">
-                        {t.members.map((m) => (
+                        {t.members.filter((m) => m.id !== t.leader?.id).map((m) => (
                           <li key={`${m.id}-${m.position}`} className="row between">
                             <Link to={`/adultos/${m.id}`}>{adultName(m)}</Link>
                             <span className="muted">{m.position}</span>
