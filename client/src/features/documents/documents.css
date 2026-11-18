@@ -1,0 +1,30 @@
+/* Tablero de documentación: columnas angostas y el nombre del protagonista fijo al desplazar de costado */
+.doc-board th { white-space: nowrap; font-size: 0.72rem; }
+.doc-board th .doc-count { text-transform: none; font-weight: 400; letter-spacing: 0; font-size: 0.75rem; }
+.doc-board td { padding-top: 6px; padding-bottom: 6px; white-space: nowrap; }
+.doc-board .doc-cell { font-size: 0.8rem; padding: 3px 4px; }
+.doc-board .doc-sticky { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--border); }
+.doc-board thead .doc-sticky { z-index: 2; }
+
+/* Elegir columnas */
+.col-picker { position: relative; }
+.col-picker-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 280px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg, var(--shadow));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.col-picker-actions { display: flex; gap: 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.col-picker-item { font-size: 0.9rem; }
+.doc-board thead .doc-sticky { background: var(--surface-2); }
