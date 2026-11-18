@@ -46,7 +46,7 @@ dashboardRouter.get(
       const today = todayIso();
       for (const m of members) {
         const s = docStats.get(m.unitId!) ?? { ok: 0, expiring: 0, expired: 0, missing: 0 };
-        for (const t of types) s[documentStatus(docs.find((d) => d.memberId === m.id && d.documentTypeId === t.id), t.hasExpiry, today)]++;
+        for (const t of types) s[documentStatus(docs.find((d) => d.memberId === m.id && d.documentTypeId === t.id), t.hasExpiry, today, t.required)]++;
         docStats.set(m.unitId!, s);
       }
     }

@@ -97,10 +97,11 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'documentacion',
     title: 'Documentación y vencimientos',
-    description: 'Semáforo por unidad: ficha médica, autorización anual de salidas, uso de imagen y autorización de retiro. Qué falta y qué vence.',
+    description:
+      'El legajo de cada protagonista según Scouts de Argentina, con semáforo por unidad: autorización de ingreso, declaración jurada de salud (ficha médica), autorizaciones anuales de salidas cercanas y de uso de imagen, vacunas, obra social, DNI y partida de nacimiento. Qué falta, qué vence y qué no corresponde.',
     path: '/documentacion',
     section: 'Protagonistas',
-    keywords: ['documentación', 'ficha médica', 'ficha medica', 'autorización', 'autorizaciones', 'uso de imagen', 'retiro', 'salidas', 'vencimiento', 'vencida', 'qué falta', 'papeles', 'semáforo'],
+    keywords: ['documentación', 'legajo', 'legajos', 'ficha médica', 'ficha medica', 'declaración jurada de salud', 'djs', 'autorización', 'autorizaciones', 'autorización de ingreso', 'uso de imagen', 'retiro', 'salidas', 'vacunas', 'obra social', 'partida de nacimiento', 'fotocopia dni', 'vencimiento', 'vencida', 'qué falta', 'no corresponde', 'papeles', 'semáforo'],
     show: can('member_documents', 'view'),
   },
   {

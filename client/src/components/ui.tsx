@@ -196,8 +196,9 @@ export function UnitBadge({ unit, short }: { unit: { name: string; code: string;
   );
 }
 
-export function DocDot({ status }: { status: DocStatus }) {
-  return <span className={`dot dot-${status}`} title={DOC_STATUS_LABELS[status]} />;
+/** Punto del semáforo. `muted`: gris, para "No corresponde" u "Opcional" (no es un documento al día de verdad). */
+export function DocDot({ status, label, muted }: { status: DocStatus; label?: string; muted?: boolean }) {
+  return <span className={`dot dot-${muted ? 'missing' : status}`} title={label ?? DOC_STATUS_LABELS[status]} />;
 }
 
 export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { key: T; label: ReactNode }[]; value: T; onChange: (k: T) => void }) {

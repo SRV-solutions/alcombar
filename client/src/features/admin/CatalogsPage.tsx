@@ -67,7 +67,10 @@ export function CatalogsPage() {
                     <tr key={d.id}>
                       <td className="num">{d.sortOrder}</td>
                       <td style={{ fontWeight: 600 }}>{d.name}</td>
-                      <td>{d.hasExpiry ? 'Tiene vencimiento' : <span className="muted">No vence</span>}</td>
+                      <td>
+                        {d.hasExpiry ? 'Tiene vencimiento' : <span className="muted">No vence</span>}
+                        {!d.required ? <span className="muted"> · Opcional</span> : null}
+                      </td>
                       <td>{d.active ? <Badge tone="ok">Activo</Badge> : <Badge>Inactivo</Badge>}</td>
                       {canDocs ? (
                         <td className="num">
@@ -151,6 +154,7 @@ export function CatalogsPage() {
 interface DocForm {
   name: string;
   hasExpiry: boolean;
+  required: boolean;
   active: boolean;
   sortOrder: number | string;
 }
@@ -166,8 +170,8 @@ function DocTypeModal({ docType, nextOrder, onClose }: { docType: DocumentType |
   } = useForm<DocForm>({
     resolver: zodResolver(documentTypeSchema),
     defaultValues: docType
-      ? { name: docType.name, hasExpiry: docType.hasExpiry, active: docType.active, sortOrder: docType.sortOrder }
-      : { name: '', hasExpiry: false, active: true, sortOrder: nextOrder },
+      ? { name: docType.name, hasExpiry: docType.hasExpiry, required: docType.required, active: docType.active, sortOrder: docType.sortOrder }
+      : { name: '', hasExpiry: false, required: true, active: true, sortOrder: nextOrder },
   });
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -205,6 +209,7 @@ function DocTypeModal({ docType, nextOrder, onClose }: { docType: DocumentType |
           </Field>
           <div className="field" style={{ justifyContent: 'flex-end', gap: 10 }}>
             <Checkbox label="Tiene fecha de vencimiento" {...register('hasExpiry')} />
+            <Checkbox label="Obligatorio para el legajo (si no, es opcional y no figura como faltante)" {...register('required')} />
             <Checkbox label="Activo (se controla en el tablero)" {...register('active')} />
           </div>
         </div>

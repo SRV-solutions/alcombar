@@ -146,7 +146,17 @@ documentsRouter.get(
         documents: Object.fromEntries(
           types.map((t) => {
             const d = docs.find((x) => x.memberId === m.id && x.documentTypeId === t.id);
-            return [t.id, { presented: d?.presented ?? false, presentedAt: d?.presentedAt ?? null, expiresAt: d?.expiresAt ?? null, notes: d?.notes ?? null, status: documentStatus(d, t.hasExpiry, today) }];
+            return [
+              t.id,
+              {
+                presented: d?.presented ?? false,
+                notApplicable: (!d?.presented && d?.notApplicable) ?? false,
+                presentedAt: d?.presentedAt ?? null,
+                expiresAt: d?.expiresAt ?? null,
+                notes: d?.notes ?? null,
+                status: documentStatus(d, t.hasExpiry, today, t.required),
+              },
+            ];
           }),
         ),
       })),

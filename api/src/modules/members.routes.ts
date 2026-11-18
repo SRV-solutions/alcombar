@@ -60,7 +60,7 @@ async function docSummaries(memberIds: string[]) {
   const out = new Map<string, { ok: number; expiring: number; expired: number; missing: number; total: number }>();
   for (const id of memberIds) {
     const s = { ok: 0, expiring: 0, expired: 0, missing: 0, total: types.length };
-    for (const t of types) s[documentStatus(docs.find((d) => d.memberId === id && d.documentTypeId === t.id), t.hasExpiry, today)]++;
+    for (const t of types) s[documentStatus(docs.find((d) => d.memberId === id && d.documentTypeId === t.id), t.hasExpiry, today, t.required)]++;
     out.set(id, s);
   }
   return out;
@@ -335,11 +335,13 @@ membersRouter.get(
                 documentTypeId: t.id,
                 name: t.name,
                 hasExpiry: t.hasExpiry,
+                required: t.required,
                 presented: d?.presented ?? false,
+                notApplicable: (!d?.presented && d?.notApplicable) ?? false,
                 presentedAt: d?.presentedAt ?? null,
                 expiresAt: d?.expiresAt ?? null,
                 notes: d?.notes ?? null,
-                status: documentStatus(d, t.hasExpiry, todayIso()),
+                status: documentStatus(d, t.hasExpiry, todayIso(), t.required),
               };
             })
         : null,
@@ -593,6 +595,8 @@ membersRouter.put(
     if (!type) throw badRequest('Tipo de documento inexistente');
     const values = {
       presented: data.presented,
+      // "No corresponde" solo tiene sentido si no se presentó
+      notApplicable: !data.presented && data.notApplicable,
       presentedAt: data.presented ? data.presentedAt ?? todayIso() : null,
       expiresAt: data.presented && type.hasExpiry ? data.expiresAt : null,
       notes: data.notes,

@@ -220,13 +220,18 @@ export const TUTORIALS: Tutorial[] = [
     keywords: ['documentación', 'ficha médica', 'autorizaciones', 'vencimientos', 'semáforo', 'papeles'],
     audience: (c) => c.can('member_documents', 'view'),
     steps: [
-      { route: '/documentacion', target: nav('/documentacion'), pose: 'point', title: 'Documentación', text: 'Un tablero por unidad con lo que entregó cada chico.' },
+      { route: '/documentacion', target: nav('/documentacion'), pose: 'point', title: 'Documentación', text: 'El legajo de cada chico, como lo pide Scouts de Argentina: autorización de ingreso, declaración jurada de salud, autorizaciones anuales, vacunas, obra social, DNI y partida de nacimiento.' },
       { target: { selector: 'select[aria-label="Unidad"]' }, pose: 'point', title: 'Elegí la unidad', text: 'Cambiá de unidad desde acá.' },
       {
         target: { selector: '.doc-cell' },
         pose: 'point',
         title: 'El semáforo',
         text: 'Verde: al día. Amarillo: vence en menos de 30 días. Rojo: vencido. Gris: falta. Si tenés permiso, tocando la celda marcás la entrega y el vencimiento.',
+      },
+      {
+        pose: 'think',
+        title: 'Lo que vence y lo que no corresponde',
+        text: 'La declaración jurada de salud vale un año desde su fecha, y las autorizaciones de imagen y de salidas cercanas se firman cada año. Si algo no aplica (por ejemplo, no tiene obra social), marcá "No corresponde" y deja de figurar como faltante.',
       },
       { target: { selector: 'label.checkbox', text: 'Solo con pendientes' }, pose: 'point', title: 'Solo pendientes', text: 'Para ver rápido a quién le falta algo antes de una salida.' },
       { pose: 'cheer', title: '¡A salir tranquilos!', text: 'En Inicio también ves el porcentaje al día de cada unidad.' },

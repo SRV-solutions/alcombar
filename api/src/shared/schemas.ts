@@ -141,6 +141,7 @@ export const supportTeamSchema = z.object({
 export const documentTypeSchema = z.object({
   name: reqStr(120),
   hasExpiry: z.boolean().default(false),
+  required: z.boolean().default(true),
   active: z.boolean().default(true),
   sortOrder: z.coerce.number().int().default(0),
 });
@@ -224,6 +225,7 @@ export const bulkTransferSchema = transferSchema.extend({
 export const memberDocumentSchema = z.object({
   documentTypeId: z.string().uuid(),
   presented: z.boolean(),
+  notApplicable: z.boolean().default(false),
   presentedAt: optDate,
   expiresAt: optDate,
   notes: optStr(500),

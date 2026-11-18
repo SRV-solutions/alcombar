@@ -8,6 +8,7 @@ import {
   ATTENDANCE_STATUS_LABELS,
   BRANCH_INFO,
   DOC_STATUS_LABELS,
+  documentLabel,
   formatDate,
   TRANSFER_REASON_LABELS,
   type TransferReason,
@@ -293,8 +294,8 @@ export function MemberDetailPage() {
                   <td>{d.name}</td>
                   <td>
                     <span className="row" style={{ gap: 6 }}>
-                      <DocDot status={d.status} />
-                      <Badge tone={DOC_TONE[d.status]}>{DOC_STATUS_LABELS[d.status]}</Badge>
+                      <DocDot status={d.status} muted={!d.presented && d.status === 'ok'} label={documentLabel(d.status, d, d.required)} />
+                      <Badge tone={!d.presented && d.status === 'ok' ? 'neutral' : DOC_TONE[d.status]}>{documentLabel(d.status, d, d.required)}</Badge>
                     </span>
                   </td>
                   <td>{formatDate(d.presentedAt) || '—'}</td>

@@ -59,6 +59,8 @@ export interface DocumentType {
   code: string | null;
   name: string;
   hasExpiry: boolean;
+  /** Obligatorio para el legajo; los opcionales no cuentan como faltantes. */
+  required: boolean;
   active: boolean;
   sortOrder: number;
 }
@@ -141,7 +143,10 @@ export interface MemberDoc {
   documentTypeId: string;
   name: string;
   hasExpiry: boolean;
+  required: boolean;
   presented: boolean;
+  /** No corresponde para este protagonista (no cuenta como faltante). */
+  notApplicable: boolean;
   presentedAt: string | null;
   expiresAt: string | null;
   notes: string | null;

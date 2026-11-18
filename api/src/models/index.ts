@@ -547,6 +547,8 @@ export class DocumentType extends Model<InferAttributes<DocumentType>, InferCrea
   declare code: string | null;
   declare name: string;
   declare hasExpiry: CreationOptional<boolean>;
+  /** Obligatorio para tener el legajo completo; los opcionales (p. ej. "retirarse solo") no cuentan como faltantes. */
+  declare required: CreationOptional<boolean>;
   declare active: CreationOptional<boolean>;
   declare sortOrder: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
@@ -559,6 +561,7 @@ DocumentType.init(
     code: STRING(40),
     name: { type: STRING(120), allowNull: false },
     hasExpiry: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    required: { type: BOOLEAN, allowNull: false, defaultValue: true },
     active: { type: BOOLEAN, allowNull: false, defaultValue: true },
     sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 },
     createdAt: DATE,
@@ -573,6 +576,8 @@ export class MemberDocument extends Model<InferAttributes<MemberDocument>, Infer
   declare memberId: ForeignKey<Member['id']>;
   declare documentTypeId: ForeignKey<DocumentType['id']>;
   declare presented: boolean;
+  /** No corresponde para este protagonista (p. ej. no tiene obra social): no cuenta como faltante. */
+  declare notApplicable: CreationOptional<boolean>;
   declare presentedAt: string | null;
   declare expiresAt: string | null;
   declare notes: string | null;
@@ -585,6 +590,7 @@ MemberDocument.init(
   {
     id,
     presented: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    notApplicable: { type: BOOLEAN, allowNull: false, defaultValue: false },
     presentedAt: DATEONLY,
     expiresAt: DATEONLY,
     notes: TEXT,

@@ -163,12 +163,13 @@ export function DocumentDialog({
 }: {
   memberId: string;
   memberName?: string;
-  doc: Pick<MemberDoc, 'documentTypeId' | 'name' | 'hasExpiry' | 'presented' | 'presentedAt' | 'expiresAt' | 'notes'>;
+  doc: Pick<MemberDoc, 'documentTypeId' | 'name' | 'hasExpiry' | 'presented' | 'presentedAt' | 'expiresAt' | 'notes'> & Partial<Pick<MemberDoc, 'notApplicable' | 'required'>>;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const toast = useToast();
   const [presented, setPresented] = useState(doc.presented);
+  const [notApplicable, setNotApplicable] = useState(!!doc.notApplicable);
   const [presentedAt, setPresentedAt] = useState(doc.presentedAt ?? todayIso());
   const [expiresAt, setExpiresAt] = useState(doc.expiresAt ?? (doc.hasExpiry ? `${new Date().getFullYear()}-12-31` : ''));
   const [notes, setNotes] = useState(doc.notes ?? '');
@@ -177,7 +178,7 @@ export function DocumentDialog({
   const save = async () => {
     setBusy(true);
     try {
-      await api.put(`/members/${memberId}/documents`, { documentTypeId: doc.documentTypeId, presented, presentedAt, expiresAt, notes });
+      await api.put(`/members/${memberId}/documents`, { documentTypeId: doc.documentTypeId, presented, notApplicable: !presented && notApplicable, presentedAt, expiresAt, notes });
       toast.ok('Documentación actualizada');
       onSaved();
       onClose();
@@ -217,7 +218,14 @@ export function DocumentDialog({
               </Field>
             ) : null}
           </div>
-        ) : null}
+        ) : (
+          <Checkbox
+            label="No corresponde (por ejemplo, no tiene obra social): no cuenta como faltante"
+            checked={notApplicable}
+            onChange={(e) => setNotApplicable(e.target.checked)}
+          />
+        )}
+        {doc.required === false ? <p className="muted" style={{ margin: 0 }}>Es un documento opcional: si no se presenta, no figura como faltante.</p> : null}
         <Field label="Notas" hint="No escribas datos de salud.">
           <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>

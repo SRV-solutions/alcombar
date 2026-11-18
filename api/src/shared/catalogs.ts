@@ -47,11 +47,18 @@ export const COURSE_KIND_LABELS: Record<CourseKind, string> = {
 };
 
 /** Documentos que se controlan por protagonista (informe §3.3). Solo presentado + vencimiento. */
+/** Legajo personal de un protagonista según las planillas de Scouts de Argentina (versión 07-21). */
 export const DEFAULT_DOCUMENT_TYPES = [
-  { code: 'ficha_medica', name: 'Ficha médica', hasExpiry: true, sortOrder: 1 },
-  { code: 'aut_salidas', name: 'Autorización anual de salidas', hasExpiry: true, sortOrder: 2 },
-  { code: 'aut_imagen', name: 'Autorización de uso de imagen', hasExpiry: false, sortOrder: 3 },
-  { code: 'aut_retiro', name: 'Autorización de retiro', hasExpiry: false, sortOrder: 4 },
+  { code: 'aut_ingreso', name: 'Autorización de ingreso', hasExpiry: false, required: true, sortOrder: 1 },
+  { code: 'ficha_medica', name: 'Declaración jurada de salud (ficha médica)', hasExpiry: true, required: true, sortOrder: 2 },
+  { code: 'aut_salidas', name: 'Autorización anual de salidas cercanas', hasExpiry: true, required: true, sortOrder: 3 },
+  { code: 'aut_imagen', name: 'Autorización de uso de imagen', hasExpiry: true, required: true, sortOrder: 4 },
+  { code: 'vacunas', name: 'Carnet de vacunación (fotocopia)', hasExpiry: false, required: true, sortOrder: 5 },
+  { code: 'obra_social', name: 'Credencial de obra social (fotocopia)', hasExpiry: false, required: true, sortOrder: 6 },
+  { code: 'dni_protagonista', name: 'DNI del protagonista (fotocopia)', hasExpiry: false, required: true, sortOrder: 7 },
+  { code: 'dni_responsables', name: 'DNI de madre, padre o tutor (fotocopia)', hasExpiry: false, required: true, sortOrder: 8 },
+  { code: 'partida_nacimiento', name: 'Partida de nacimiento (fotocopia)', hasExpiry: false, required: true, sortOrder: 9 },
+  { code: 'aut_retiro', name: 'Autorización para retirarse solo/a', hasExpiry: false, required: false, sortOrder: 10 },
 ];
 
 /** Unidades del Grupo (informe §3.1). El código es editable desde la app. */

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FileCheck2 } from 'lucide-react';
-import { DOC_STATUS_LABELS, formatDate, type DocStatus } from '@shared';
+import { DOC_STATUS_LABELS, documentLabel, formatDate, type DocStatus } from '@shared';
 import { api, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useUnits } from '../../lib/queries';
@@ -12,6 +12,7 @@ import { DocumentDialog } from '../members/MemberDialogs';
 
 interface Cell {
   presented: boolean;
+  notApplicable: boolean;
   presentedAt: string | null;
   expiresAt: string | null;
   notes: string | null;
@@ -46,7 +47,10 @@ export function DocumentsPage() {
     (m) => !onlyPending || Object.values(m.documents).some((c) => c.status !== 'ok'),
   );
 
+  /** "No corresponde" u "Opcional": no falta, pero tampoco está entregado. */
+  const exempt = (c: Cell) => !c.presented && c.status === 'ok';
   const cellText = (c: Cell, t: DocumentType) => {
+    if (exempt(c)) return documentLabel(c.status, c, t.required);
     if (c.status === 'missing') return 'Falta';
     if (t.hasExpiry && c.expiresAt) return `${c.status === 'expired' ? 'Venció' : 'Vence'} ${formatDate(c.expiresAt)}`;
     return 'Entregado';
@@ -91,12 +95,12 @@ export function DocumentsPage() {
               <tr>
                 <th>Protagonista</th>
                 {data.types.map((t) => {
-                  const ok = data.members.filter((m) => m.documents[t.id]?.status === 'ok' || m.documents[t.id]?.status === 'expiring').length;
+                  const ok = data.members.filter((m) => m.documents[t.id]?.presented && (m.documents[t.id]?.status === 'ok' || m.documents[t.id]?.status === 'expiring')).length;
                   return (
                     <th key={t.id} title={t.name}>
                       {t.name}
                       <div style={{ textTransform: 'none', fontWeight: 400, letterSpacing: 0 }}>
-                        {ok}/{data.members.length} al día
+                        {ok}/{data.members.length} {t.required ? 'al día' : 'entregado (opcional)'}
                       </div>
                     </th>
                   );
@@ -119,11 +123,11 @@ export function DocumentsPage() {
                         <button
                           className="doc-cell"
                           disabled={!data.canEdit}
-                          title={c.notes ?? DOC_STATUS_LABELS[c.status]}
+                          title={c.notes ?? documentLabel(c.status, c, t.required)}
                           onClick={() => setEditing({ memberId: m.id, memberName: `${m.firstName} ${m.lastName}`, type: t, cell: c })}
                         >
-                          <DocDot status={c.status} />
-                          <span className={c.status === 'missing' ? 'muted' : ''}>{cellText(c, t)}</span>
+                          <DocDot status={c.status} muted={exempt(c)} label={documentLabel(c.status, c, t.required)} />
+                          <span className={c.status === 'missing' || exempt(c) ? 'muted' : ''}>{cellText(c, t)}</span>
                         </button>
                       </td>
                     );
@@ -140,7 +144,7 @@ export function DocumentsPage() {
         <DocumentDialog
           memberId={editing.memberId}
           memberName={editing.memberName}
-          doc={{ documentTypeId: editing.type.id, name: editing.type.name, hasExpiry: editing.type.hasExpiry, ...editing.cell }}
+          doc={{ documentTypeId: editing.type.id, name: editing.type.name, hasExpiry: editing.type.hasExpiry, required: editing.type.required, ...editing.cell }}
           onClose={() => setEditing(null)}
           onSaved={() => {
             void qc.invalidateQueries({ queryKey: ['doc-board', unitId] });
