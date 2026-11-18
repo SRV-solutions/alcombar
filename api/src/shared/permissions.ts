@@ -75,8 +75,10 @@ export const MODULES = {
     label: 'Contabilidad',
     section: 'Tesorería',
     actions: ['view', 'create', 'edit', 'delete', 'approve', 'export'],
-    unitScoped: false,
-    description: 'Cuentas, movimientos, presupuesto, cierres mensuales y reportes. Aprobar = presupuestos y cierres.',
+    // Cada cuenta es del Grupo o de una unidad: limitado a la unidad, ve y mueve solo la plata de las cuentas de su unidad
+    unitScoped: true,
+    description:
+      'Cuentas del Grupo y de cada unidad, movimientos, presupuesto, cierres mensuales y reportes. Limitado a la unidad: solo las cuentas de su unidad. Aprobar = presupuesto, plan de cuotas y cierres.',
   },
   fees: {
     label: 'Cuotas y pagos de protagonistas',
@@ -321,7 +323,8 @@ export const ROLE_SEEDS: RoleSeed[] = [
     key: 'secretaria',
     name: 'Secretaría',
     scope: 'group',
-    description: 'Altas y bajas de protagonistas y adultos, afiliaciones, documentación, legajos y cobros (registrar pagos y emitir recibos).',
+    description:
+      'Cobra cuotas, afiliaciones y campamentos (genera los cargos, registra los pagos y emite recibos) y registra lo que entra y sale del Grupo, incluida la plata que se pasa a las unidades. También altas y bajas, documentación y legajos.',
     permissions: [
       'group:view',
       ...all('small_groups'),
@@ -332,13 +335,39 @@ export const ROLE_SEEDS: RoleSeed[] = [
       ...all('member_documents'),
       'attendance:view',
       // Etapas 3 a 8
+      // Cobra: genera las cuotas del mes y la afiliación, carga cargos, registra pagos y emite recibos.
+      // Los montos del plan de cuotas, el presupuesto, los cierres y anular pagos siguen siendo de Tesorería.
       'fees:view',
-      // Cobra: registra pagos y emite recibos (generar las cuotas del año sigue siendo de Tesorería)
       'fees:create',
+      'fees:edit',
+      // Lo que entra y sale del Grupo: ingresos, gastos y transferencias (también a las cajas de las unidades)
+      'accounting:view',
+      'accounting:create',
+      'accounting:edit',
+      'accounting:export',
       'events:view',
       'camps:view',
       ...all('calendar'),
       ...all('documents'),
+    ],
+  },
+  {
+    key: 'finanzas_unidad',
+    name: 'Finanzas de la unidad',
+    scope: 'unit',
+    description:
+      'Lleva la plata de su unidad: las cuentas de la unidad, lo que le pasa el Grupo, lo que entra por eventos y los gastos. Ve lo que deben los protagonistas de su unidad.',
+    permissions: [
+      'group:view',
+      'accounting:view@unit',
+      'accounting:create@unit',
+      'accounting:edit@unit',
+      'accounting:export@unit',
+      'fees:view@unit',
+      'events:view',
+      'camps:view@unit',
+      'calendar:view',
+      'documents:view',
     ],
   },
   {

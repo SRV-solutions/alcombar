@@ -47,3 +47,7 @@
   .receipt { border: none; padding: 0; max-width: none; }
   .receipt-head { border-bottom-color: #000; }
 }
+
+/* Cuentas agrupadas por dueña (Grupo / cada unidad) */
+.acc-owner-row th { text-align: left; font-weight: 600; font-size: 0.85rem; padding-top: 14px; border-bottom: 1px solid var(--border); }
+.acc-owner-row th .muted { font-weight: 400; }

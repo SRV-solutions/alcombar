@@ -6,11 +6,22 @@ export interface AccountRow {
   name: string;
   type: 'efectivo' | 'banco' | 'billetera';
   holder: string | null;
+  /** Unidad dueña (la caja de la unidad); null = cuenta del Grupo. */
+  unitId: string | null;
+  unit?: UnitLite | null;
+  /** Quién lleva la plata de esa unidad (rol "Finanzas de la unidad"). */
+  managers?: string[];
   initialBalance: number;
   initialDate: string | null;
   active: boolean;
   notes: string | null;
   balance: number | null;
+}
+export interface UnitLite {
+  id: string;
+  code: string;
+  name: string;
+  branch: string;
 }
 export interface CategoryRow {
   id: string;
@@ -37,7 +48,7 @@ export interface MovementRow {
   reversesId: string | null;
   voided: boolean;
   closed?: boolean;
-  account?: { id: string; name: string } | null;
+  account?: { id: string; name: string; unitId?: string | null } | null;
   category?: { id: string; name: string } | null;
   event?: { id: string; name: string } | null;
   camp?: { id: string; name: string } | null;

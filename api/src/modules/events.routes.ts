@@ -3,6 +3,7 @@
  * Lo real sale de los movimientos de contabilidad vinculados al evento.
  */
 import { Router } from 'express';
+import { accountIdsFor } from '../lib/accountAccess';
 import { Op, QueryTypes } from 'sequelize';
 import { eventBudgetLineSchema, eventSchema, eventTaskSchema, renderSchema, round2 } from '../shared';
 import { sequelize } from '../db';
@@ -96,9 +97,11 @@ eventsRouter.get(
       ],
     });
     if (!e) throw notFound();
+    // Solo los movimientos de las cuentas que puede ver (todas, o las de su unidad)
+    const visible = await accountIdsFor(req.auth, 'view');
     const movements = can(req.auth, 'accounting', 'view')
       ? await Movement.findAll({
-          where: { eventId: e.id },
+          where: { eventId: e.id, ...(visible ? { accountId: visible } : {}) },
           include: [
             { model: Account, as: 'account', attributes: ['id', 'name'] },
             { model: Category, as: 'category', attributes: ['id', 'name'] },

@@ -23,7 +23,8 @@ import { api } from '../../lib/api';
 import { applyServerErrors } from '../../lib/forms';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, Select, type Tone } from '../../components/ui';
-import { Money, Stat, useAccounts, useRefreshTreasury } from './common';
+import { useAuth } from '../../lib/auth';
+import { AccountOptions, Money, Stat, useAccounts, useRefreshTreasury } from './common';
 import type { ChargeRow, MemberAccount } from './types';
 
 const STATUS_TONE: Record<ChargeRow['status'], Tone> = { pendiente: 'warn', parcial: 'info', pagado: 'ok', anulado: 'neutral' };
@@ -267,7 +268,8 @@ function PaymentDialog({
   const e = formState.errors;
   const method = watch('method');
   const accountId = watch('accountId');
-  const active = accounts.data?.filter((x) => x.active) ?? [];
+  const { can } = useAuth();
+  const active = accounts.data?.filter((x) => x.active && (!x.unitId || can('accounting', 'create', x.unitId))) ?? [];
   // Cuenta sugerida según la forma de pago
   useEffect(() => {
     if (accountId || !active.length) return;
@@ -359,11 +361,7 @@ function PaymentDialog({
         <Field label="Ingresa en la cuenta" required error={e.accountId?.message}>
           <Select {...register('accountId')} invalid={!!e.accountId}>
             <option value="">Elegí la cuenta</option>
-            {active.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name}
-              </option>
-            ))}
+            <AccountOptions accounts={active} />
           </Select>
         </Field>
         <Field label="Pagó (nombre para el recibo)" full error={e.payerName?.message}>

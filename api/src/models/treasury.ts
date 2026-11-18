@@ -30,6 +30,9 @@ export class Account extends Model {
   declare name: string;
   declare type: string;
   declare holder: string | null;
+  /** Unidad dueña de la cuenta (caja de la unidad); null = cuenta del Grupo. */
+  declare unitId: string | null;
+  declare unit?: Unit | null;
   declare initialBalance: number;
   declare initialDate: string | null;
   declare active: boolean;
@@ -501,6 +504,7 @@ CampShoppingItem.init(
 );
 
 // ======================= RELACIONES =======================
+Account.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
 Movement.belongsTo(Account, { as: 'account', foreignKey: 'accountId' });
 Movement.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
 Movement.belongsTo(GroupEvent, { as: 'event', foreignKey: 'eventId' });

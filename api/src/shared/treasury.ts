@@ -121,6 +121,8 @@ const pct = z.coerce.number().int().min(0).max(100);
 export const accountSchema = z.object({
   name: reqStr(80),
   type: z.enum(ACCOUNT_TYPES),
+  /** Unidad dueña de la cuenta (la caja de la unidad); vacío = cuenta del Grupo. */
+  unitId: optUuid,
   holder: optStr(120),
   initialBalance: amount.default(0),
   initialDate: optDate,

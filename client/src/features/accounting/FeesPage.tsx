@@ -181,7 +181,8 @@ function PlanTab() {
         months: q.data.months ?? [],
       });
   }, [q.data]);
-  const editable = canAll('fees', 'edit');
+  // Los montos los define Tesorería (quien aprueba el presupuesto); Secretaría cobra con este plan
+  const editable = canAll('fees', 'edit') && canAll('accounting', 'approve');
   const toggle = (m: number) => setD((p) => ({ ...p, months: p.months.includes(m) ? p.months.filter((x) => x !== m) : [...p.months, m].sort((a, b) => a - b) }));
   const save = async () => {
     setSaving(true);

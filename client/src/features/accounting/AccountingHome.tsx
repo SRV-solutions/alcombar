@@ -19,24 +19,70 @@ import {
 } from '@shared';
 import { z } from 'zod';
 import { api, qs } from '../../lib/api';
+import { useUnits } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, Checkbox, ConfirmButton, Empty, ErrorBox, Field, Input, LinkButton, Loading, Modal, PageHeader, Select, Tabs } from '../../components/ui';
-import { Money, MovementDialog, Stat, useAccounts, useCategories, useRefreshTreasury } from './common';
+import { AccountOptions, AccountOwner, groupAccounts, Money, MovementDialog, Stat, useAccounts, useCategories, useRefreshTreasury } from './common';
 import type { AccountRow, CategoryRow, MovementRow } from './types';
 
 type Tab = 'resumen' | 'movimientos' | 'presupuesto' | 'reportes' | 'config';
 
-export function AccountingHome() {
+/**
+ * Ámbito de lo que se mira: todo lo que puede ver (''), solo las cuentas del Grupo ('grupo') o las de una unidad (su id).
+ * Va en la URL (?ambito=) para que se mantenga al cambiar de pestaña.
+ */
+function useAmbito() {
   const [params, setParams] = useSearchParams();
+  const value = params.get('ambito') ?? '';
+  const set = (v: string) => {
+    const p = new URLSearchParams(params);
+    if (v) p.set('ambito', v);
+    else p.delete('ambito');
+    setParams(p, { replace: true });
+  };
+  return [value, set] as const;
+}
+
+/** Elegir el Grupo o una unidad (solo si ve cuentas de más de un dueño). */
+function AmbitoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const accounts = useAccounts();
+  // Las que ve con saldo son las que puede mirar en Contabilidad (sin saldo = solo para elegir dónde entra un cobro)
+  const groups = groupAccounts((accounts.data ?? []).filter((a) => a.balance !== null));
+  if (groups.length < 2) return null;
+  return (
+    <Select value={value} onChange={(e) => onChange(e.target.value)} aria-label="Ámbito" style={{ width: 'auto' }}>
+      <option value="">Grupo y unidades</option>
+      {groups.map((g) => (
+        <option key={g.key} value={g.key}>
+          {g.unit ? `Unidad: ${g.label}` : 'Solo el Grupo'}
+        </option>
+      ))}
+    </Select>
+  );
+}
+
+export function AccountingHome() {
+  const { canAll } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const groupWide = canAll('accounting', 'view');
   const tab = (params.get('tab') as Tab) || 'resumen';
-  const setTab = (t: Tab) => setParams(t === 'resumen' ? {} : { tab: t }, { replace: true });
+  const setTab = (t: Tab) => {
+    const p = new URLSearchParams(params);
+    if (t === 'resumen') p.delete('tab');
+    else p.set('tab', t);
+    setParams(p, { replace: true });
+  };
   return (
     <>
       <PageHeader
         title="Contabilidad"
-        sub="Caja y movimientos del Grupo, presupuesto anual, cierres mensuales y reportes."
+        sub={
+          groupWide
+            ? 'Caja y movimientos del Grupo y de las cajas de cada unidad, presupuesto anual, cierres mensuales y reportes.'
+            : 'La plata de tu unidad: sus cuentas, lo que le pasa el Grupo, lo que entra por eventos y los gastos.'
+        }
         actions={
           <LinkButton to="/contabilidad/cuotas" variant="secondary">
             Cuotas y pagos
@@ -47,16 +93,17 @@ export function AccountingHome() {
         tabs={[
           { key: 'resumen', label: 'Resumen' },
           { key: 'movimientos', label: 'Movimientos' },
-          { key: 'presupuesto', label: 'Presupuesto' },
+          // El presupuesto es del Grupo en su conjunto
+          ...(groupWide ? [{ key: 'presupuesto' as const, label: 'Presupuesto' }] : []),
           { key: 'reportes', label: 'Reportes' },
-          { key: 'config', label: 'Cuentas y cierres' },
+          { key: 'config', label: groupWide ? 'Cuentas y cierres' : 'Cuentas' },
         ]}
         value={tab}
         onChange={setTab}
       />
       {tab === 'resumen' ? <SummaryTab /> : null}
       {tab === 'movimientos' ? <MovementsTab /> : null}
-      {tab === 'presupuesto' ? <BudgetTab /> : null}
+      {tab === 'presupuesto' && groupWide ? <BudgetTab /> : null}
       {tab === 'reportes' ? <ReportsTab /> : null}
       {tab === 'config' ? <ConfigTab /> : null}
     </>
@@ -68,7 +115,8 @@ interface Summary {
   year: number;
   accounts: AccountRow[];
   byMonth: { month: number; ingresos: number; egresos: number; resultado: number; closed: boolean }[];
-  totals: { ingresos: number; egresos: number };
+  /** Neto de transferencias con cuentas de afuera del ámbito (por ejemplo, lo que el Grupo le pasa a una unidad); null = mirando todo. */
+  totals: { ingresos: number; egresos: number; transfers: number | null };
   recent: MovementRow[];
   budget: { status: string } | null;
 }
@@ -88,7 +136,9 @@ function YearSelect({ value, onChange }: { value: number; onChange: (y: number) 
 
 function SummaryTab() {
   const [year, setYear] = useState(new Date().getFullYear());
-  const q = useQuery({ queryKey: ['acc-summary', year], queryFn: () => api.get<Summary>(`/accounting/summary${qs({ year })}`) });
+  const [ambito, setAmbito] = useAmbito();
+  const { canAll } = useAuth();
+  const q = useQuery({ queryKey: ['acc-summary', year, ambito], queryFn: () => api.get<Summary>(`/accounting/summary${qs({ year, ambito })}`) });
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorBox error={q.error} />;
   const s = q.data!;
@@ -98,13 +148,24 @@ function SummaryTab() {
     <div className="stack">
       <div className="toolbar" style={{ marginBottom: 0 }}>
         <YearSelect value={year} onChange={setYear} />
-        <span className="muted">Presupuesto {year}: {s.budget ? (s.budget.status === 'aprobado' ? 'aprobado' : 'en borrador') : 'sin cargar'}</span>
+        <AmbitoSelect value={ambito} onChange={setAmbito} />
+        {!ambito && canAll('accounting', 'view') ? (
+          <span className="muted">Presupuesto {year}: {s.budget ? (s.budget.status === 'aprobado' ? 'aprobado' : 'en borrador') : 'sin cargar'}</span>
+        ) : null}
       </div>
       <div className="acc-stats">
         <Stat label="Saldo total hoy" value={formatMoney(total)} hint={`${s.accounts.filter((a) => a.active).length} cuentas`} />
         <Stat label={`Ingresos ${year}`} value={formatMoney(s.totals.ingresos)} tone="ok" />
         <Stat label={`Egresos ${year}`} value={formatMoney(s.totals.egresos)} tone="danger" />
-        <Stat label={`Resultado ${year}`} value={formatMoney(result)} tone={result >= 0 ? 'ok' : 'danger'} />
+        <Stat label={`Resultado ${year}`} value={formatMoney(result)} tone={result >= 0 ? 'ok' : 'danger'} hint="Sin transferencias" />
+        {s.totals.transfers !== null ? (
+          <Stat
+            label={`Transferencias ${year}`}
+            value={formatMoney(s.totals.transfers)}
+            tone={s.totals.transfers >= 0 ? 'ok' : 'warn'}
+            hint={s.totals.transfers >= 0 ? 'Neto que entró desde otras cuentas (por ejemplo, lo que pasa el Grupo)' : 'Neto que salió hacia otras cuentas'}
+          />
+        ) : null}
       </div>
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
         <Card title="Saldo por cuenta" bodyClass="table-wrap">
@@ -114,7 +175,9 @@ function SummaryTab() {
                 <tr key={a.id}>
                   <td>
                     {a.name} {!a.active ? <Badge>Inactiva</Badge> : null}
-                    <div className="muted">{ACCOUNT_TYPE_LABELS[a.type]}</div>
+                    <div className="muted">
+                      {ACCOUNT_TYPE_LABELS[a.type]} · <AccountOwner unit={a.unit} />
+                    </div>
                   </td>
                   <td className="num">
                     <Money value={a.balance ?? 0} strong />
@@ -183,7 +246,8 @@ function SummaryTab() {
 
 // ======================= MOVIMIENTOS =======================
 function MovementsTab() {
-  const { can } = useAuth();
+  const { can, canAll } = useAuth();
+  const [ambito, setAmbito] = useAmbito();
   const toast = useToast();
   const refresh = useRefreshTreasury();
   const accounts = useAccounts();
@@ -193,11 +257,14 @@ function MovementsTab() {
   const [page, setPage] = useState(1);
   const [dialog, setDialog] = useState<{ kind: 'new'; mkind: 'ingreso' | 'egreso' } | { kind: 'edit'; m: MovementRow } | { kind: 'transfer' } | null>(null);
   useEffect(() => setPage(1), [f]);
+  useEffect(() => setPage(1), [ambito]);
+  // Para transferir hacen falta al menos dos cuentas que pueda mover
+  const movable = (accounts.data ?? []).filter((a) => a.active && can('accounting', 'create', a.unitId));
   const list = useQuery({
-    queryKey: ['acc-movements', f, page],
+    queryKey: ['acc-movements', f, ambito, page],
     queryFn: () =>
       api.get<{ rows: MovementRow[]; total: number; pageSize: number; totals: { ingresos: number; egresos: number; resultado: number } }>(
-        `/accounting/movements${qs({ ...f, page })}`,
+        `/accounting/movements${qs({ ...f, ambito, page })}`,
       ),
   });
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -213,13 +280,10 @@ function MovementsTab() {
           <option value="ingreso">Solo ingresos</option>
           <option value="egreso">Solo egresos</option>
         </Select>
+        <AmbitoSelect value={ambito} onChange={setAmbito} />
         <Select value={f.accountId} onChange={(e) => set('accountId', e.target.value)} aria-label="Cuenta">
           <option value="">Todas las cuentas</option>
-          {accounts.data?.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
+          <AccountOptions accounts={(accounts.data ?? []).filter((a) => a.balance !== null)} />
         </Select>
         <Select value={f.categoryId} onChange={(e) => set('categoryId', e.target.value)} aria-label="Categoría">
           <option value="">Todas las categorías</option>
@@ -241,14 +305,16 @@ function MovementsTab() {
               <Button onClick={() => setDialog({ kind: 'new', mkind: 'egreso' })}>
                 <Plus /> Registrar gasto
               </Button>
-              <Button variant="secondary" onClick={() => setDialog({ kind: 'transfer' })}>
-                <ArrowLeftRight /> Transferencia entre cuentas
-              </Button>
+              {movable.length > 1 ? (
+                <Button variant="secondary" onClick={() => setDialog({ kind: 'transfer' })}>
+                  <ArrowLeftRight /> {canAll('accounting', 'create') ? 'Transferencia (o pasarle plata a una unidad)' : 'Transferencia entre cuentas'}
+                </Button>
+              ) : null}
             </>
           ) : null}
         </div>
         {can('accounting', 'export') ? (
-          <Button variant="secondary" onClick={() => api.download(`/accounting/movements/export${qs(f)}`, 'movimientos.csv').catch(toast.error)}>
+          <Button variant="secondary" onClick={() => api.download(`/accounting/movements/export${qs({ ...f, ambito })}`, 'movimientos.csv').catch(toast.error)}>
             <Download /> Exportar CSV
           </Button>
         ) : null}
@@ -285,6 +351,7 @@ function MovementsTab() {
             <tbody>
               {data.rows.map((m) => {
                 const auto = !!m.paymentId || !!m.transferGroup || !!m.reversesId;
+                const owner = m.account?.unitId ?? null;
                 return (
                   <tr key={m.id} className={m.voided ? 'voided' : ''}>
                     <td className="nowrap">
@@ -305,7 +372,14 @@ function MovementsTab() {
                       {m.createdBy ? <div className="muted">Cargó: {m.createdBy.name}</div> : null}
                     </td>
                     <td>{m.transferGroup ? <Badge tone="info">Transferencia</Badge> : m.category?.name ?? '—'}</td>
-                    <td>{m.account?.name}</td>
+                    <td>
+                      {m.account?.name}
+                      {m.account?.unitId ? (
+                        <div className="muted">
+                          <AccountOwner unit={accounts.data?.find((a) => a.id === m.accountId)?.unit} />
+                        </div>
+                      ) : null}
+                    </td>
                     <td>
                       {m.event ? <Link to={`/eventos/${m.event.id}`}>{m.event.name}</Link> : null}
                       {m.camp ? <Link to={`/campamentos/${m.camp.id}`}>{m.camp.name}</Link> : null}
@@ -317,12 +391,12 @@ function MovementsTab() {
                     <td className="num nowrap">
                       {!m.voided && !m.reversesId && !m.paymentId ? (
                         <>
-                          {!auto && !m.closed && can('accounting', 'edit') ? (
+                          {!auto && !m.closed && can('accounting', 'edit', owner) ? (
                             <Button variant="ghost" size="sm" aria-label="Editar" onClick={() => setDialog({ kind: 'edit', m })}>
                               <Pencil />
                             </Button>
                           ) : null}
-                          {!auto && !m.closed && can('accounting', 'delete') ? (
+                          {!auto && !m.closed && can('accounting', 'delete', owner) ? (
                             <ConfirmButton
                               variant="ghost"
                               size="sm"
@@ -342,7 +416,7 @@ function MovementsTab() {
                               <Trash2 />
                             </ConfirmButton>
                           ) : null}
-                          {can('accounting', 'edit') ? (
+                          {can('accounting', 'edit', owner) ? (
                             <ConfirmButton
                               variant="ghost"
                               size="sm"
@@ -395,6 +469,7 @@ function MovementsTab() {
 function TransferDialog({ onClose }: { onClose: () => void }) {
   const toast = useToast();
   const refresh = useRefreshTreasury();
+  const { can, canAll } = useAuth();
   const accounts = useAccounts();
   type F = z.input<typeof accountTransferSchema>;
   const { register, handleSubmit, formState, setError } = useForm<F>({
@@ -412,7 +487,8 @@ function TransferDialog({ onClose }: { onClose: () => void }) {
       if (!applyServerErrors(err, setError)) toast.error(err);
     }
   });
-  const opts = accounts.data?.filter((a) => a.active) ?? [];
+  // Las dos puntas tienen que ser cuentas que pueda mover
+  const opts = accounts.data?.filter((a) => a.active && can('accounting', 'create', a.unitId)) ?? [];
   return (
     <Modal
       title="Transferencia entre cuentas"
@@ -429,24 +505,21 @@ function TransferDialog({ onClose }: { onClose: () => void }) {
       }
     >
       <form className="form-grid" onSubmit={onSubmit} noValidate>
+        <div className="alert alert-info full">
+          {canAll('accounting', 'create')
+            ? 'Para pasarle plata a una unidad (por ejemplo, la de programa), elegí una cuenta del Grupo en «Desde» y la caja de la unidad en «Hacia».'
+            : 'Entre las cuentas de tu unidad. La plata que el Grupo le pasa a la unidad (o que la unidad le devuelve) la registran Secretaría o Tesorería.'}
+        </div>
         <Field label="Desde" required error={e.fromAccountId?.message}>
           <Select {...register('fromAccountId')} invalid={!!e.fromAccountId}>
             <option value="">Elegí la cuenta</option>
-            {opts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            <AccountOptions accounts={opts} />
           </Select>
         </Field>
         <Field label="Hacia" required error={e.toAccountId?.message}>
           <Select {...register('toAccountId')} invalid={!!e.toAccountId}>
             <option value="">Elegí la cuenta</option>
-            {opts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            <AccountOptions accounts={opts} />
           </Select>
         </Field>
         <Field label="Fecha" required error={e.date?.message}>
@@ -475,7 +548,7 @@ interface BudgetView {
 }
 
 function BudgetTab() {
-  const { can } = useAuth();
+  const { canAll } = useAuth();
   const toast = useToast();
   const refresh = useRefreshTreasury();
   const [year, setYear] = useState(new Date().getFullYear());
@@ -488,7 +561,7 @@ function BudgetTab() {
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorBox error={q.error} />;
   const b = q.data!;
-  const editable = can('accounting', 'edit') && (b.status === 'borrador' || can('accounting', 'approve'));
+  const editable = canAll('accounting', 'edit') && (b.status === 'borrador' || canAll('accounting', 'approve'));
   const dirty = b.lines.some((l) => Number(draft[l.categoryId] || 0) !== l.planned);
   const save = async () => {
     setSaving(true);
@@ -570,7 +643,7 @@ function BudgetTab() {
             Guardar presupuesto
           </Button>
         ) : null}
-        {can('accounting', 'approve') && b.exists ? (
+        {canAll('accounting', 'approve') && b.exists ? (
           <ConfirmButton
             variant={b.status === 'aprobado' ? 'secondary' : 'gold'}
             title={b.status === 'aprobado' ? 'Volver a borrador' : 'Aprobar presupuesto'}
@@ -609,12 +682,16 @@ function BudgetTab() {
 // ======================= REPORTES =======================
 function ReportsTab() {
   const year = new Date().getFullYear();
+  const [ambito, setAmbito] = useAmbito();
   const [from, setFrom] = useState(`${year}-01-01`);
   const [to, setTo] = useState(todayIso());
   const [pyear, setPyear] = useState(year);
   const cash = useQuery({
-    queryKey: ['acc-reports', 'cash', from, to],
-    queryFn: () => api.get<{ rows: { accountId: string; name: string; opening: number; ingresos: number; egresos: number; closing: number }[] }>(`/accounting/reports/cash${qs({ from, to })}`),
+    queryKey: ['acc-reports', 'cash', from, to, ambito],
+    queryFn: () =>
+      api.get<{ rows: { accountId: string; name: string; unit: AccountRow['unit']; opening: number; ingresos: number; egresos: number; closing: number }[] }>(
+        `/accounting/reports/cash${qs({ from, to, ambito })}`,
+      ),
   });
   const projects = useQuery({
     queryKey: ['acc-reports', 'projects', pyear],
@@ -630,6 +707,7 @@ function ReportsTab() {
         title="Caja por período"
         actions={
           <>
+            <AmbitoSelect value={ambito} onChange={setAmbito} />
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="Desde" style={{ width: 'auto' }} />
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Hasta" style={{ width: 'auto' }} />
           </>
@@ -652,7 +730,12 @@ function ReportsTab() {
             <tbody>
               {cash.data?.rows.map((r) => (
                 <tr key={r.accountId}>
-                  <td>{r.name}</td>
+                  <td>
+                    {r.name}
+                    <div className="muted">
+                      <AccountOwner unit={r.unit} />
+                    </div>
+                  </td>
                   <td className="num">
                     <Money value={r.opening} />
                   </td>
@@ -741,7 +824,7 @@ function ReportsTab() {
 
 // ======================= CUENTAS, CATEGORÍAS Y CIERRES =======================
 function ConfigTab() {
-  const { can } = useAuth();
+  const { can, canAll } = useAuth();
   const toast = useToast();
   const refresh = useRefreshTreasury();
   const accounts = useAccounts();
@@ -771,33 +854,48 @@ function ConfigTab() {
           bodyClass="table-wrap"
         >
           <table className="table">
-            <tbody>
-              {accounts.data?.map((a) => (
-                <tr key={a.id}>
-                  <td>
-                    {a.name} {!a.active ? <Badge>Inactiva</Badge> : null}
-                    <div className="muted">
-                      {ACCOUNT_TYPE_LABELS[a.type]}
-                      {a.holder ? ` · a nombre de ${a.holder}` : ''}
-                    </div>
-                  </td>
-                  <td className="num">{a.balance !== null ? <Money value={a.balance} /> : null}</td>
-                  <td className="num">
-                    {can('accounting', 'edit') ? (
-                      <Button variant="ghost" size="sm" aria-label="Editar cuenta" onClick={() => setAcc(a)}>
-                        <Pencil />
-                      </Button>
-                    ) : null}
-                  </td>
+            {groupAccounts((accounts.data ?? []).filter((a) => a.balance !== null)).map((g) => (
+              <tbody key={g.key}>
+                <tr className="acc-owner-row">
+                  <th colSpan={3}>
+                    {g.unit ? <AccountOwner unit={g.unit} /> : 'Grupo'}
+                    {g.unit ? (
+                      <span className="muted">
+                        {' '}
+                        · {g.managers.length ? `Lleva la plata: ${g.managers.join(', ')}` : 'Sin responsable: dale a alguien el rol «Finanzas de la unidad» en Usuarios'}
+                      </span>
+                    ) : (
+                      <span className="muted"> · Tesorería y Secretaría</span>
+                    )}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
+                {g.accounts.map((a) => (
+                  <tr key={a.id}>
+                    <td>
+                      {a.name} {!a.active ? <Badge>Inactiva</Badge> : null}
+                      <div className="muted">
+                        {ACCOUNT_TYPE_LABELS[a.type]}
+                        {a.holder ? ` · a nombre de ${a.holder}` : ''}
+                      </div>
+                    </td>
+                    <td className="num">{a.balance !== null ? <Money value={a.balance} /> : null}</td>
+                    <td className="num">
+                      {can('accounting', 'edit', a.unitId) ? (
+                        <Button variant="ghost" size="sm" aria-label="Editar cuenta" onClick={() => setAcc(a)}>
+                          <Pencil />
+                        </Button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
           </table>
         </Card>
         <Card
           title="Cierres mensuales"
           actions={
-            can('accounting', 'approve') ? (
+            canAll('accounting', 'approve') ? (
               <div className="row" style={{ gap: 6 }}>
                 <Select value={cm} onChange={(e) => setCm(Number(e.target.value))} aria-label="Mes" style={{ width: 'auto' }}>
                   {MONTH_NAMES.map((m, i) => (
@@ -846,7 +944,7 @@ function ConfigTab() {
                       {c.closedBy ? ` · ${c.closedBy.name}` : ''}
                     </td>
                     <td className="num">
-                      {can('accounting', 'approve') ? (
+                      {canAll('accounting', 'approve') ? (
                         <ConfirmButton
                           variant="ghost"
                           size="sm"
@@ -877,7 +975,7 @@ function ConfigTab() {
       <Card
         title="Categorías de ingresos y egresos"
         actions={
-          can('accounting', 'create') ? (
+          canAll('accounting', 'create') ? (
             <Button size="sm" onClick={() => setCat('new')}>
               <Plus /> Nueva categoría
             </Button>
@@ -903,7 +1001,7 @@ function ConfigTab() {
                 </td>
                 <td>{c.active ? 'Activa' : <Badge>Inactiva</Badge>}</td>
                 <td className="num">
-                  {can('accounting', 'edit') ? (
+                  {canAll('accounting', 'edit') ? (
                     <Button variant="ghost" size="sm" aria-label="Editar categoría" onClick={() => setCat(c)}>
                       <Pencil />
                     </Button>
@@ -923,12 +1021,31 @@ function ConfigTab() {
 function AccountDialog({ account, onClose }: { account?: AccountRow; onClose: () => void }) {
   const toast = useToast();
   const refresh = useRefreshTreasury();
-  const { register, handleSubmit, formState, setError } = useForm<AccountInput>({
+  const { can, canAll } = useAuth();
+  const units = useUnits();
+  const action = account ? 'edit' : 'create';
+  // De quién puede ser: del Grupo (si lleva las cuentas del Grupo) o de las unidades que maneja
+  const groupOk = canAll('accounting', action);
+  const unitOpts = (units.data ?? []).filter((u) => (u.active || u.id === account?.unitId) && can('accounting', action, u.id));
+  const { register, handleSubmit, formState, setError, setValue, watch } = useForm<AccountInput>({
     resolver: zodResolver(accountSchema),
     defaultValues: account
-      ? { name: account.name, type: account.type, holder: account.holder ?? '', initialBalance: account.initialBalance, initialDate: account.initialDate ?? '', active: account.active, notes: account.notes ?? '' }
-      : { name: '', type: 'efectivo', holder: '', initialBalance: 0, initialDate: todayIso(), active: true, notes: '' },
+      ? {
+          name: account.name,
+          type: account.type,
+          unitId: account.unitId ?? '',
+          holder: account.holder ?? '',
+          initialBalance: account.initialBalance,
+          initialDate: account.initialDate ?? '',
+          active: account.active,
+          notes: account.notes ?? '',
+        }
+      : { name: '', type: 'efectivo', unitId: '', holder: '', initialBalance: 0, initialDate: todayIso(), active: true, notes: '' },
   });
+  // Sin permiso para el Grupo, la cuenta nueva es de su unidad
+  useEffect(() => {
+    if (!account && !groupOk && !watch('unitId') && unitOpts.length) setValue('unitId', unitOpts[0].id);
+  }, [units.data]); // eslint-disable-line react-hooks/exhaustive-deps
   const e = formState.errors;
   const onSubmit = handleSubmit(async (v) => {
     try {
@@ -965,6 +1082,16 @@ function AccountDialog({ account, onClose }: { account?: AccountRow; onClose: ()
             {ACCOUNT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {ACCOUNT_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Es de" hint="Del Grupo, o la caja propia de una unidad" error={e.unitId?.message}>
+          <Select {...register('unitId')}>
+            {groupOk ? <option value="">Grupo</option> : null}
+            {unitOpts.map((u) => (
+              <option key={u.id} value={u.id}>
+                Unidad: {u.name}
               </option>
             ))}
           </Select>

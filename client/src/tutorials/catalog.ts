@@ -273,6 +273,40 @@ export const TUTORIALS: Tutorial[] = [
       },
     ],
   },
+  {
+    id: 'cruz-del-sur',
+    title: 'Altas y bajas para Cruz del Sur',
+    description: 'Las altas y bajas que hay que cargar en la plataforma de SAAC, y marcarlas como hechas.',
+    keywords: ['cruz del sur', 'altas', 'bajas', 'saac', 'cargar en saac'],
+    audience: (c) => c.isSuperadmin || c.canAll('members', 'edit') || c.canAll('adults', 'edit'),
+    steps: [
+      {
+        route: '/cruz-del-sur',
+        target: nav('/cruz-del-sur'),
+        pose: 'point',
+        title: 'Altas y bajas',
+        text: 'Cada vez que se da de alta o de baja a un protagonista o a un adulto en ALCOMBAR, queda acá para cargarlo en Cruz del Sur, la plataforma de SAAC.',
+      },
+      {
+        target: tab('Pendientes'),
+        pose: 'point',
+        title: 'Lo que falta cargar',
+        text: 'Tildá los que ya cargaste y tocá "Marcar como hechos en Cruz del Sur", así el resto del equipo sabe que está. Si alguno no va, "No corresponde".',
+      },
+      {
+        target: { selector: 'select[aria-label="Filtrar por tipo"]' },
+        pose: 'point',
+        title: 'Solo altas o solo bajas',
+        text: 'Para cargarlas de a tandas.',
+      },
+      {
+        pose: 'think',
+        title: 'Quién recibe los avisos',
+        text: 'El equipo marcado en Equipos de apoyo ("Recibe los avisos de altas y bajas") recibe cada alta y baja en la campanita y por mail.',
+      },
+      { pose: 'cheer', title: '¡Al día con SAAC!', text: 'Si alguien se da de alta y de baja antes de cargarlo, los dos movimientos se anulan solos.' },
+    ],
+  },
 
   // ---------- Programa ----------
   {
@@ -308,8 +342,8 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         pose: 'point',
-        title: 'Imprimir y duplicar',
-        text: 'Desde cada ficha la podés imprimir o guardar en PDF, y duplicarla para otra unidad o para repetirla.',
+        title: 'Descargar en PDF y duplicar',
+        text: 'Desde cada ficha, "Descargar PDF" la baja con el formato de SAAC (con sus logos). También la podés duplicar para otra unidad o para repetirla, y ves en qué cronograma de campamento está.',
       },
       { pose: 'cheer', title: '¡A jugar!', text: 'Con buenas fichas, el sábado sale solo y queda todo para la próxima vez.' },
     ],
@@ -407,6 +441,33 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'referentes-de-rama',
+    title: 'Referentes de rama',
+    description: 'A quién consultar por cada rama y qué ven los referentes.',
+    keywords: ['referentes', 'rama', 'equipo de programa', 'a quién consulto'],
+    audience: (c) => c.can('activities', 'view'),
+    steps: [
+      {
+        route: '/programa/referentes',
+        target: nav('/programa/referentes'),
+        pose: 'point',
+        title: 'Referentes de rama',
+        text: 'Los integrantes del equipo de Programa que acompañan a cada rama. Son por rama, no por unidad.',
+      },
+      {
+        pose: 'think',
+        title: 'Les llega un aviso',
+        text: 'Cuando una unidad carga una ficha de actividad o un campamento, al referente de su rama le llega un aviso en la campanita y por mail.',
+      },
+      {
+        pose: 'think',
+        title: 'Qué pueden ver',
+        text: 'Ser referente sale del cargo en el equipo de Programa: ven, sin poder editar, las fichas, campamentos, progresión y calendario de las unidades de su rama.',
+      },
+      { pose: 'cheer', title: '¡Nadie camina solo!', text: 'Si cambia el referente, cambiale el cargo y los permisos se acomodan solos.' },
+    ],
+  },
+  {
     id: 'progresion',
     title: 'Progresión personal',
     description: 'Seguir la etapa, las competencias, los roles y las revisiones de cada protagonista.',
@@ -498,14 +559,20 @@ export const TUTORIALS: Tutorial[] = [
     title: 'La contabilidad del Grupo',
     description: 'Registrar ingresos y gastos, armar el presupuesto, ver reportes y cerrar el mes.',
     keywords: ['contabilidad', 'tesorería', 'gastos', 'ingresos', 'presupuesto', 'cierre'],
-    audience: (c) => c.can('accounting', 'view'),
+    audience: (c) => c.canAll('accounting', 'view'),
     steps: [
       {
         route: '/contabilidad',
         target: nav('/contabilidad'),
         pose: 'point',
         title: 'Contabilidad',
-        text: 'Acá está la plata del Grupo: saldo de cada cuenta (caja, banco, Mercado Pago), ingresos y gastos del año.',
+        text: 'Acá está la plata del Grupo y de las cajas de cada unidad: saldo de cada cuenta (caja, banco, Mercado Pago), ingresos y gastos del año.',
+      },
+      {
+        target: { selector: 'select[aria-label="Ámbito"]' },
+        pose: 'point',
+        title: 'Todo, el Grupo o una unidad',
+        text: 'Con este selector mirás todo junto, solo las cuentas del Grupo o las de una unidad. Si todavía ninguna unidad tiene caja, no aparece.',
       },
       {
         target: tab('Movimientos'),
@@ -518,7 +585,7 @@ export const TUTORIALS: Tutorial[] = [
         target: button('Registrar gasto'),
         pose: 'point',
         title: 'Registrar',
-        text: 'Con "Registrar ingreso" o "Registrar gasto" lo cargás. Si es de un evento o campamento, lo vinculás y queda en su rendición. Para pasar plata entre cuentas está "Transferencia entre cuentas".',
+        text: 'Con "Registrar ingreso" o "Registrar gasto" lo cargás. Si es de un evento o campamento, lo vinculás y queda en su rendición. Para pasar plata entre cuentas (o a la caja de una unidad) está "Transferencia".',
       },
       {
         pose: 'think',
@@ -547,6 +614,87 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'cajas-de-las-unidades',
+    title: 'Cajas de las unidades',
+    description: 'Abrir la caja de una unidad, elegir quién la lleva y pasarle plata desde el Grupo.',
+    keywords: ['caja de la unidad', 'plata de programa', 'pasar plata', 'finanzas de la unidad', 'transferencia'],
+    audience: (c) => c.canAll('accounting', 'create'),
+    steps: [
+      {
+        route: '/contabilidad?tab=config',
+        target: tab('Cuentas y cierres'),
+        pose: 'point',
+        title: 'Cada unidad, su caja',
+        text: 'Las unidades pueden manejar su propia plata: lo que juntan en sus eventos y lo que les pasa el Grupo. Las cuentas se ven separadas: las del Grupo y las de cada unidad.',
+      },
+      {
+        target: button('Nueva cuenta'),
+        pose: 'point',
+        title: 'Abrir la caja',
+        text: 'Con "Nueva cuenta", en "Es de" elegís la unidad. Puede ser efectivo, banco o una billetera virtual.',
+      },
+      {
+        pose: 'think',
+        title: 'Quién la lleva',
+        text: 'La plata de cada unidad la lleva una persona de la unidad. En Usuarios le das el rol "Finanzas de la unidad" con su unidad: ve y mueve solo las cuentas de esa unidad.',
+      },
+      {
+        route: '/contabilidad?tab=movimientos',
+        target: button('Transferencia'),
+        pose: 'point',
+        title: 'Pasarle plata',
+        text: 'Para darle plata a una unidad (por ejemplo, la de programa), hacé una transferencia: desde una cuenta del Grupo hacia la caja de la unidad. A la unidad le aparece sola.',
+      },
+      { pose: 'cheer', title: '¡Cuentas claras!', text: 'Arriba podés mirar todo junto, solo el Grupo o una unidad.' },
+    ],
+  },
+  {
+    id: 'plata-de-la-unidad',
+    title: 'La plata de tu unidad',
+    description: 'Ver el saldo de tu unidad, registrar ingresos y gastos y saber cuánto pasó el Grupo.',
+    keywords: ['plata de la unidad', 'caja de la unidad', 'gastos', 'ingresos', 'finanzas de la unidad'],
+    audience: (c) => c.can('accounting', 'view') && !c.canAll('accounting', 'view'),
+    steps: [
+      {
+        route: '/contabilidad',
+        target: nav('/contabilidad'),
+        pose: 'point',
+        title: 'La plata de tu unidad',
+        text: 'Acá ves las cuentas de tu unidad: cuánto hay, lo que entró y lo que se gastó en el año.',
+      },
+      {
+        pose: 'think',
+        title: 'Lo que pasa el Grupo',
+        text: 'Cuando el Grupo le pasa plata a la unidad (por ejemplo, la de programa), aparece como transferencia y suma al saldo. La registran Secretaría o Tesorería: vos no tenés que cargar nada.',
+      },
+      {
+        target: tab('Movimientos'),
+        clickOnNext: true,
+        pose: 'point',
+        title: 'Movimientos',
+        text: 'Cada ingreso y cada gasto de tu unidad, con su comprobante.',
+      },
+      {
+        target: button('Registrar gasto'),
+        pose: 'point',
+        title: 'Registrar',
+        text: 'Con "Registrar ingreso" (una venta, un evento de la unidad) o "Registrar gasto" (materiales, transporte) lo cargás en la caja de la unidad. Si es de un campamento, vinculalo.',
+      },
+      {
+        pose: 'think',
+        title: 'Corregir sin borrar',
+        text: 'Si te equivocaste, "Anular" deja el movimiento tachado y crea el contra-asiento: así siempre queda el registro.',
+      },
+      {
+        target: tab('Cuentas'),
+        pose: 'point',
+        title: 'Las cuentas de la unidad',
+        text: 'Si la unidad abre otra cuenta (por ejemplo, un Mercado Pago), la podés sumar acá.',
+      },
+      { pose: 'cheer', title: '¡Cuentas claras!', text: 'Con todo anotado, rendirle al Grupo es un trámite.' },
+    ],
+  },
+  {
     id: 'cuotas-y-pagos',
     title: 'Cuotas y pagos',
     description: 'Ver quién debe, armar el plan de cuotas, generar las cuotas del mes y las becas.',
@@ -570,13 +718,13 @@ export const TUTORIALS: Tutorial[] = [
         target: tab('Plan de cuotas'),
         pose: 'point',
         title: 'El plan del año',
-        text: 'El valor de la cuota, el día de vencimiento, los meses que se cobran, la afiliación y el descuento por hermanos.',
+        text: 'El valor de la cuota, el día de vencimiento, los meses que se cobran, la afiliación y el descuento por hermanos. Los montos los define Tesorería.',
       },
       {
         target: tab('Generar cuotas'),
         pose: 'think',
         title: 'Generar las cuotas',
-        text: 'Elegís el mes, mirás la vista previa y las generás para todos los protagonistas activos. Si ya estaban generadas, no se duplican.',
+        text: 'Secretaría o Tesorería eligen el mes, miran la vista previa y las generan para todos los protagonistas activos. Si ya estaban generadas, no se duplican. La afiliación anual se genera igual.',
       },
       {
         target: tab('Becas'),
@@ -624,7 +772,7 @@ export const TUTORIALS: Tutorial[] = [
         title: 'El recibo',
         text: 'Al guardar se genera el recibo numerado, listo para imprimir o mandar. El ingreso queda solo en la contabilidad.',
       },
-      { pose: 'cheer', title: '¡Cobrado!', text: 'Y si te equivocaste, el pago se puede anular y queda registrado.' },
+      { pose: 'cheer', title: '¡Cobrado!', text: 'Y si te equivocaste, pedile a Tesorería que anule el pago: queda registrado igual.' },
     ],
   },
   {
@@ -682,6 +830,11 @@ export const TUTORIALS: Tutorial[] = [
         text: '"Inscripción y legajo": inscribís a los chicos (se les genera el cargo) y el semáforo te dice a quién le falta la autorización, el DNI o la ficha médica. "Presupuesto y rendición": lo previsto, los gastos y la rendición. "Logística": menú, compras, transporte y los materiales prestados del inventario.',
       },
       {
+        pose: 'think',
+        title: 'Programa y cronograma',
+        text: 'En la pestaña "Programa y cronograma" está la propuesta, el cronograma de cada día y las fichas del campamento. Cada día se arma con el mismo editor del "Programa del sábado", así las fichas quedan enlazadas sin cargar nada dos veces.',
+      },
+      {
         target: button('Lugares de acampe'),
         pose: 'point',
         title: 'Lugares de acampe',
@@ -726,7 +879,12 @@ export const TUTORIALS: Tutorial[] = [
       { route: '/adultos', target: nav('/adultos'), pose: 'point', title: 'Adultos', text: 'Todos los adultos del Grupo con sus cargos de este año y su formación.' },
       { target: button('Nuevo adulto'), pose: 'point', title: 'Nuevo adulto', text: 'Para sumar a alguien que se incorpora al Grupo.' },
       { target: firstRow, clickOnNext: true, pose: 'point', title: 'Abrí una ficha', text: 'Tocando un nombre ves su ficha. Te abro la primera.' },
-      { target: button('Agregar cargo'), pose: 'point', title: 'Cargos por año', text: 'Qué cargo tiene cada año y en qué unidad o equipo. Con esto se arma solo el organigrama.' },
+      {
+        target: button('Agregar cargo'),
+        pose: 'point',
+        title: 'Cargos por año',
+        text: 'Primero elegís dónde (una unidad, el Grupo, un equipo de apoyo u otro) y después la función, con menús que se pueden buscar. Con esto se arma solo el organigrama y, si es de una unidad, sus permisos.',
+      },
       { target: button('Registrar formación'), pose: 'point', title: 'Formación', text: 'Insignia de Madera, Miembro Activo, niveles y cursos, con la fecha y el enlace al certificado.' },
       { pose: 'cheer', title: '¡Gracias por tu servicio!', text: 'En Inicio ves cuántos adultos no tienen formación registrada.' },
     ],
@@ -758,7 +916,7 @@ export const TUTORIALS: Tutorial[] = [
         target: button('Nuevo usuario'),
         pose: 'point',
         title: 'Nuevo usuario',
-        text: 'Elegís al adulto, su email y sus roles. Los roles de unidad (Jefe/a de Unidad, Educador/a) piden la unidad.',
+        text: 'Elegís al adulto, su email y sus roles. Los roles de unidad (Jefe/a de Unidad, Educador/a, Finanzas de la unidad) piden la unidad. Secretaría es quien cobra cuotas, afiliaciones y campamentos.',
       },
       {
         target: button('Generar enlace'),
@@ -813,6 +971,27 @@ export const TUTORIALS: Tutorial[] = [
       { target: { selector: '#tutoriales' }, pose: 'think', title: 'Tus tutoriales', text: 'Todos los tutoriales para tu rol, con cuáles hiciste. Los podés repasar cuando quieras.' },
       { target: { selector: 'form', text: 'Contraseña actual' }, pose: 'point', title: 'Cambiar contraseña', text: 'Mínimo 10 caracteres. Al cambiarla se cierran tus sesiones en otros dispositivos.' },
       { pose: 'cheer', title: '¡Siempre listos!', text: 'Cualquier duda, buscá en el buscador o en Ayuda.' },
+    ],
+  },
+  {
+    id: 'avisos',
+    title: 'Los avisos',
+    description: 'La campanita: lo que te toca, sin tener que andar buscando.',
+    keywords: ['avisos', 'notificaciones', 'campanita', 'mails'],
+    audience: (c) => c.loggedIn,
+    steps: [
+      {
+        target: { selector: '.nbell-btn' },
+        pose: 'point',
+        title: 'La campanita',
+        text: 'Acá te aviso lo que te toca: fichas y campamentos de tu rama, cambios de servicio, el temario del Consejo, altas y bajas… El número rojo son los que no leíste.',
+      },
+      {
+        pose: 'think',
+        title: 'Tocá un aviso',
+        text: 'Te lleva directo a lo que corresponde. Los avisos también te llegan por mail.',
+      },
+      { pose: 'cheer', title: '¡Siempre al tanto!', text: 'Así nadie se entera tarde de nada.' },
     ],
   },
   {
@@ -918,6 +1097,41 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'sabados-y-servicio',
+    title: 'Sábados y servicio',
+    description: 'Qué rama está de servicio cada sábado, qué pasa ese día y cómo cambiar el día de tu unidad.',
+    keywords: ['sábados', 'servicio', 'rama de servicio', 'cambiar día', 'limpieza', 'merienda'],
+    audience: (c) => c.can('calendar', 'view'),
+    steps: [
+      {
+        route: '/calendario/sabados',
+        target: nav('/calendario/sabados'),
+        pose: 'point',
+        title: 'Los sábados del año',
+        text: 'Qué rama está de servicio cada sábado y qué pasa ese día: Consejo, feriado, campamento…',
+      },
+      {
+        target: { selector: '.sat-help-toggle' },
+        pose: 'point',
+        title: '¿Qué hace la rama de servicio?',
+        text: 'Acá está lo que le toca a la rama de servicio: limpieza, merienda, la Misa y sacar la basura.',
+      },
+      {
+        target: { selector: 'select[aria-label="Filtrar por servicio"]' },
+        pose: 'point',
+        title: 'Cuándo te toca',
+        text: 'Elegí "Cuando está de servicio mi unidad" y ves solo tus sábados.',
+      },
+      {
+        target: button('Cambiar día'),
+        pose: 'think',
+        title: 'Cambiar el día',
+        text: 'Si tu unidad no puede, tocá "Cambiar día" y elegí con qué sábado cambiarlo. A los adultos de las unidades que se mueven les llega un aviso al instante.',
+      },
+      { pose: 'cheer', title: '¡Sede impecable!', text: 'También lo podés imprimir para la cartelera.' },
+    ],
+  },
+  {
     id: 'actas-y-documentos',
     title: 'Actas y documentos',
     description: 'Cargar las actas del Consejo de Grupo y tener a mano los documentos del Drive.',
@@ -951,6 +1165,30 @@ export const TUTORIALS: Tutorial[] = [
         text: 'Título, categoría y el enlace al Drive. Se abre en otra pestaña; si lo borrás de acá, el archivo del Drive no se toca.',
       },
       { pose: 'cheer', title: '¡Ordenado!', text: 'Nada de buscar en mil carpetas: está todo acá.' },
+    ],
+  },
+  {
+    id: 'temario-del-consejo',
+    title: 'Enviar el temario del Consejo',
+    description: 'Cargar el orden del día del próximo Consejo y mandárselo a todos.',
+    keywords: ['temario', 'orden del día', 'consejo de grupo', 'convocatoria'],
+    audience: (c) => c.can('documents', 'edit'),
+    steps: [
+      {
+        route: '/actas',
+        target: firstRow,
+        clickOnNext: true,
+        pose: 'point',
+        title: 'El acta del Consejo',
+        text: 'Unos días antes del Consejo, creá el acta (o abrila) y cargá el orden del día. Abramos una.',
+      },
+      {
+        target: button('temario'),
+        pose: 'point',
+        title: 'Enviar temario',
+        text: 'Con "Enviar temario" el orden del día les llega a todos los del Consejo en la campanita y por mail. Si lo cambiás, lo podés reenviar.',
+      },
+      { pose: 'cheer', title: '¡Todos al Consejo!', text: 'Después, en la misma acta, se anotan las decisiones y se aprueba.' },
     ],
   },
   // ---------- Soporte ----------

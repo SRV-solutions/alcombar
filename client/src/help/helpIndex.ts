@@ -8,6 +8,8 @@ import { TUTORIALS } from '../tutorials/catalog';
 
 export interface HelpContext {
   can: (module: ModuleKey, action: Action, unitId?: string | null) => boolean;
+  /** ¿Tiene el permiso para todo el Grupo? (no solo en su unidad) */
+  canAll: (module: ModuleKey, action: Action) => boolean;
   isSuperadmin: boolean;
   loggedIn: boolean;
 }
@@ -190,7 +192,7 @@ export const HELP_INDEX: HelpEntry[] = [
   },
   {
     id: 'imprimir-ficha',
-    title: 'Imprimir o guardar en PDF una ficha',
+    title: 'Descargar una ficha en PDF (formato SAAC)',
     description: 'En la ficha, "Imprimir": abre la vista para papel con el botón "Imprimir o guardar PDF".',
     path: '/programa',
     section: 'Programa',
@@ -285,7 +287,8 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'contabilidad',
     title: 'Contabilidad del Grupo',
-    description: 'Ingresos y gastos por cuenta (caja, banco, Mercado Pago) y categoría, saldos, presupuesto anual, reportes y cierre de mes.',
+    description:
+      'Ingresos y gastos por cuenta (caja, banco, Mercado Pago) y categoría, saldos, presupuesto anual, reportes y cierre de mes. Incluye las cajas de las unidades: arriba elegís mirar todo, solo el Grupo o una unidad.',
     path: '/contabilidad',
     section: 'Tesorería',
     keywords: ['contabilidad', 'tesorería', 'plata', 'dinero', 'caja', 'banco', 'mercado pago', 'saldo', 'cuánta plata hay', 'balance', 'finanzas'],
@@ -301,13 +304,33 @@ export const HELP_INDEX: HelpEntry[] = [
     show: can('accounting', 'view'),
   },
   {
+    id: 'cajas-unidades',
+    title: 'Cajas de las unidades y plata para cada unidad',
+    description:
+      'Cada unidad puede tener su propia caja. Contabilidad → Cuentas y cierres → "Nueva cuenta" → "Es de: Unidad …". Para pasarle plata (por ejemplo, la de programa): Movimientos → "Transferencia", desde una cuenta del Grupo hacia la caja de la unidad. Quién la lleva se elige en Usuarios con el rol "Finanzas de la unidad".',
+    path: '/contabilidad?tab=config',
+    section: 'Tesorería',
+    keywords: ['caja de la unidad', 'plata de la unidad', 'pasar plata', 'plata de programa', 'transferir a una unidad', 'finanzas de la unidad', 'tesorero de unidad'],
+    show: (c) => c.canAll('accounting', 'create'),
+  },
+  {
+    id: 'plata-de-la-unidad',
+    title: 'La plata de tu unidad',
+    description:
+      'Contabilidad muestra las cuentas de tu unidad: saldo, lo que entró (eventos, lo que pasó el Grupo) y lo que se gastó. Registrás ingresos y gastos en la caja de la unidad; la plata que el Grupo le pasa la registran Secretaría o Tesorería.',
+    path: '/contabilidad',
+    section: 'Tesorería',
+    keywords: ['plata de la unidad', 'caja de la unidad', 'gastos de la unidad', 'finanzas de la unidad', 'tesorero de unidad', 'cuánta plata tenemos'],
+    show: (c) => c.can('accounting', 'view') && !c.canAll('accounting', 'view'),
+  },
+  {
     id: 'presupuesto',
     title: 'Presupuesto anual',
     description: 'Contabilidad → Presupuesto: lo previsto por categoría para el año, comparado con lo real. Se aprueba y se puede volver a borrador.',
     path: '/contabilidad?tab=presupuesto',
     section: 'Tesorería',
     keywords: ['presupuesto', 'previsto', 'planificación financiera', 'cuánto vamos a gastar'],
-    show: can('accounting', 'view'),
+    show: (c) => c.canAll('accounting', 'view'),
   },
   {
     id: 'reportes-contables',
@@ -339,7 +362,8 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'generar-cuotas',
     title: 'Generar las cuotas del mes',
-    description: 'Cuotas y pagos → Generar cuotas: con vista previa antes de crear. También genera la afiliación anual. Aplica el descuento por hermanos y las becas.',
+    description:
+      'Cuotas y pagos → Generar cuotas (Secretaría o Tesorería): con vista previa antes de crear. También genera la afiliación anual. Aplica el descuento por hermanos y las becas. Los montos del plan de cuotas los define Tesorería.',
     path: '/contabilidad/cuotas?tab=generar',
     section: 'Tesorería',
     keywords: ['generar cuotas', 'cuota del mes', 'afiliación anual', 'descuento hermanos'],
@@ -357,7 +381,8 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'registrar-pago',
     title: 'Registrar un pago y dar el recibo',
-    description: 'En la ficha del protagonista → pestaña Pagos → "Registrar pago": elegís qué cuotas o cargos paga, la cuenta y el medio. Genera el recibo para imprimir.',
+    description:
+      'En la ficha del protagonista → pestaña Pagos → "Registrar pago": elegís qué cuotas, afiliación o campamento paga, la cuenta y el medio. Genera el recibo para imprimir. Lo hacen Secretaría y Tesorería; anular un pago, Tesorería.',
     path: '/protagonistas',
     section: 'Tesorería',
     keywords: ['pago', 'pagar', 'cobrar cuota', 'registrar pago', 'recibo', 'comprobante de pago', 'pagó', 'imprimir recibo'],
@@ -532,6 +557,56 @@ export const HELP_INDEX: HelpEntry[] = [
   },
 
   // --- Administración ---
+  {
+    id: 'cruz-del-sur',
+    title: 'Altas y bajas para cargar en Cruz del Sur',
+    description:
+      'Cada alta o baja de un protagonista o un adulto queda en "Altas y bajas · Cruz del Sur" para cargarla en la plataforma de SAAC. Cuando está cargada, se marca como hecha. El equipo que recibe los avisos se elige en Equipos de apoyo.',
+    path: '/cruz-del-sur',
+    section: 'Protagonistas',
+    keywords: ['cruz del sur', 'altas', 'bajas', 'saac', 'cargar en saac', 'afiliar', 'registro'],
+    show: (c) => c.isSuperadmin || c.canAll('members', 'edit') || c.canAll('adults', 'edit'),
+  },
+  {
+    id: 'referentes',
+    title: 'Referentes de rama',
+    description:
+      'Programa → Referentes de rama: a quién consultar por cada rama. Les llega un aviso cuando una unidad de su rama carga una ficha o un campamento, y pueden ver (sin editar) las fichas, campamentos, progresión y calendario de esas unidades.',
+    path: '/programa/referentes',
+    section: 'Programa',
+    keywords: ['referente', 'referentes', 'rama', 'equipo de programa', 'a quién consulto'],
+    show: can('activities', 'view'),
+  },
+  {
+    id: 'sabados',
+    title: 'Sábados y servicio',
+    description:
+      'Calendario → Sábados y servicio: qué rama está de servicio cada sábado y qué pasa ese día (Consejo, feriado, campamento). Si tu unidad no puede, "Cambiar día" y les llega un aviso a los adultos de las unidades que se mueven.',
+    path: '/calendario/sabados',
+    section: 'Grupo',
+    keywords: ['sábado', 'sábados', 'servicio', 'rama de servicio', 'cambiar día', 'limpieza', 'merienda'],
+    show: can('calendar', 'view'),
+  },
+  {
+    id: 'temario-consejo',
+    title: 'Enviar el temario del Consejo',
+    description:
+      'En el acta del próximo Consejo, cargá el orden del día y tocá "Enviar temario": les llega a todos los del Consejo en la campanita y por mail.',
+    path: '/actas',
+    section: 'Grupo',
+    keywords: ['temario', 'orden del día', 'consejo de grupo', 'convocatoria', 'avisar al consejo'],
+    show: can('documents', 'edit'),
+  },
+  {
+    id: 'avisos',
+    title: 'Los avisos (la campanita)',
+    description:
+      'La campanita de arriba muestra lo que te toca: fichas y campamentos de tu rama, cambios de servicio, el temario del Consejo, altas y bajas. Tocando un aviso vas a lo que corresponde. También llegan por mail.',
+    path: '/',
+    section: 'Mi cuenta',
+    keywords: ['avisos', 'notificaciones', 'campanita', 'mails', 'me llegó un mail'],
+    show: (c) => c.loggedIn,
+  },
   {
     id: 'usuarios',
     title: 'Usuarios e invitaciones',

@@ -12,15 +12,53 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
 import { useToast } from '../../lib/toast';
-import { Button, Field, Input, Modal, Select } from '../../components/ui';
-import type { AccountRow, CategoryRow, MovementRow } from './types';
+import { Button, Field, Input, Modal, Select, UnitBadge } from '../../components/ui';
+import type { AccountRow, CategoryRow, MovementRow, UnitLite } from './types';
 import './accounting.css';
 
 export const useAccounts = (enabled = true) =>
   useQuery({ queryKey: ['acc-accounts'], queryFn: () => api.get<AccountRow[]>('/accounting/accounts'), enabled, staleTime: 30_000 });
 export const useCategories = () => useQuery({ queryKey: ['acc-categories'], queryFn: () => api.get<CategoryRow[]>('/accounting/categories'), staleTime: 60_000 });
+
+/** Cuentas agrupadas por dueña: primero las del Grupo y después las de cada unidad. */
+export function groupAccounts(accounts: AccountRow[]) {
+  const map = new Map<string, { key: string; label: string; unit: UnitLite | null; managers: string[]; accounts: AccountRow[] }>();
+  for (const a of accounts) {
+    const key = a.unitId ?? 'grupo';
+    const g = map.get(key) ?? { key, label: a.unit ? a.unit.name : 'Grupo', unit: a.unit ?? null, managers: a.managers ?? [], accounts: [] };
+    g.accounts.push(a);
+    map.set(key, g);
+  }
+  return [...map.values()].sort((x, y) => Number(!!x.unit) - Number(!!y.unit) || (x.unit?.code ?? x.label).localeCompare(y.unit?.code ?? y.label));
+}
+
+/** <option> de cuentas; si hay del Grupo y de unidades, separadas por dueña. */
+export function AccountOptions({ accounts }: { accounts: AccountRow[] }) {
+  const groups = groupAccounts(accounts);
+  const opt = (a: AccountRow) => (
+    <option key={a.id} value={a.id}>
+      {a.name}
+    </option>
+  );
+  if (groups.length < 2) return <>{accounts.map(opt)}</>;
+  return (
+    <>
+      {groups.map((g) => (
+        <optgroup key={g.key} label={g.unit ? `Unidad: ${g.label}` : 'Grupo'}>
+          {g.accounts.map(opt)}
+        </optgroup>
+      ))}
+    </>
+  );
+}
+
+/** De quién es la cuenta: el Grupo o la unidad. */
+export function AccountOwner({ unit }: { unit?: UnitLite | null }) {
+  return unit ? <UnitBadge unit={unit} short /> : <span className="muted">Grupo</span>;
+}
 
 /** Monto con signo y color: ingresos en verde, egresos en rojo. */
 export function Money({ value, kind, strong }: { value: number; kind?: 'ingreso' | 'egreso'; strong?: boolean }) {
@@ -72,8 +110,11 @@ export function MovementDialog({
 }) {
   const toast = useToast();
   const refresh = useRefreshTreasury();
+  const { can } = useAuth();
   const accounts = useAccounts();
   const categories = useCategories();
+  // Solo las cuentas que puede mover: todas (Grupo) o las de su unidad
+  const usable = (accounts.data ?? []).filter((a) => (a.active || a.id === movement?.accountId) && can('accounting', movement ? 'edit' : 'create', a.unitId));
   const form = useForm<TransactionInput>({
     resolver: zodResolver(transactionSchema),
     defaultValues: movement
@@ -102,6 +143,10 @@ export function MovementDialog({
     api.get<{ id: string; name: string }[]>('/events').then(setEvents).catch(() => setEvents([]));
     api.get<{ id: string; name: string }[]>('/camps').then(setCamps).catch(() => setCamps([]));
   }, [lockLink]);
+  // Con una sola cuenta posible (por ejemplo, la caja de la unidad), queda elegida
+  useEffect(() => {
+    if (!movement && usable.length === 1 && !watch('accountId')) setValue('accountId', usable[0].id);
+  }, [accounts.data]); // eslint-disable-line react-hooks/exhaustive-deps
   // Si la categoría no corresponde al tipo, se limpia
   useEffect(() => {
     const cat = categories.data?.find((c) => c.id === watch('categoryId'));
@@ -156,13 +201,7 @@ export function MovementDialog({
         <Field label="Cuenta" required error={e.accountId?.message}>
           <Select {...register('accountId')} invalid={!!e.accountId}>
             <option value="">Elegí la cuenta</option>
-            {accounts.data
-              ?.filter((a) => a.active || a.id === movement?.accountId)
-              .map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
+            <AccountOptions accounts={usable} />
           </Select>
         </Field>
         <Field label="Categoría" required error={e.categoryId?.message} full>

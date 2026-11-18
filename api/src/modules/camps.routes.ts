@@ -5,6 +5,7 @@
  * Permisos por la unidad organizadora (sin unidad = del Grupo: solo permisos de todo el Grupo).
  */
 import { Router, type Request } from 'express';
+import { accountIdsFor } from '../lib/accountAccess';
 import { Op, QueryTypes, type Transaction as SqlTx } from 'sequelize';
 import {
   BRANCH_INFO,
@@ -460,9 +461,11 @@ campsRouter.get(
     const realExpense = round2(byRubro.reduce((s, r) => s + r.actual, 0));
     const expected = round2(legajo.filter((l) => l.kind === 'protagonista').reduce((s, l) => s + l.net, 0));
     const collected = round2(legajo.reduce((s, l) => s + (l.charge?.paid ?? 0), 0));
+    // Solo los movimientos de las cuentas que puede ver (todas, o las de su unidad)
+    const visible = await accountIdsFor(req.auth, 'view');
     const movements = can(req.auth, 'accounting', 'view')
       ? await Movement.findAll({
-          where: { campId: camp.id },
+          where: { campId: camp.id, ...(visible ? { accountId: visible } : {}) },
           include: [
             { model: Account, as: 'account', attributes: ['id', 'name'] },
             { model: Category, as: 'category', attributes: ['id', 'name'] },

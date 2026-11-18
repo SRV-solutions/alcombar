@@ -5,7 +5,7 @@
  *  - Los movimientos de un mes cerrado no se editan ni se borran: se corrigen con "Anular" (contra-asiento).
  *  - Cada pago crea su recibo numerado (R-<año>-0001) y el/los ingresos en contabilidad (por concepto).
  */
-import { Router, type Request } from 'express';
+import { Router, type NextFunction, type Request, type Response } from 'express';
 import { Op, QueryTypes, type Transaction as SqlTx, type WhereOptions } from 'sequelize';
 import {
   accountSchema,
@@ -29,10 +29,11 @@ import {
   transactionSchema,
   unitsWith,
   voidSchema,
+  type Action,
   type ChargeConcept,
 } from '../shared';
 import { sequelize } from '../db';
-import { Guardian, Member, MemberGuardian, Unit, User } from '../models';
+import { Guardian, Member, MemberGuardian, Role, Unit, User, UserRole } from '../models';
 import {
   Account,
   Budget,
@@ -50,6 +51,7 @@ import {
   PeriodClose,
   SIGNED,
 } from '../models/treasury';
+import { accountOr400, assertAccount, canAccount, scopedAccountIds } from '../lib/accountAccess';
 import { writeAudit } from '../lib/audit';
 import { currentContext } from '../lib/context';
 import { sendCsv, toCsv } from '../lib/csv';
@@ -74,8 +76,35 @@ async function assertOpen(iso: string, transaction?: SqlTx) {
   }
 }
 
+/** Lo del Grupo en su conjunto (presupuesto, categorías, cierres): pide el permiso para todo el Grupo, no alcanza con el de una unidad. */
+const groupWide = (action: Action) => (req: Request, _res: Response, next: NextFunction) =>
+  canGroupWide(req.auth, 'accounting', action) ? next() : next(forbidden('Es de quien lleva las cuentas del Grupo (Tesorería)'));
+
+const unitAttrs = ['id', 'code', 'name', 'branch'];
+const NO_ID = '00000000-0000-0000-0000-000000000000';
+/** Reemplazo para "account_id IN (:ids)" (una lista vacía no es SQL válido). */
+const idsOrNone = (ids: string[]) => (ids.length ? ids : [NO_ID]);
+
+/** Quién lleva la plata de cada unidad (usuarios activos con el rol "Finanzas de la unidad" en esa unidad). */
+async function unitManagers(unitIds: string[]) {
+  const map = new Map<string, string[]>();
+  if (!unitIds.length) return map;
+  const rows = await UserRole.findAll({
+    where: { unitId: [...new Set(unitIds)] },
+    include: [
+      { model: Role, as: 'role', where: { key: 'finanzas_unidad' }, attributes: ['id'], required: true },
+      { model: User, as: 'user', where: { active: true }, attributes: ['name'], required: true },
+    ],
+  });
+  for (const r of rows) {
+    const name = (r as UserRole & { user?: User }).user?.name;
+    if (r.unitId && name) map.set(r.unitId, [...(map.get(r.unitId) ?? []), name]);
+  }
+  return map;
+}
+
 const movementInclude = [
-  { model: Account, as: 'account', attributes: ['id', 'name', 'type'] },
+  { model: Account, as: 'account', attributes: ['id', 'name', 'type', 'unitId'], paranoid: false },
   { model: Category, as: 'category', attributes: ['id', 'name', 'kind', 'code'] },
   { model: GroupEvent, as: 'event', attributes: ['id', 'name'] },
   { model: Camp, as: 'camp', attributes: ['id', 'name'] },
@@ -148,19 +177,24 @@ async function chargeWithMember(id: string) {
 accountingRouter.get(
   '/accounts',
   ah(async (req, res) => {
-    // Las ven quienes llevan la contabilidad o registran pagos
-    if (!(can(req.auth, 'accounting', 'view') || can(req.auth, 'fees', 'create') || can(req.auth, 'fees', 'edit'))) throw forbidden();
-    const accounts = await Account.findAll({ order: [['name', 'ASC']] });
+    // Las ven quienes llevan la contabilidad (las de su alcance: del Grupo y/o de su unidad) y quienes registran pagos
+    // (las del Grupo, para elegir dónde entra el pago)
+    const payer = can(req.auth, 'fees', 'create') || can(req.auth, 'fees', 'edit');
+    if (!(can(req.auth, 'accounting', 'view') || payer)) throw forbidden();
+    const accounts = (await Account.findAll({ include: [{ model: Unit, as: 'unit', attributes: unitAttrs }], order: [['name', 'ASC']] })).filter(
+      (a) => canAccount(req.auth, 'view', a) || (payer && !a.unitId),
+    );
+    const managers = await unitManagers(accounts.map((a) => a.unitId).filter((x): x is string => !!x));
     const balances = await sequelize.query<{ account_id: string; net: string }>(
       `SELECT account_id, SUM(CASE WHEN kind='ingreso' THEN amount ELSE -amount END) AS net
        FROM transactions WHERE deleted_at IS NULL GROUP BY account_id`,
       { type: QueryTypes.SELECT },
     );
-    const showBalance = can(req.auth, 'accounting', 'view');
     res.json(
       accounts.map((a) => ({
         ...a.toJSON(),
-        balance: showBalance ? round2(a.initialBalance + Number(balances.find((b) => b.account_id === a.id)?.net ?? 0)) : null,
+        balance: canAccount(req.auth, 'view', a) ? round2(a.initialBalance + Number(balances.find((b) => b.account_id === a.id)?.net ?? 0)) : null,
+        managers: a.unitId ? managers.get(a.unitId) ?? [] : [],
       })),
     );
   }),
@@ -169,7 +203,10 @@ accountingRouter.post(
   '/accounts',
   authorize('accounting', 'create'),
   ah(async (req, res) => {
-    res.status(201).json(await Account.create(parse(accountSchema, req.body)));
+    const data = parse(accountSchema, req.body);
+    assertAccount(req.auth, 'create', data);
+    if (data.unitId && !(await Unit.findByPk(data.unitId))) throw badRequest('Revisá los datos', { unitId: 'Unidad inexistente' });
+    res.status(201).json(await Account.create(data));
   }),
 );
 accountingRouter.put(
@@ -178,7 +215,14 @@ accountingRouter.put(
   ah(async (req, res) => {
     const a = await Account.findByPk(req.params.id);
     if (!a) throw notFound();
-    await a.update(parse(accountSchema, req.body));
+    assertAccount(req.auth, 'edit', a);
+    const data = parse(accountSchema, req.body);
+    if ((data.unitId ?? null) !== (a.unitId ?? null)) {
+      // Cambiarla de dueño: hay que poder manejar las dos (la de antes y la nueva)
+      assertAccount(req.auth, 'edit', data);
+      if (data.unitId && !(await Unit.findByPk(data.unitId))) throw badRequest('Revisá los datos', { unitId: 'Unidad inexistente' });
+    }
+    await a.update(data);
     res.json(a);
   }),
 );
@@ -188,6 +232,7 @@ accountingRouter.delete(
   ah(async (req, res) => {
     const a = await Account.findByPk(req.params.id);
     if (!a) throw notFound();
+    assertAccount(req.auth, 'delete', a);
     if (await Movement.count({ where: { accountId: a.id }, paranoid: false })) throw badRequest('La cuenta tiene movimientos: desactivala en lugar de eliminarla.');
     await a.destroy();
     res.json({ ok: true });
@@ -202,14 +247,14 @@ accountingRouter.get(
 );
 accountingRouter.post(
   '/categories',
-  authorize('accounting', 'create'),
+  groupWide('create'),
   ah(async (req, res) => {
     res.status(201).json(await Category.create({ ...parse(categorySchema, req.body), code: null }));
   }),
 );
 accountingRouter.put(
   '/categories/:id',
-  authorize('accounting', 'edit'),
+  groupWide('edit'),
   ah(async (req, res) => {
     const c = await Category.findByPk(req.params.id);
     if (!c) throw notFound();
@@ -223,7 +268,8 @@ accountingRouter.put(
 // ===================================================================
 // Movimientos
 // ===================================================================
-function movementWhere(req: Request): WhereOptions {
+/** Filtros de la lista de movimientos, siempre dentro de las cuentas que puede ver (y del ámbito elegido). */
+async function movementWhere(req: Request): Promise<WhereOptions> {
   const w: Record<string | symbol, unknown> = {};
   const from = String(req.query.from ?? '');
   const to = String(req.query.to ?? '');
@@ -241,6 +287,8 @@ function movementWhere(req: Request): WhereOptions {
   }
   const q = String(req.query.q ?? '').trim();
   if (q) w.description = { [Op.iLike]: `%${q}%` };
+  const ids = await scopedAccountIds(req, 'view');
+  if (ids) w.accountId = w.accountId ? ids.filter((id) => id === w.accountId) : ids;
   return w;
 }
 
@@ -248,7 +296,7 @@ accountingRouter.get(
   '/movements',
   authorize('accounting', 'view'),
   ah(async (req, res) => {
-    const where = movementWhere(req);
+    const where = await movementWhere(req);
     const page = Math.max(1, Number(req.query.page) || 1);
     const pageSize = Math.min(200, Number(req.query.pageSize) || 100);
     const { rows, count } = await Movement.findAndCountAll({
@@ -287,7 +335,7 @@ accountingRouter.get(
   '/movements/export',
   authorize('accounting', 'export'),
   ah(async (req, res) => {
-    const rows = await Movement.findAll({ where: movementWhere(req), include: movementInclude, order: [['date', 'ASC'], ['createdAt', 'ASC']] });
+    const rows = await Movement.findAll({ where: await movementWhere(req), include: movementInclude, order: [['date', 'ASC'], ['createdAt', 'ASC']] });
     const csv = toCsv(
       ['fecha', 'tipo', 'cuenta', 'categoria', 'monto', 'descripcion', 'evento', 'campamento', 'recibo', 'comprobante', 'anulado', 'cargado_por'],
       rows.map((m) => [
@@ -316,8 +364,12 @@ const withRubro = <T extends { kind: string; campId: string | null; campRubro: s
   campRubro: d.campId ? (d.kind === 'egreso' ? d.campRubro ?? 'otro' : null) : null,
 });
 
-async function validateRefs(data: { accountId: string; categoryId?: string | null; kind?: string; eventId?: string | null; campId?: string | null }) {
-  if (!(await Account.findByPk(data.accountId))) throw badRequest('Revisá los datos', { accountId: 'Cuenta inexistente' });
+async function validateRefs(
+  req: Request,
+  action: Action,
+  data: { accountId: string; categoryId?: string | null; kind?: string; eventId?: string | null; campId?: string | null },
+) {
+  assertAccount(req.auth, action, await accountOr400(data.accountId));
   if (data.categoryId) {
     const c = await Category.findByPk(data.categoryId);
     if (!c) throw badRequest('Revisá los datos', { categoryId: 'Categoría inexistente' });
@@ -332,16 +384,17 @@ accountingRouter.post(
   authorize('accounting', 'create'),
   ah(async (req, res) => {
     const data = withRubro(parse(transactionSchema, req.body));
-    await validateRefs(data);
+    await validateRefs(req, 'create', data);
     await assertOpen(data.date);
     const m = await Movement.create({ ...data, createdByUserId: currentContext().userId });
     res.status(201).json(m);
   }),
 );
 
-async function editableMovement(id: string) {
-  const m = await Movement.findByPk(id);
+async function editableMovement(req: Request, action: Action) {
+  const m = await Movement.findByPk(req.params.id, { include: [{ model: Account, as: 'account', attributes: ['id', 'unitId'], paranoid: false }] });
   if (!m) throw notFound();
+  assertAccount(req.auth, action, m.account ?? { unitId: null });
   if (m.voided || m.reversesId) throw badRequest('Un movimiento anulado (o una anulación) no se modifica');
   if (m.paymentId) throw badRequest('Es el ingreso de un pago: para corregirlo anulá el pago desde la cuenta del protagonista');
   if (m.transferGroup) throw badRequest('Es una transferencia: para corregirla usá "Anular"');
@@ -353,9 +406,9 @@ accountingRouter.put(
   '/movements/:id',
   authorize('accounting', 'edit'),
   ah(async (req, res) => {
-    const m = await editableMovement(req.params.id);
+    const m = await editableMovement(req, 'edit');
     const data = withRubro(parse(transactionSchema, req.body));
-    await validateRefs(data);
+    await validateRefs(req, 'edit', data);
     await assertOpen(data.date);
     await m.update(data);
     res.json(m);
@@ -366,7 +419,7 @@ accountingRouter.delete(
   '/movements/:id',
   authorize('accounting', 'delete'),
   ah(async (req, res) => {
-    const m = await editableMovement(req.params.id);
+    const m = await editableMovement(req, 'delete');
     await m.destroy();
     res.json({ ok: true });
   }),
@@ -381,6 +434,11 @@ accountingRouter.post(
     const m = await Movement.findByPk(req.params.id);
     if (!m) throw notFound();
     if (m.paymentId) throw badRequest('Es el ingreso de un pago: anulá el pago desde la cuenta del protagonista');
+    // Hay que poder manejar todas las cuentas que toca (en una transferencia, las dos)
+    const legAccounts = m.transferGroup
+      ? (await Movement.findAll({ where: { transferGroup: m.transferGroup, reversesId: null }, attributes: ['accountId'] })).map((x) => x.accountId)
+      : [m.accountId];
+    for (const a of await Account.findAll({ where: { id: legAccounts }, attributes: ['id', 'unitId'], paranoid: false })) assertAccount(req.auth, 'edit', a);
     await sequelize.transaction(async (transaction) => {
       const legs = m.transferGroup ? await Movement.findAll({ where: { transferGroup: m.transferGroup, reversesId: null }, transaction }) : [m];
       for (const leg of legs) await reverseMovement(leg, date, data.reason, transaction);
@@ -395,8 +453,10 @@ accountingRouter.post(
   ah(async (req, res) => {
     const data = parse(accountTransferSchema, req.body);
     if (data.fromAccountId === data.toAccountId) throw badRequest('Revisá los datos', { toAccountId: 'Elegí otra cuenta' });
-    const [from, to] = await Promise.all([Account.findByPk(data.fromAccountId), Account.findByPk(data.toAccountId)]);
-    if (!from || !to) throw badRequest('Cuenta inexistente');
+    const [from, to] = await Promise.all([accountOr400(data.fromAccountId, 'fromAccountId'), accountOr400(data.toAccountId, 'toAccountId')]);
+    // Las dos puntas: la plata que el Grupo le pasa a una unidad la registra quien lleva las cuentas del Grupo
+    assertAccount(req.auth, 'create', from);
+    assertAccount(req.auth, 'create', to);
     await assertOpen(data.date);
     const group = crypto.randomUUID();
     const desc = data.description ?? `Transferencia ${from.name} → ${to.name}`;
@@ -417,19 +477,36 @@ accountingRouter.get(
   authorize('accounting', 'view'),
   ah(async (req, res) => {
     const year = Number(req.query.year) || new Date().getFullYear();
-    const accounts = await Account.findAll({ order: [['name', 'ASC']] });
+    // Lo que puede ver (todas las cuentas o las de su unidad), acotado al ámbito elegido (el Grupo o una unidad)
+    const ids = await scopedAccountIds(req, 'view');
+    const inIds = ids ? 'AND account_id IN (:ids)' : '';
+    const replacements = { ids: ids ? idsOrNone(ids) : [NO_ID], from: `${year}-01-01`, to: `${year}-12-31` };
+    const accounts = await Account.findAll({ where: ids ? { id: ids } : {}, include: [{ model: Unit, as: 'unit', attributes: unitAttrs }], order: [['name', 'ASC']] });
     const net = await sequelize.query<{ account_id: string; net: string }>(
-      `SELECT account_id, SUM(CASE WHEN kind='ingreso' THEN amount ELSE -amount END) AS net FROM transactions WHERE deleted_at IS NULL GROUP BY account_id`,
-      { type: QueryTypes.SELECT },
+      `SELECT account_id, SUM(CASE WHEN kind='ingreso' THEN amount ELSE -amount END) AS net FROM transactions WHERE deleted_at IS NULL ${inIds} GROUP BY account_id`,
+      { type: QueryTypes.SELECT, replacements },
     );
     const months = await sequelize.query<{ m: number; kind: string; total: string }>(
       `SELECT EXTRACT(MONTH FROM date)::int AS m, kind, SUM(amount) AS total FROM transactions
-       WHERE deleted_at IS NULL AND transfer_group IS NULL AND date BETWEEN :from AND :to GROUP BY 1, 2`,
-      { type: QueryTypes.SELECT, replacements: { from: `${year}-01-01`, to: `${year}-12-31` } },
+       WHERE deleted_at IS NULL AND transfer_group IS NULL AND date BETWEEN :from AND :to ${inIds} GROUP BY 1, 2`,
+      { type: QueryTypes.SELECT, replacements },
     );
+    // Mirando una parte (una unidad, o el Grupo sin las unidades): lo que entró o salió por transferencias con cuentas de
+    // afuera, por ejemplo la plata que el Grupo le pasa a la unidad. Neto: + entró, − salió.
+    let transfers: number | null = null;
+    if (ids) {
+      const [row] = await sequelize.query<{ net: string | null }>(
+        `SELECT SUM(CASE WHEN t.kind='ingreso' THEN t.amount ELSE -t.amount END) AS net FROM transactions t
+         WHERE t.deleted_at IS NULL AND t.transfer_group IS NOT NULL AND t.account_id IN (:ids) AND t.date BETWEEN :from AND :to
+           AND NOT EXISTS (SELECT 1 FROM transactions o WHERE o.transfer_group = t.transfer_group AND o.id <> t.id AND o.deleted_at IS NULL
+                           AND (o.reverses_id IS NULL) = (t.reverses_id IS NULL) AND o.account_id IN (:ids))`,
+        { type: QueryTypes.SELECT, replacements },
+      );
+      transfers = round2(Number(row?.net ?? 0));
+    }
     const closes = await PeriodClose.findAll({ where: { year }, include: [{ model: User, as: 'closedBy', attributes: ['id', 'name'] }], order: [['month', 'ASC']] });
-    const recent = await Movement.findAll({ include: movementInclude, order: [['date', 'DESC'], ['createdAt', 'DESC']], limit: 8 });
-    const budget = await Budget.findOne({ where: { year } });
+    const recent = await Movement.findAll({ where: ids ? { accountId: ids } : {}, include: movementInclude, order: [['date', 'DESC'], ['createdAt', 'DESC']], limit: 8 });
+    const budget = canGroupWide(req.auth, 'accounting', 'view') ? await Budget.findOne({ where: { year } }) : null;
     const byMonth = Array.from({ length: 12 }, (_, i) => {
       const inc = Number(months.find((x) => x.m === i + 1 && x.kind === 'ingreso')?.total ?? 0);
       const exp = Number(months.find((x) => x.m === i + 1 && x.kind === 'egreso')?.total ?? 0);
@@ -445,6 +522,7 @@ accountingRouter.get(
       totals: {
         ingresos: round2(byMonth.reduce((s, m) => s + m.ingresos, 0)),
         egresos: round2(byMonth.reduce((s, m) => s + m.egresos, 0)),
+        transfers,
       },
       closes,
       recent,
@@ -462,7 +540,7 @@ accountingRouter.get(
 );
 accountingRouter.post(
   '/closes',
-  authorize('accounting', 'approve'),
+  groupWide('approve'),
   ah(async (req, res) => {
     const data = parse(periodCloseSchema, req.body);
     const now = new Date();
@@ -474,7 +552,7 @@ accountingRouter.post(
 );
 accountingRouter.delete(
   '/closes/:id',
-  authorize('accounting', 'approve'),
+  groupWide('approve'),
   ah(async (req, res) => {
     const c = await PeriodClose.findByPk(req.params.id);
     if (!c) throw notFound();
@@ -500,7 +578,7 @@ async function actualByCategory(year: number) {
 
 accountingRouter.get(
   '/budgets/:year',
-  authorize('accounting', 'view'),
+  groupWide('view'),
   ah(async (req, res) => {
     const year = Number(req.params.year);
     const budget = await Budget.findOne({ where: { year }, include: [{ model: BudgetLine, as: 'lines' }, { model: User, as: 'approvedBy', attributes: ['id', 'name'] }] });
@@ -534,14 +612,14 @@ accountingRouter.get(
 );
 accountingRouter.put(
   '/budgets/:year',
-  authorize('accounting', 'edit'),
+  groupWide('edit'),
   ah(async (req, res) => {
     const year = Number(req.params.year);
     if (!year || year < 2000 || year > 2100) throw badRequest('Año inválido');
     const data = parse(budgetSchema, req.body);
     await sequelize.transaction(async (transaction) => {
       let budget = await Budget.findOne({ where: { year }, transaction });
-      if (budget?.status === 'aprobado' && !can(req.auth, 'accounting', 'approve')) throw forbidden('El presupuesto está aprobado: solo quien aprueba lo puede modificar');
+      if (budget?.status === 'aprobado' && !canGroupWide(req.auth, 'accounting', 'approve')) throw forbidden('El presupuesto está aprobado: solo quien aprueba lo puede modificar');
       if (!budget) budget = await Budget.create({ year, status: 'borrador', notes: data.notes }, { transaction });
       else await budget.update({ notes: data.notes }, { transaction });
       const current = await BudgetLine.findAll({ where: { budgetId: budget.id }, transaction });
@@ -559,7 +637,7 @@ accountingRouter.put(
 );
 accountingRouter.post(
   '/budgets/:year/approve',
-  authorize('accounting', 'approve'),
+  groupWide('approve'),
   ah(async (req, res) => {
     const budget = await Budget.findOne({ where: { year: Number(req.params.year) } });
     if (!budget) throw badRequest('Primero cargá el presupuesto');
@@ -575,7 +653,8 @@ accountingRouter.get(
     const year = new Date().getFullYear();
     const from = String(req.query.from || `${year}-01-01`);
     const to = String(req.query.to || todayIso());
-    const accounts = await Account.findAll({ order: [['name', 'ASC']] });
+    const ids = await scopedAccountIds(req, 'view');
+    const accounts = await Account.findAll({ where: ids ? { id: ids } : {}, include: [{ model: Unit, as: 'unit', attributes: unitAttrs }], order: [['name', 'ASC']] });
     const before = await sequelize.query<{ account_id: string; net: string }>(
       `SELECT account_id, SUM(CASE WHEN kind='ingreso' THEN amount ELSE -amount END) AS net FROM transactions
        WHERE deleted_at IS NULL AND date < :from GROUP BY account_id`,
@@ -590,7 +669,7 @@ accountingRouter.get(
       const opening = round2(a.initialBalance + Number(before.find((b) => b.account_id === a.id)?.net ?? 0));
       const inc = round2(Number(range.find((r) => r.account_id === a.id && r.kind === 'ingreso')?.total ?? 0));
       const exp = round2(Number(range.find((r) => r.account_id === a.id && r.kind === 'egreso')?.total ?? 0));
-      return { accountId: a.id, name: a.name, opening, ingresos: inc, egresos: exp, closing: round2(opening + inc - exp) };
+      return { accountId: a.id, name: a.name, unit: a.unit ?? null, opening, ingresos: inc, egresos: exp, closing: round2(opening + inc - exp) };
     });
     res.json({ from, to, rows });
   }),
@@ -619,7 +698,7 @@ accountingRouter.get(
     const showEvents = can(req.auth, 'accounting', 'view') || can(req.auth, 'events', 'view');
     const events = showEvents ? await GroupEvent.findAll({ where: { date: range }, order: [['date', 'ASC']] }) : [];
     const campsAll = await Camp.findAll({ where: { startDate: range }, order: [['startDate', 'ASC']] });
-    const camps = campsAll.filter((c) => can(req.auth, 'accounting', 'view') || can(req.auth, 'camps', 'view', c.ownerUnitId));
+    const camps = campsAll.filter((c) => canGroupWide(req.auth, 'accounting', 'view') || can(req.auth, 'camps', 'view', c.ownerUnitId));
     res.json({
       year,
       events: events.map((e) => {
@@ -663,7 +742,8 @@ accountingRouter.get(
 accountingRouter.put(
   '/fees/plans/:year',
   ah(async (req, res) => {
-    if (!canGroupWide(req.auth, 'fees', 'edit')) throw forbidden();
+    // Los montos los define Tesorería (quien aprueba el presupuesto); Secretaría cobra con ese plan
+    if (!canGroupWide(req.auth, 'fees', 'edit') || !canGroupWide(req.auth, 'accounting', 'approve')) throw forbidden('Los montos del plan de cuotas los define Tesorería');
     const year = Number(req.params.year);
     if (!year || year < 2000 || year > 2100) throw badRequest('Año inválido');
     const data = parse(feePlanSchema, req.body);
@@ -693,7 +773,7 @@ async function siblingOrder(memberIds: string[]) {
 accountingRouter.post(
   '/fees/generate',
   ah(async (req, res) => {
-    if (!canGroupWide(req.auth, 'fees', 'create') || !canGroupWide(req.auth, 'fees', 'edit')) throw forbidden('Generar cuotas lo hace Tesorería');
+    if (!canGroupWide(req.auth, 'fees', 'create') || !canGroupWide(req.auth, 'fees', 'edit')) throw forbidden('Generar las cuotas lo hacen Secretaría y Tesorería');
     const data = parse(generateChargesSchema, req.body);
     const preview = req.query.preview === '1' || req.body?.preview === true;
     const plan = await FeePlan.findOne({ where: { year: data.year } });
@@ -947,7 +1027,9 @@ accountingRouter.post(
     const data = parse(paymentSchema, req.body);
     const member = await Member.findByPk(req.params.memberId, { attributes: ['id', 'firstName', 'lastName', 'unitId'] });
     if (!member) throw notFound();
-    if (!(await Account.findByPk(data.accountId))) throw badRequest('Revisá los datos', { accountId: 'Cuenta inexistente' });
+    const account = await accountOr400(data.accountId);
+    // Los cobros entran en una cuenta del Grupo, o en la de una unidad si quien cobra lleva esa cuenta
+    if (account.unitId && !canAccount(req.auth, 'create', account)) throw badRequest('Revisá los datos', { accountId: 'Es la cuenta de una unidad: elegí una cuenta del Grupo' });
     const result = await sequelize.transaction(async (transaction) => {
       await assertOpen(data.date, transaction);
       const where: Record<string, unknown> = { memberId: member.id, status: { [Op.in]: ['pendiente', 'parcial'] } };
