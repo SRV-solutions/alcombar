@@ -11,6 +11,7 @@ import { SearchSelect } from '../../components/SearchSelect';
 import { Badge, Button, Card, ErrorBox, Field, Input, Loading, Modal, type Tone } from '../../components/ui';
 import { AuthorizationPaper } from './AuthorizationPaper';
 import { SignDialog } from './SignDialog';
+import { DeleteAuthButton } from './AuthorizationsPage';
 import type { AuthDetail } from './types';
 
 export const AUTH_STATUS_TONE: Record<AuthStatus, Tone> = { firmada: 'warn', completa: 'ok', anulada: 'danger' };
@@ -121,11 +122,14 @@ export function AuthorizationDocPage() {
         voided={voided ? { at: a.voidedAt, reason: a.voidReason } : null}
       />
 
-      {a.canVoid ? (
+      {a.canVoid || a.canDelete ? (
         <div className="row no-print" style={{ justifyContent: 'flex-end' }}>
-          <Button variant="ghost" size="sm" onClick={() => setDialog('void')}>
-            <Ban /> Anular esta autorización
-          </Button>
+          {a.canVoid ? (
+            <Button variant="ghost" size="sm" onClick={() => setDialog('void')}>
+              <Ban /> Anular esta autorización
+            </Button>
+          ) : null}
+          {a.canDelete ? <DeleteAuthButton row={a} onDone={() => navigate(-1)} /> : null}
         </div>
       ) : null}
 

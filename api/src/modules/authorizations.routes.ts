@@ -109,6 +109,8 @@ function row(a: SignedAuthorization, req: Request) {
     canWitness: active && a.witnesses.length < AUTH_WITNESSES[a.kind] && can(req.auth, 'member_documents', 'edit', unitId),
     canApprove: active && AUTH_NEEDS_AVAL[a.kind] && !a.aval && can(req.auth, 'member_documents', 'approve', unitId),
     canVoid: active && can(req.auth, 'member_documents', 'approve', unitId),
+    // Eliminar (pruebas o errores de carga): solo el Superadmin
+    canDelete: !!req.auth?.isSuperadmin,
   };
 }
 const listInclude = [
@@ -545,6 +547,32 @@ authorizationsRouter.post(
         transaction,
       });
       if (!others) await syncLegajo(a, false, transaction);
+    });
+    res.json({ ok: true });
+  }),
+);
+
+// ---------------- Eliminar (pruebas o errores de carga) ----------------
+/**
+ * Solo el Superadmin. Es un borrado lógico (queda en la base y en la auditoría, pero deja de verse). Si no queda
+ * otra vigente del mismo tipo, el legajo o la inscripción vuelven a mostrarla como faltante. En el uso normal se
+ * anula, que deja el registro a la vista.
+ */
+authorizationsRouter.delete(
+  '/:id',
+  ah(async (req, res) => {
+    if (!req.auth?.isSuperadmin) throw forbidden('Eliminar una autorización lo hace el Superadmin. Si hubo un error, anulala.');
+    await sequelize.transaction(async (transaction) => {
+      const a = await SignedAuthorization.findByPk(req.params.id, { transaction });
+      if (!a) throw notFound();
+      if (a.status !== 'anulada') {
+        const others = await SignedAuthorization.count({
+          where: { id: { [Op.ne]: a.id }, memberId: a.memberId, kind: a.kind, status: { [Op.ne]: 'anulada' }, ...(a.kind === 'campamento' ? { campId: a.campId } : a.kind === 'ingreso' ? {} : { year: a.year }) },
+          transaction,
+        });
+        if (!others) await syncLegajo(a, false, transaction);
+      }
+      await a.destroy({ transaction });
     });
     res.json({ ok: true });
   }),

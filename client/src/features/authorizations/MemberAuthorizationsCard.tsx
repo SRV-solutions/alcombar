@@ -6,7 +6,7 @@ import { AUTH_KIND_LABELS, AUTH_STATUS_LABELS, formatDate } from '@shared';
 import { api, qs } from '../../lib/api';
 import { Badge, Button, Card, Empty } from '../../components/ui';
 import { AUTH_STATUS_TONE } from './AuthorizationDocPage';
-import { authScope, NewAuthorizationDialog, PdfButton } from './AuthorizationsPage';
+import { authScope, DeleteAuthButton, NewAuthorizationDialog, PdfButton } from './AuthorizationsPage';
 import type { AuthRow } from './types';
 
 /** En la ficha del protagonista: sus autorizaciones firmadas en la app y el botón para hacer firmar otra. */
@@ -57,6 +57,7 @@ export function MemberAuthorizationsCard({ memberId, canSign }: { memberId: stri
                 </td>
                 <td className="num nowrap">
                   <PdfButton row={r} />
+                  {r.canDelete ? <DeleteAuthButton row={r} /> : null}
                 </td>
               </tr>
             ))}

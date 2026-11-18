@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Download, FileSignature, PenLine } from 'lucide-react';
+import { Download, FileSignature, PenLine, Trash2 } from 'lucide-react';
 import { AUTH_KIND_ANNUAL, AUTH_KIND_LABELS, AUTH_STATUS_LABELS, formatDate, type AuthKind } from '@shared';
 import { api, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -9,11 +9,45 @@ import { useUnits } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { MemberListItem } from '../../lib/types';
 import { SearchSelect } from '../../components/SearchSelect';
-import { Badge, Button, Card, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Select, UnitBadge } from '../../components/ui';
+import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Select, UnitBadge } from '../../components/ui';
 import { AUTH_STATUS_TONE } from './AuthorizationDocPage';
 import { SignDialog } from './SignDialog';
 import type { AuthRow } from './types';
 import './authorization.css';
+
+/** Eliminar una autorización de prueba o cargada por error (solo Superadmin). */
+export function DeleteAuthButton({ row, onDone }: { row: Pick<AuthRow, 'id' | 'kind' | 'member' | 'signerName'>; onDone?: () => void }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  return (
+    <ConfirmButton
+      variant="ghost"
+      size="sm"
+      title="Eliminar autorización"
+      message={
+        <>
+          <p>
+            ¿Eliminar la {AUTH_KIND_LABELS[row.kind].toLowerCase()} de {row.member?.firstName} {row.member?.lastName}, firmada por {row.signerName}?
+          </p>
+          <p className="muted">Usalo para pruebas o errores de carga: deja de verse y el legajo vuelve a mostrarla como faltante. Si fue una autorización real, mejor anulala.</p>
+        </>
+      }
+      confirmLabel="Eliminar"
+      onConfirm={async () => {
+        try {
+          await api.del(`/authorizations/${row.id}`);
+          await Promise.all(['authorizations', 'member', 'members', 'doc-board', 'camp'].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+          toast.ok('Autorización eliminada');
+          onDone?.();
+        } catch (e) {
+          toast.error(e);
+        }
+      }}
+    >
+      <Trash2 />
+    </ConfirmButton>
+  );
+}
 
 /** Botón que baja el PDF de una autorización firmada. */
 export function PdfButton({ row }: { row: Pick<AuthRow, 'id' | 'kind' | 'member'> }) {
@@ -264,6 +298,7 @@ export function AuthorizationsPage() {
                   </td>
                   <td className="num nowrap">
                     <PdfButton row={r} />
+                    {r.canDelete ? <DeleteAuthButton row={r} /> : null}
                   </td>
                 </tr>
               ))}

@@ -25,6 +25,8 @@ export interface AuthRow {
   canWitness: boolean;
   canApprove: boolean;
   canVoid: boolean;
+  /** Eliminar (pruebas o errores de carga): solo el Superadmin. */
+  canDelete: boolean;
 }
 export interface AdultSignature {
   adultId: string | null;
