@@ -143,7 +143,7 @@ groupRouter.get(
         ...t.toJSON(),
         members: members
           .filter((m) => m.supportTeamId === t.id && m.adult?.status !== 'baja')
-          .map((m) => ({ id: m.adult!.id, firstName: m.adult!.firstName, lastName: m.adult!.lastName, totem: m.adult!.totem, position: m.position })),
+          .map((m) => ({ id: m.adult!.id, firstName: m.adult!.firstName, lastName: m.adult!.lastName, totem: m.adult!.totem, position: m.position, assignmentId: m.id, branch: m.branch ?? null })),
       })),
     );
   }),

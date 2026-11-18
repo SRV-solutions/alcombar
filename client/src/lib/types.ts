@@ -44,7 +44,8 @@ export interface SupportTeam {
   /** Recibe los avisos de altas y bajas para cargar en Cruz del Sur. */
   receivesRegistryAlerts: boolean;
   leader: AdultRef | null;
-  members: (AdultRef & { position: string })[];
+  /** Integrantes del año, con su cargo (assignmentId) para editarlo o sacarlo. */
+  members: (AdultRef & { position: string; assignmentId: string; branch: string | null })[];
 }
 export interface Course {
   id: string;

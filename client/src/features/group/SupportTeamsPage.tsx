@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { z } from 'zod';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { supportTeamSchema } from '@shared';
+import { BRANCH_INFO, supportTeamSchema, type Branch } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
@@ -13,8 +13,101 @@ import { adultName, useAdults } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { SupportTeam } from '../../lib/types';
 import { Badge, Button, Checkbox, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select, Textarea } from '../../components/ui';
+import { SearchSelect } from '../../components/SearchSelect';
 
 type TeamForm = z.input<typeof supportTeamSchema>;
+type Member = SupportTeam['members'][number];
+
+const FUNCTIONS = ['Integrante de equipo', 'Encargado/a de equipo'];
+const OTHER = '__otra';
+
+/**
+ * Agregar a alguien al equipo (o cambiarle la función): es su cargo del año, el mismo que se ve en su ficha.
+ * Si queda como encargado/a, el equipo lo toma como encargado/a y el anterior pasa a integrante.
+ */
+function MemberModal({ team, member, onClose }: { team: SupportTeam; member?: Member; onClose: () => void }) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  const adults = useAdults();
+  const year = new Date().getFullYear();
+  const isFixed = (p: string) => FUNCTIONS.includes(p);
+  const [adultId, setAdultId] = useState(member?.id ?? '');
+  const [fn, setFn] = useState(member ? (isFixed(member.position) ? member.position : OTHER) : FUNCTIONS[0]);
+  const [other, setOther] = useState(member && !isFixed(member.position) ? member.position : '');
+  const [busy, setBusy] = useState(false);
+  const inTeam = new Set(team.members.map((m) => m.id));
+  const position = fn === OTHER ? other.trim() : fn;
+
+  const save = async () => {
+    if (!adultId || !position) return;
+    setBusy(true);
+    try {
+      if (member) await api.put(`/adults/assignments/${member.assignmentId}`, { year, position, supportTeamId: team.id, unitId: null });
+      else await api.post(`/adults/${adultId}/assignments`, { year, position, supportTeamId: team.id, unitId: null });
+      await Promise.all(['support-teams', 'adult', 'adults', 'organigrama'].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+      toast.ok(member ? 'Función actualizada' : 'Agregado al equipo');
+      onClose();
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={member ? `Función en ${team.name}` : `Agregar a ${team.name}`}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} loading={busy} disabled={!adultId || !position}>
+            {member ? 'Guardar' : 'Agregar'}
+          </Button>
+        </>
+      }
+    >
+      <div className="form-grid">
+        <Field label="Adulto" required full>
+          {member ? (
+            <b>{adultName(member)}</b>
+          ) : (
+            <SearchSelect
+              value={adultId}
+              onChange={setAdultId}
+              placeholder={adults.isLoading ? 'Cargando…' : 'Elegí al adulto'}
+              searchPlaceholder="Buscar por nombre o tótem"
+              options={(adults.data ?? [])
+                .filter((a) => a.status !== 'baja' && !inTeam.has(a.id))
+                .map((a) => ({ value: a.id, label: `${a.lastName}, ${a.firstName}`, hint: a.totem ? `«${a.totem}»` : undefined, keywords: a.totem ?? '' }))}
+            />
+          )}
+        </Field>
+        <Field label="Función" required full hint={fn === FUNCTIONS[1] ? 'Queda como encargado/a del equipo; si había otro, pasa a integrante.' : undefined}>
+          <Select value={fn} onChange={(e) => setFn(e.target.value)}>
+            {FUNCTIONS.map((f) => (
+              <option key={f} value={f}>
+                {f === FUNCTIONS[0] ? 'Integrante' : 'Encargado/a del equipo'}
+              </option>
+            ))}
+            <option value={OTHER}>Otra función…</option>
+          </Select>
+        </Field>
+        {fn === OTHER ? (
+          <Field label="Cuál" required full hint="Por ejemplo: Tesorero/a, Coordinador/a de redes">
+            <Input value={other} onChange={(e) => setOther(e.target.value)} autoFocus />
+          </Field>
+        ) : null}
+        <p className="muted full" style={{ margin: 0 }}>
+          Queda como su cargo {year} en este equipo: también se ve en su ficha y en el organigrama.
+          {/^programa/i.test(team.name) ? ' Los referentes de cada rama se cargan en Programa → Referentes de rama.' : ''}
+        </p>
+      </div>
+    </Modal>
+  );
+}
 
 function TeamModal({ team, onClose }: { team?: SupportTeam; onClose: () => void }) {
   const qc = useQueryClient();
@@ -93,6 +186,36 @@ export function SupportTeamsPage() {
   const toast = useToast();
   const teams = useQuery({ queryKey: ['support-teams'], queryFn: () => api.get<SupportTeam[]>('/group/support-teams') });
   const [editing, setEditing] = useState<SupportTeam | 'new' | null>(null);
+  const [memberEdit, setMemberEdit] = useState<{ team: SupportTeam; member?: Member } | null>(null);
+  const canMembers = can('adults', 'edit');
+  const removeMember = async (m: Member) => {
+    try {
+      await api.del(`/adults/assignments/${m.assignmentId}`);
+      await Promise.all(['support-teams', 'adult', 'adults', 'organigrama'].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+      toast.ok(`${adultName(m)} ya no está en el equipo`);
+    } catch (e) {
+      toast.error(e);
+    }
+  };
+  /** Cambiar la función o sacar del equipo (el referente de rama se maneja en Referentes de rama). */
+  const memberActions = (t: SupportTeam, m: Member) =>
+    canMembers && !m.branch ? (
+      <span className="row" style={{ gap: 2, flexWrap: 'nowrap' }}>
+        <Button variant="ghost" size="sm" aria-label={`Cambiar la función de ${adultName(m)}`} title="Cambiar la función" onClick={() => setMemberEdit({ team: t, member: m })}>
+          <Pencil />
+        </Button>
+        <ConfirmButton
+          variant="ghost"
+          size="sm"
+          title="Sacar del equipo"
+          message={<p>¿Sacar a {adultName(m)} de {t.name}? Se borra su cargo {new Date().getFullYear()} en el equipo (los de otros años quedan).</p>}
+          confirmLabel="Sacar"
+          onConfirm={() => removeMember(m)}
+        >
+          <Trash2 />
+        </ConfirmButton>
+      </span>
+    ) : null;
 
   const remove = async (t: SupportTeam) => {
     try {
@@ -157,16 +280,33 @@ export function SupportTeamsPage() {
                 ) : null}
                 <dl className="dl">
                   <dt>Encargado/a</dt>
-                  <dd>{t.leader ? <Link to={`/adultos/${t.leader.id}`}>{adultName(t.leader)}</Link> : <span className="muted">Sin asignar</span>}</dd>
+                  <dd>
+                    {t.leader ? (
+                      <span className="row between">
+                        <Link to={`/adultos/${t.leader.id}`}>{adultName(t.leader)}</Link>
+                        {(() => {
+                          const lm = t.members.find((m) => m.id === t.leader!.id && !m.branch);
+                          return lm ? memberActions(t, lm) : null;
+                        })()}
+                      </span>
+                    ) : (
+                      <span className="muted">Sin asignar</span>
+                    )}
+                  </dd>
                   <dt>Integrantes {new Date().getFullYear()}</dt>
                   <dd>
                     {/* El encargado/a ya figura arriba: no se repite en la lista */}
                     {t.members.some((m) => m.id !== t.leader?.id) ? (
                       <ul className="list-plain">
                         {t.members.filter((m) => m.id !== t.leader?.id).map((m) => (
-                          <li key={`${m.id}-${m.position}`} className="row between">
+                          <li key={m.assignmentId} className="row between">
                             <Link to={`/adultos/${m.id}`}>{adultName(m)}</Link>
-                            <span className="muted">{m.position}</span>
+                            <span className="row" style={{ gap: 6, flexWrap: 'nowrap' }}>
+                              <span className="muted">
+                                {m.branch ? `Referente · ${BRANCH_INFO[m.branch as Branch]?.label ?? m.branch}` : m.position}
+                              </span>
+                              {memberActions(t, m)}
+                            </span>
                           </li>
                         ))}
                       </ul>
@@ -175,12 +315,18 @@ export function SupportTeamsPage() {
                     )}
                   </dd>
                 </dl>
+                {canMembers ? (
+                  <Button variant="secondary" size="sm" onClick={() => setMemberEdit({ team: t })}>
+                    <Plus /> Agregar integrante
+                  </Button>
+                ) : null}
               </div>
             </section>
           ))}
         </div>
       )}
       {editing ? <TeamModal team={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
+      {memberEdit ? <MemberModal team={memberEdit.team} member={memberEdit.member} onClose={() => setMemberEdit(null)} /> : null}
     </>
   );
 }

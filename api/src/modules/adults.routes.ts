@@ -55,7 +55,15 @@ async function syncTeamLeader(adultId: string, before: { supportTeamId: string |
   }
   if (leads(after)) {
     const team = await SupportTeam.findByPk(after!.supportTeamId!);
-    if (team && team.leaderAdultId !== adultId) await team.update({ leaderAdultId: adultId });
+    if (team && team.leaderAdultId !== adultId) {
+      const previous = team.leaderAdultId;
+      await team.update({ leaderAdultId: adultId });
+      // El encargado/a anterior sigue en el equipo, como integrante
+      if (previous) {
+        const old = await AdultAssignment.findAll({ where: { adultId: previous, supportTeamId: team.id, year: currentYear() } });
+        for (const a of old) if (isTeamLeaderPosition(a.position)) await a.update({ position: 'Integrante de equipo' });
+      }
+    }
   }
 }
 
