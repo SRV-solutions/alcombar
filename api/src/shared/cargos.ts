@@ -47,7 +47,8 @@ export const REFERENT_FUNCTION: CargoFunction = { key: 'referente', label: 'Refe
 /** Cualquier otra función, escrita a mano. */
 export const OTHER_FUNCTION_KEY = 'otra';
 
-export const isTeamLeaderPosition = (p: string) => /^(encargad|responsable|coordinador|l[ií]der)/i.test(p.trim());
+/** Cargo que conduce el equipo: encargado/a, responsable, coordinador/a, líder o director/a (p. ej. Director Ejecutivo). */
+export const isTeamLeaderPosition = (p: string) => /^(encargad|responsable|coordinador|l[ií]der|director)/i.test(p.trim());
 
 /** Dónde está un cargo ya cargado. Los que solo tienen rama (importados sin unidad) cuentan como de unidad. */
 export function cargoScopeOf(a: { position: string; unitId?: string | null; supportTeamId?: string | null; branch?: string | null }): CargoScope {

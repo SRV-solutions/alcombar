@@ -5,6 +5,7 @@ import {
   courseSchema,
   documentTypeSchema,
   GROUP_CONTEXT,
+  isTeamLeaderPosition,
   smallGroupSchema,
   supportTeamSchema,
   unitSchema,
@@ -148,12 +149,37 @@ groupRouter.get(
   }),
 );
 
+/**
+ * Elegir el encargado/a desde el equipo también deja el cargo en la ficha del adulto (y al revés lo hace
+ * adults.routes): el nuevo encargado/a queda con «Encargado/a de equipo» del año, y quien lo era pasa a
+ * «Integrante de equipo» (sigue en el equipo; si ya no está, se le borra el cargo desde su ficha).
+ */
+async function syncLeaderCargo(team: SupportTeam, previousLeaderId: string | null) {
+  const year = new Date().getFullYear();
+  const next = team.leaderAdultId ?? null;
+  if (previousLeaderId && previousLeaderId !== next) {
+    const old = await AdultAssignment.findAll({ where: { adultId: previousLeaderId, supportTeamId: team.id, year } });
+    for (const a of old) if (isTeamLeaderPosition(a.position)) await a.update({ position: 'Integrante de equipo' });
+  }
+  if (next) {
+    const mine = await AdultAssignment.findAll({ where: { adultId: next, supportTeamId: team.id, year } });
+    if (!mine.some((a) => isTeamLeaderPosition(a.position))) {
+      // Si ya estaba como integrante, ese mismo cargo pasa a encargado/a; si no, se crea
+      const member = mine.find((a) => !a.branch);
+      if (member) await member.update({ position: 'Encargado/a de equipo' });
+      else await AdultAssignment.create({ adultId: next, supportTeamId: team.id, unitId: null, branch: null, year, position: 'Encargado/a de equipo', notes: null } as never);
+    }
+  }
+}
+
 groupRouter.post(
   '/support-teams',
   authorize('group', 'create'),
   ah(async (req, res) => {
     const d = parse(supportTeamSchema, req.body);
-    res.status(201).json(await SupportTeam.create({ ...d, receivesRegistryAlerts: d.receivesRegistryAlerts ?? false }));
+    const team = await SupportTeam.create({ ...d, receivesRegistryAlerts: d.receivesRegistryAlerts ?? false });
+    await syncLeaderCargo(team, null);
+    res.status(201).json(team);
   }),
 );
 
@@ -164,7 +190,9 @@ groupRouter.put(
     const team = await SupportTeam.findByPk(req.params.id);
     if (!team) throw notFound();
     const { receivesRegistryAlerts, ...d } = parse(supportTeamSchema, req.body);
+    const previousLeaderId = team.leaderAdultId ?? null;
     await team.update({ ...d, ...(receivesRegistryAlerts !== undefined ? { receivesRegistryAlerts } : {}) });
+    await syncLeaderCargo(team, previousLeaderId);
     res.json(team);
   }),
 );
