@@ -53,7 +53,7 @@ const unitInclude = [
 /** Resumen de documentación por protagonista (cantidad al día / total de tipos activos). */
 async function docSummaries(memberIds: string[]) {
   const [types, docs] = await Promise.all([
-    DocumentType.findAll({ where: { active: true } }),
+    DocumentType.findAll({ where: { active: true, appliesTo: 'member' } }),
     memberIds.length ? MemberDocument.findAll({ where: { memberId: memberIds } }) : Promise.resolve([] as MemberDocument[]),
   ]);
   const today = todayIso();
@@ -296,7 +296,7 @@ membersRouter.get(
         ? MemberGuardian.findAll({ where: { memberId: m.id }, include: [{ model: Guardian, as: 'guardian', required: true }], order: [['sortOrder', 'ASC']] })
         : [],
       flags.canViewDocuments ? MemberDocument.findAll({ where: { memberId: m.id } }) : [],
-      DocumentType.findAll({ order: [['sortOrder', 'ASC']] }),
+      DocumentType.findAll({ where: { appliesTo: 'member' }, order: [['sortOrder', 'ASC']] }),
       UnitTransfer.findAll({
         where: { memberId: m.id },
         include: [
@@ -592,7 +592,7 @@ membersRouter.put(
   ah(async (req, res) => {
     const data = parse(memberDocumentSchema, req.body);
     const type = await DocumentType.findByPk(data.documentTypeId);
-    if (!type) throw badRequest('Tipo de documento inexistente');
+    if (!type || type.appliesTo !== 'member') throw badRequest('Tipo de documento inexistente');
     const values = {
       presented: data.presented,
       // "No corresponde" solo tiene sentido si no se presentó

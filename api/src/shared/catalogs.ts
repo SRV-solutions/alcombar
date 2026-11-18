@@ -59,6 +59,11 @@ export const DEFAULT_DOCUMENT_TYPES = [
   { code: 'dni_responsables', name: 'DNI de madre, padre o tutor (fotocopia)', hasExpiry: false, required: true, sortOrder: 8 },
   { code: 'partida_nacimiento', name: 'Partida de nacimiento (fotocopia)', hasExpiry: false, required: true, sortOrder: 9 },
   { code: 'aut_retiro', name: 'Autorización para retirarse solo/a', hasExpiry: false, required: false, sortOrder: 10 },
+  // Legajo de los adultos
+  { code: 'ad_ficha_medica', name: 'Ficha médica / declaración jurada de salud', hasExpiry: true, required: true, appliesTo: 'adult' as const, sortOrder: 1 },
+  { code: 'ad_dni', name: 'DNI (fotocopia)', hasExpiry: false, required: true, appliesTo: 'adult' as const, sortOrder: 2 },
+  { code: 'ad_obra_social', name: 'Credencial de obra social (fotocopia)', hasExpiry: false, required: true, appliesTo: 'adult' as const, sortOrder: 3 },
+  { code: 'ad_antecedentes', name: 'Certificado de antecedentes penales', hasExpiry: true, required: true, appliesTo: 'adult' as const, sortOrder: 4 },
 ];
 
 /** Unidades del Grupo (informe §3.1). El código es editable desde la app. */

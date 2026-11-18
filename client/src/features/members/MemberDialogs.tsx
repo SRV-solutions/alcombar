@@ -156,12 +156,15 @@ function LinkExistingGuardian({ memberId, onDone }: { memberId: string; onDone: 
 // ---------- Documento ----------
 export function DocumentDialog({
   memberId,
+  adultId,
   memberName,
   doc,
   onClose,
   onSaved,
 }: {
-  memberId: string;
+  /** Protagonista o adulto: uno de los dos. */
+  memberId?: string;
+  adultId?: string;
   memberName?: string;
   doc: Pick<MemberDoc, 'documentTypeId' | 'name' | 'hasExpiry' | 'presented' | 'presentedAt' | 'expiresAt' | 'notes'> & Partial<Pick<MemberDoc, 'notApplicable' | 'required'>>;
   onClose: () => void;
@@ -178,7 +181,7 @@ export function DocumentDialog({
   const save = async () => {
     setBusy(true);
     try {
-      await api.put(`/members/${memberId}/documents`, { documentTypeId: doc.documentTypeId, presented, notApplicable: !presented && notApplicable, presentedAt, expiresAt, notes });
+      await api.put(adultId ? `/adults/${adultId}/documents` : `/members/${memberId}/documents`, { documentTypeId: doc.documentTypeId, presented, notApplicable: !presented && notApplicable, presentedAt, expiresAt, notes });
       toast.ok('Documentación actualizada');
       onSaved();
       onClose();

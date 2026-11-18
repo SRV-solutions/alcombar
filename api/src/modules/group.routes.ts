@@ -335,7 +335,7 @@ groupRouter.get(
 groupRouter.get(
   '/document-types',
   ah(async (_req, res) => {
-    res.json(await DocumentType.findAll({ order: [['sortOrder', 'ASC'], ['name', 'ASC']] }));
+    res.json(await DocumentType.findAll({ order: [['appliesTo', 'DESC'], ['sortOrder', 'ASC'], ['name', 'ASC']] }));
   }),
 );
 groupRouter.post(

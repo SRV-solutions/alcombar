@@ -27,6 +27,7 @@ import { supportRouter } from './modules/support.routes';
 import { notificationsRouter, registryRouter } from './modules/notifications.routes';
 import { referentsRouter } from './modules/referents.routes';
 import { saturdaysRouter } from './modules/saturdays.routes';
+import { authorizationsRouter } from './modules/authorizations.routes';
 
 export function createApp() {
   const app = express();
@@ -66,6 +67,7 @@ export function createApp() {
   api.use('/notifications', notificationsRouter);
   api.use('/registry', registryRouter);
   api.use('/referents', referentsRouter);
+  api.use('/authorizations', authorizationsRouter);
   app.use('/api/v1', api);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta inexistente' }));

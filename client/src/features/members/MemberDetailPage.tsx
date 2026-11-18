@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeftRight, Mail, MessageCircle, Pencil, Phone, Plus, Tent, Trash2, Unlink } from 'lucide-react';
 import {
   ageAt,
@@ -21,6 +21,7 @@ import { useToast } from '../../lib/toast';
 import type { Guardian, MemberDetail, MemberDoc } from '../../lib/types';
 import { Badge, Button, Card, ConfirmButton, DocDot, Empty, ErrorBox, LinkButton, Loading, PageHeader, Tabs, UnitBadge, type Tone } from '../../components/ui';
 import { AffiliationDialog, DocumentDialog, GuardianDialog, TransferDialog } from './MemberDialogs';
+import { MemberAuthorizationsCard } from '../authorizations/MemberAuthorizationsCard';
 import { AssignUnitDialog } from './AssignUnitDialog';
 import { MemberProgressTab } from '../progression/MemberProgressTab';
 import { MemberPaymentsTab } from '../accounting/MemberPaymentsTab';
@@ -45,7 +46,9 @@ export function MemberDetailPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const { can } = useAuth();
-  const [tab, setTab] = useState<TabKey>('datos');
+  // ?tab=docs abre directo la documentación (se usa al volver de firmar una autorización)
+  const [search] = useSearchParams();
+  const [tab, setTab] = useState<TabKey>((search.get('tab') as TabKey) || 'datos');
   const [dialog, setDialog] = useState<
     | { kind: 'guardian'; guardian?: Guardian }
     | { kind: 'doc'; doc: MemberDoc }
@@ -314,6 +317,8 @@ export function MemberDetailPage() {
           </table>
         </Card>
       ) : null}
+
+      {tab === 'docs' && m.documents ? <MemberAuthorizationsCard memberId={m.id} canSign={!!m.canEditDocuments} /> : null}
 
       {tab === 'historial' ? (
         <div className="grid grid-2" style={{ alignItems: 'start' }}>

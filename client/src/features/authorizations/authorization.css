@@ -1,0 +1,81 @@
+/* Autorizaciones firmadas en pantalla, con el formato de las planillas de Scouts de Argentina (versión 07-21) */
+.auth-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.auth-wrap > * { width: 100%; max-width: 210mm; }
+.auth-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.auth-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.auth-step { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); font-size: 0.85rem; color: var(--muted); }
+.auth-step.on { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+
+/* La hoja: siempre blanca, como el papel, también en modo oscuro */
+.auth-paper {
+  position: relative;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  line-height: 1.45;
+  padding: 12mm 15mm 10mm;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.auth-head { display: flex; align-items: center; gap: 8mm; margin-bottom: 7mm; font-size: 8.5pt; line-height: 1.3; }
+.auth-head img { width: 30mm; height: auto; }
+.auth-head-title { color: #00a3e0; font-weight: 700; font-size: 10pt; }
+.auth-title { margin: 0 0 6mm; text-align: center; font-size: 12.5pt; font-weight: 700; line-height: 1.3; color: #111; }
+.auth-title span { display: block; }
+.auth-addressee { margin: 0 0 5mm; }
+.auth-addressee span { display: block; }
+.auth-p { margin: 0 0 3mm; text-align: justify; overflow-wrap: anywhere; }
+.auth-sub { margin: 6mm 0 3mm; text-align: center; font-size: 10pt; font-weight: 700; color: #111; }
+.auth-sub.line { border-top: 1px solid #000; padding-top: 3mm; }
+
+.auth-sign { display: flex; align-items: flex-end; gap: 6px; margin: 5mm 0 0 25%; }
+.auth-sign-label { padding-bottom: 2px; white-space: nowrap; }
+.auth-sign-area { position: relative; display: block; width: 62mm; height: 21mm; border-bottom: 1px dotted #000; }
+.auth-sign-ink { position: absolute; inset: 0; width: 100%; height: 100%; }
+.auth-sign-pending { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 8pt; color: #b00020; }
+.auth-aclaracion { margin: 1mm 0 4mm 25%; font-size: 8.5pt; color: #333; }
+.auth-adult { margin-left: 25%; }
+.auth-adult .auth-sign { margin-left: 0; }
+.auth-adult p { margin: 1mm 0 0; }
+.auth-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+.auth-cols .auth-adult { margin-left: 0; }
+.auth-cols .auth-sign-area { width: 100%; }
+
+.auth-notes { margin: 6mm 0 0; padding: 2mm 0 0; list-style: none; border-top: 1px solid #000; width: 100%; font-size: 7.5pt; line-height: 1.3; color: #222; }
+.auth-notes li { margin: 0 0 1px; }
+.auth-proof { margin-top: 4mm; padding: 2.5mm 3mm; border: 1px solid #9aa4b2; border-radius: 3px; font-size: 7.5pt; line-height: 1.35; color: #222; background: #f5f7fa; }
+.auth-hash { font-family: Consolas, 'Courier New', monospace; letter-spacing: 0.5px; }
+.auth-foot { display: flex; align-items: center; gap: 5mm; margin-top: 6mm; padding-top: 3mm; border-top: 1px solid #999; font-size: 7pt; line-height: 1.3; color: #222; }
+.auth-foot img { width: 32mm; height: auto; }
+.auth-foot p { margin: 0; }
+.auth-void { position: absolute; top: 38%; left: 0; right: 0; text-align: center; font-size: 60pt; font-weight: 700; color: rgba(176, 0, 32, 0.16); transform: rotate(-24deg); pointer-events: none; letter-spacing: 6px; }
+
+/* Recuadro para firmar con el dedo */
+.sigpad { display: flex; flex-direction: column; gap: 6px; }
+.sigpad-box { position: relative; background: #fff; border: 2px dashed var(--border-strong, #9aa4b2); border-radius: 10px; overflow: hidden; }
+.sigpad-canvas { display: block; width: 100%; height: 190px; touch-action: none; cursor: crosshair; }
+.sigpad-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 0 16px; text-align: center; color: #8a94a3; pointer-events: none; font-size: 1rem; }
+.sigpad-line { position: absolute; left: 8%; right: 8%; bottom: 38px; border-bottom: 1px dotted #9aa4b2; pointer-events: none; }
+
+.auth-check { display: flex; gap: 10px; align-items: flex-start; font-size: 1rem; }
+.auth-check input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+.auth-kids { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+
+@media (max-width: 700px) {
+  .auth-paper { padding: 16px 14px; font-size: 9.5pt; }
+  .auth-head img { width: 64px; }
+  .auth-sign, .auth-aclaracion, .auth-adult { margin-left: 0; }
+  .auth-sign-area { width: 100%; max-width: 62mm; }
+  .auth-cols { grid-template-columns: 1fr; }
+  .sigpad-canvas { height: 210px; }
+}
+
+@media print {
+  @page { size: A4; margin: 10mm 12mm; }
+  .auth-wrap { display: block; }
+  .auth-wrap > * { max-width: none; }
+  .auth-paper { box-shadow: none; padding: 0; overflow: visible; }
+  .auth-paper, .auth-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .auth-sign, .auth-adult, .auth-proof, .auth-foot { break-inside: avoid; }
+}

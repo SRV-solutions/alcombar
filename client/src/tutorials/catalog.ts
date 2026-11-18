@@ -238,6 +238,75 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'firmar-autorizaciones',
+    title: 'Hacer firmar una autorización',
+    description: 'La madre, el padre o el tutor firma con el dedo en tu celular, sobre la planilla de Scouts de Argentina, y queda el PDF.',
+    keywords: ['firmar', 'firma', 'autorización', 'con el dedo', 'planilla', 'pdf', 'salidas cercanas', 'uso de imagen', 'ingreso'],
+    audience: (c) => c.can('member_documents', 'edit'),
+    steps: [
+      {
+        route: '/autorizaciones',
+        target: nav('/autorizaciones'),
+        pose: 'point',
+        title: 'Autorizaciones',
+        text: 'Acá están las autorizaciones firmadas en la app. Se firman en persona: la madre, el padre o el tutor firma con el dedo en tu celular o tablet.',
+      },
+      {
+        target: button('Hacer firmar'),
+        pose: 'point',
+        title: 'Hacer firmar',
+        text: 'Elegís al chico y la autorización: anual de salidas cercanas, uso de imagen o ingreso. La de un campamento se firma desde el legajo de ese campamento, con «Firmar acá».',
+      },
+      {
+        pose: 'think',
+        title: 'Primero los datos',
+        text: 'Completás con la persona sus datos tal como figuran en el DNI. Quedan guardados en la ficha: la próxima vez ya aparecen.',
+      },
+      {
+        pose: 'point',
+        title: 'Lee y firma',
+        text: 'Le pasás el dispositivo: ve la planilla oficial ya completa, firma con el dedo y tilda que leyó y autoriza. Queda registrado que firmó delante tuyo.',
+      },
+      {
+        pose: 'think',
+        title: 'Testigos y aval',
+        text: 'La de ingreso la firman además dos educadores como testigos, ahí mismo. Las de salidas y campamentos llevan el aval del Jefe/a de Unidad o de Grupo.',
+      },
+      {
+        pose: 'cheer',
+        title: '¡Y queda el PDF!',
+        text: 'Cada autorización se ve y se descarga en PDF con el formato de Scouts de Argentina, y el legajo la marca como presentada sola.',
+      },
+    ],
+  },
+  {
+    id: 'aval-autorizaciones',
+    title: 'Dar el aval a las autorizaciones',
+    description: 'El Jefe/a de Unidad o de Grupo avala las autorizaciones de salidas y campamentos, varias con una sola firma.',
+    keywords: ['aval', 'avalar', 'autorizaciones', 'jefe de unidad', 'firmar aval'],
+    audience: (c) => c.can('member_documents', 'approve'),
+    steps: [
+      {
+        route: '/autorizaciones',
+        target: { selector: 'select[aria-label="Estado"]' },
+        pose: 'point',
+        title: 'Las que esperan tu aval',
+        text: 'Elegí «Les falta el aval o un testigo» para ver las que están pendientes en tu unidad.',
+      },
+      {
+        pose: 'think',
+        title: 'Qué certificás',
+        text: 'Con el aval certificás, como dice la planilla, que el chico tiene el legajo completo y que quien firmó tiene su firma registrada en la autorización de ingreso.',
+      },
+      {
+        pose: 'point',
+        title: 'Varias con una firma',
+        text: 'Tildá las que correspondan (o «Elegir las que esperan tu aval») y tocá «Dar el aval con una firma»: firmás una vez con el dedo y vale para todas.',
+      },
+      { pose: 'cheer', title: '¡Listas!', text: 'Si una tiene un error, se anula con el motivo y se firma otra: nunca se borra.' },
+    ],
+  },
+  {
     id: 'pase-de-unidad',
     title: 'Pases de unidad',
     description: 'Pasar chicos de unidad: por edad (cambio de rama) o por elección (por ejemplo, de la Pedro Bártolo a la Luis Conde), de a varios.',
@@ -832,7 +901,7 @@ export const TUTORIALS: Tutorial[] = [
         target: firstRow,
         pose: 'think',
         title: 'Adentro del campamento',
-        text: '"Inscripción y legajo": inscribís a los chicos (se les genera el cargo) y el semáforo te dice a quién le falta la autorización, el DNI o la ficha médica. "Presupuesto y rendición": lo previsto, los gastos y la rendición. "Logística": menú, compras, transporte y los materiales prestados del inventario.',
+        text: '"Inscripción y legajo": inscribís a los chicos (se les genera el cargo) y el semáforo te dice a quién le falta la autorización, el DNI o la ficha médica. Con «Firmar acá», la madre, el padre o el tutor firma la autorización con el dedo en tu celular. "Presupuesto y rendición": lo previsto, los gastos y la rendición. "Logística": menú, compras, transporte y los materiales prestados del inventario.',
       },
       {
         pose: 'think',
@@ -889,6 +958,11 @@ export const TUTORIALS: Tutorial[] = [
         pose: 'point',
         title: 'Cargos por año',
         text: 'Primero elegís dónde (una unidad, el Grupo, un equipo de apoyo u otro) y después la función, con menús que se pueden buscar. Con esto se arma solo el organigrama y, si es de una unidad, sus permisos.',
+      },
+      {
+        pose: 'think',
+        title: 'Documentación del adulto',
+        text: 'Cada adulto tiene su legajo: ficha médica, DNI, obra social y certificado de antecedentes penales, con vencimiento. En la lista de adultos ves quién la tiene completa.',
       },
       { target: button('Registrar formación'), pose: 'point', title: 'Formación', text: 'Insignia de Madera, Miembro Activo, niveles y cursos, con la fecha y el enlace al certificado.' },
       { pose: 'cheer', title: '¡Gracias por tu servicio!', text: 'En Inicio ves cuántos adultos no tienen formación registrada.' },

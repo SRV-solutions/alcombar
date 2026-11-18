@@ -11,6 +11,7 @@ import { useUnits } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { Adult, Assignment } from '../../lib/types';
 import { Badge, Button, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
+import { DocsSummaryBadge } from '../members/MembersPage';
 
 export const ADULT_STATUS_TONES: Record<string, Tone> = { alta: 'ok', prueba: 'warn', baja: 'neutral' };
 
@@ -131,6 +132,7 @@ export function AdultsPage() {
                   <th>Adulto</th>
                   <th>Cargos {year}</th>
                   <th>Formación</th>
+                  <th>Documentación</th>
                   <th>Estado</th>
                   <th title="Tiene usuario en la app">Usuario</th>
                 </tr>
@@ -163,6 +165,9 @@ export function AdultsPage() {
                           </Badge>
                         );
                       })()}
+                    </td>
+                    <td>
+                      <DocsSummaryBadge docs={a.docs ?? null} />
                     </td>
                     <td>
                       <AdultStatusBadge status={a.status} />

@@ -61,6 +61,8 @@ export interface DocumentType {
   hasExpiry: boolean;
   /** Obligatorio para el legajo; los opcionales no cuentan como faltantes. */
   required: boolean;
+  /** A quién se le pide: protagonistas o adultos. */
+  appliesTo: 'member' | 'adult';
   active: boolean;
   sortOrder: number;
 }
@@ -97,6 +99,8 @@ export interface Adult extends AdultRef {
   status: string;
   advisorAdultId: string | null;
   notes: string | null;
+  /** Resumen de su documentación (solo en la lista). */
+  docs?: DocSummary;
   assignments: Assignment[];
   courses: AdultCourse[];
   user: { id: string; email?: string; active: boolean } | null;
@@ -104,6 +108,7 @@ export interface Adult extends AdultRef {
 export interface AdultDetail extends Adult {
   advisor: AdultRef | null;
   advisees: AdultRef[];
+  documents: MemberDoc[];
 }
 
 export interface DocSummary {

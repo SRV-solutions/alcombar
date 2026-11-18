@@ -5,18 +5,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
-import { adultCourseSchema, ageAt, BRANCH_INFO, COURSE_KIND_LABELS, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
+import { adultCourseSchema, ageAt, BRANCH_INFO, COURSE_KIND_LABELS, documentLabel, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
 import { adultName, useCourses } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
-import type { AdultCourse, AdultDetail, Assignment } from '../../lib/types';
+import type { AdultCourse, AdultDetail, Assignment, MemberDoc } from '../../lib/types';
+import { DocumentDialog } from '../members/MemberDialogs';
 import {
   Badge,
   Button,
   Card,
   ConfirmButton,
+  DocDot,
   Empty,
   ErrorBox,
   Field,
@@ -118,6 +120,8 @@ function CourseModal({ adultId, item, onClose }: { adultId: string; item?: Adult
   );
 }
 
+const DOC_TONE = { ok: 'ok', expiring: 'warn', expired: 'danger', missing: 'neutral' } as const;
+
 // ---------------- Página ----------------
 export function AdultDetailPage() {
   const { id = '' } = useParams();
@@ -127,6 +131,7 @@ export function AdultDetailPage() {
   const toast = useToast();
   const [assignment, setAssignment] = useState<Assignment | 'new' | null>(null);
   const [course, setCourse] = useState<AdultCourse | 'new' | null>(null);
+  const [doc, setDoc] = useState<MemberDoc | null>(null);
 
   const adult = useQuery({ queryKey: ['adult', id], queryFn: () => api.get<AdultDetail>(`/adults/${id}`) });
 
@@ -332,6 +337,54 @@ export function AdultDetailPage() {
           )}
         </Card>
 
+        <Card title="Documentación" bodyClass="">
+          {!a.documents?.length ? (
+            <Empty>No hay documentos definidos para adultos (se agregan en Administración → Catálogos).</Empty>
+          ) : (
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Documento</th>
+                    <th>Estado</th>
+                    <th>Entregado</th>
+                    <th>Vence</th>
+                    <th>Notas</th>
+                    {canEdit ? <th /> : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.documents.map((d) => {
+                    const exempt = !d.presented && d.status === 'ok';
+                    const label = documentLabel(d.status, d, d.required);
+                    return (
+                      <tr key={d.documentTypeId}>
+                        <td>{d.name}</td>
+                        <td>
+                          <span className="row" style={{ gap: 6 }}>
+                            <DocDot status={d.status} muted={exempt} label={label} />
+                            <Badge tone={exempt ? 'neutral' : DOC_TONE[d.status]}>{label}</Badge>
+                          </span>
+                        </td>
+                        <td>{formatDate(d.presentedAt) || '—'}</td>
+                        <td>{d.hasExpiry ? formatDate(d.expiresAt) || '—' : <span className="muted">No vence</span>}</td>
+                        <td className="muted">{d.notes}</td>
+                        {canEdit ? (
+                          <td className="num">
+                            <Button size="sm" variant="secondary" onClick={() => setDoc(d)}>
+                              Actualizar
+                            </Button>
+                          </td>
+                        ) : null}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+
         <Card
           title="Formación"
           bodyClass=""
@@ -424,6 +477,7 @@ export function AdultDetailPage() {
       </div>
 
       {assignment ? <AssignmentModal adultId={a.id} item={assignment === 'new' ? undefined : assignment} onClose={() => setAssignment(null)} /> : null}
+      {doc ? <DocumentDialog adultId={a.id} memberName={adultName(a)} doc={doc} onClose={() => setDoc(null)} onSaved={() => void refresh()} /> : null}
       {course ? <CourseModal adultId={a.id} item={course === 'new' ? undefined : course} onClose={() => setCourse(null)} /> : null}
     </>
   );

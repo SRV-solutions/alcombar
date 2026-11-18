@@ -26,6 +26,9 @@ import { CalendarRoutes } from './features/calendar/CalendarRoutes';
 import { LibraryRoutes } from './features/library/LibraryRoutes';
 import { AttendancePage } from './features/attendance/AttendancePage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
+import { AuthorizationsPage } from './features/authorizations/AuthorizationsPage';
+import { AuthorizationDocPage } from './features/authorizations/AuthorizationDocPage';
+import { SignPage } from './features/authorizations/SignPage';
 import { RegistryPage } from './features/members/RegistryPage';
 import { UnitsPage } from './features/group/UnitsPage';
 import { UnitDetailPage } from './features/group/UnitDetailPage';
@@ -82,6 +85,9 @@ export function App() {
         <Route path="pases" element={<Guard perm={['members', 'edit']}><TransfersPage /></Guard>} />
         <Route path="asistencia" element={<Guard perm={['attendance', 'view']}><AttendancePage /></Guard>} />
         <Route path="documentacion" element={<Guard perm={['member_documents', 'view']}><DocumentsPage /></Guard>} />
+        <Route path="autorizaciones" element={<Guard perm={['member_documents', 'view']}><AuthorizationsPage /></Guard>} />
+        <Route path="autorizaciones/firmar" element={<Guard perm={['member_documents', 'edit']}><SignPage /></Guard>} />
+        <Route path="autorizaciones/:id" element={<Guard perm={['member_documents', 'view']}><AuthorizationDocPage /></Guard>} />
         <Route path="cruz-del-sur" element={<RegistryPage />} />
 
         {/* Etapas 3 a 8: cada módulo maneja sus rutas internas */}

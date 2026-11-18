@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +37,9 @@ export function CampDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const [tab, setTab] = useState<Tab>('datos');
+  // ?tab=legajo abre directo el legajo (se usa al volver de firmar una autorización)
+  const [search] = useSearchParams();
+  const [tab, setTab] = useState<Tab>((search.get('tab') as Tab) || 'datos');
   const [editing, setEditing] = useState(false);
   const q = useQuery({ queryKey: ['camp', id], queryFn: () => api.get<CampDetail>(`/camps/${id}`) });
   if (q.isLoading) return <Loading />;
@@ -221,6 +223,7 @@ const nameOf = (l: LegajoRow) => (l.member ? `${l.member.lastName}, ${l.member.f
 
 function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
   const toast = useToast();
+  const { can: canDo } = useAuth();
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState<LegajoRow | null>(null);
   const [filter, setFilter] = useState<'todos' | 'incompletos'>('todos');
@@ -323,7 +326,17 @@ function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
                   </td>
                   <td className="check-cell">
                     {l.kind === 'protagonista' ? (
-                      <Check ok={l.authorizationPresented} label="Autorización" disabled={!editable} onClick={() => quick(l, { authorizationPresented: !l.authorizationPresented })} />
+                      <>
+                        <Check ok={l.authorizationPresented} label="Autorización" disabled={!editable} onClick={() => quick(l, { authorizationPresented: !l.authorizationPresented })} />
+                        {/* Firma en pantalla: la madre, el padre o el tutor firma con el dedo sobre la planilla de SAAC */}
+                        {l.member && canDo('member_documents', 'edit', l.member.unitId) ? (
+                          <div className="no-print">
+                            <Link to={`/autorizaciones/firmar?kind=campamento&memberId=${l.member.id}&campId=${c.id}`} title="Hacer firmar la autorización en este dispositivo">
+                              {l.authorizationPresented ? 'Firmar otra' : 'Firmar acá'}
+                            </Link>
+                          </div>
+                        ) : null}
+                      </>
                     ) : (
                       <span className="muted">—</span>
                     )}

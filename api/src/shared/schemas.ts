@@ -142,6 +142,7 @@ export const documentTypeSchema = z.object({
   name: reqStr(120),
   hasExpiry: z.boolean().default(false),
   required: z.boolean().default(true),
+  appliesTo: z.enum(['member', 'adult']).default('member'),
   active: z.boolean().default(true),
   sortOrder: z.coerce.number().int().default(0),
 });

@@ -126,7 +126,7 @@ documentsRouter.get(
     if (!unitId) throw badRequest('Falta la unidad');
     assertCan(req, 'member_documents', 'view', unitId);
     const [types, members] = await Promise.all([
-      DocumentType.findAll({ where: { active: true }, order: [['sortOrder', 'ASC']] }),
+      DocumentType.findAll({ where: { active: true, appliesTo: 'member' }, order: [['sortOrder', 'ASC']] }),
       Member.findAll({
         where: { unitId, status: 'activo' },
         include: [{ model: SmallGroup, as: 'smallGroup', attributes: ['id', 'name'] }],

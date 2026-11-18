@@ -53,7 +53,13 @@ export const MODULES = {
     unitScoped: true,
     description: 'Responsables adultos y sus datos de contacto.',
   },
-  member_documents: { label: 'Documentación', section: 'Protagonistas', actions: ['view', 'edit'], unitScoped: true },
+  member_documents: {
+    label: 'Documentación',
+    section: 'Protagonistas',
+    actions: ['view', 'edit', 'approve'],
+    unitScoped: true,
+    description: 'Legajo de cada protagonista y autorizaciones firmadas en la app. Editar = cargar documentos y hacer firmar. Aprobar = dar el aval del Jefe/a de Unidad o de Grupo y anular una autorización.',
+  },
   attendance: { label: 'Asistencia', section: 'Protagonistas', actions: ['view', 'edit'], unitScoped: true },
   // ---- Etapas 3 y 4: programa y progresión ----
   activities: {
@@ -197,6 +203,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
       'members:export',
       'member_contacts:view',
       'member_documents:view',
+      'member_documents:approve',
       'attendance:view',
       'audit:view',
       // Etapas 3 a 8
@@ -238,6 +245,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
       'member_contacts:edit@unit',
       'member_documents:view',
       'member_documents:edit@unit',
+      'member_documents:approve@unit',
       'attendance:view',
       'attendance:edit@unit',
       // Etapas 3 a 8
@@ -332,7 +340,8 @@ export const ROLE_SEEDS: RoleSeed[] = [
       'training:view',
       ...all('members'),
       ...all('member_contacts'),
-      ...all('member_documents'),
+      'member_documents:view',
+      'member_documents:edit',
       'attendance:view',
       // Etapas 3 a 8
       // Cobra: genera las cuotas del mes y la afiliación, carga cargos, registra pagos y emite recibos.

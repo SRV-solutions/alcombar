@@ -66,7 +66,9 @@ export function CatalogsPage() {
                   {docTypes.data.map((d) => (
                     <tr key={d.id}>
                       <td className="num">{d.sortOrder}</td>
-                      <td style={{ fontWeight: 600 }}>{d.name}</td>
+                      <td style={{ fontWeight: 600 }}>
+                        {d.name} <Badge tone={d.appliesTo === 'adult' ? 'info' : 'neutral'}>{d.appliesTo === 'adult' ? 'Adultos' : 'Protagonistas'}</Badge>
+                      </td>
                       <td>
                         {d.hasExpiry ? 'Tiene vencimiento' : <span className="muted">No vence</span>}
                         {!d.required ? <span className="muted"> · Opcional</span> : null}
@@ -155,6 +157,7 @@ interface DocForm {
   name: string;
   hasExpiry: boolean;
   required: boolean;
+  appliesTo: 'member' | 'adult';
   active: boolean;
   sortOrder: number | string;
 }
@@ -170,8 +173,8 @@ function DocTypeModal({ docType, nextOrder, onClose }: { docType: DocumentType |
   } = useForm<DocForm>({
     resolver: zodResolver(documentTypeSchema),
     defaultValues: docType
-      ? { name: docType.name, hasExpiry: docType.hasExpiry, required: docType.required, active: docType.active, sortOrder: docType.sortOrder }
-      : { name: '', hasExpiry: false, required: true, active: true, sortOrder: nextOrder },
+      ? { name: docType.name, hasExpiry: docType.hasExpiry, required: docType.required, appliesTo: docType.appliesTo, active: docType.active, sortOrder: docType.sortOrder }
+      : { name: '', hasExpiry: false, required: true, appliesTo: 'member', active: true, sortOrder: nextOrder },
   });
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -203,6 +206,12 @@ function DocTypeModal({ docType, nextOrder, onClose }: { docType: DocumentType |
         <div className="form-grid">
           <Field label="Nombre" required full error={errors.name?.message} hint="Por ejemplo: Autorización de campamento">
             <Input invalid={!!errors.name} {...register('name')} />
+          </Field>
+          <Field label="Se le pide a" hint="El legajo de los protagonistas o el de los adultos">
+            <Select {...register('appliesTo')}>
+              <option value="member">Protagonistas</option>
+              <option value="adult">Adultos</option>
+            </Select>
           </Field>
           <Field label="Orden" error={errors.sortOrder?.message} hint="Posición en las columnas del tablero">
             <Input type="number" min={0} invalid={!!errors.sortOrder} {...register('sortOrder')} />

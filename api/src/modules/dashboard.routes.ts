@@ -39,7 +39,7 @@ dashboardRouter.get(
     const docStats = new Map<string, { ok: number; expiring: number; expired: number; missing: number }>();
     if (visibleUnitIds.length) {
       const [types, members] = await Promise.all([
-        DocumentType.findAll({ where: { active: true } }),
+        DocumentType.findAll({ where: { active: true, appliesTo: 'member' } }),
         Member.findAll({ where: { unitId: visibleUnitIds, status: 'activo' }, attributes: ['id', 'unitId'] }),
       ]);
       const docs = members.length ? await MemberDocument.findAll({ where: { memberId: { [Op.in]: members.map((m) => m.id) } } }) : [];

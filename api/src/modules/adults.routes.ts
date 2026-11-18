@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Op, type WhereOptions } from 'sequelize';
-import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, formatDate, isTeamLeaderPosition, type AdultStatus } from '../shared';
-import { Adult, AdultAssignment, AdultCourse, Course, Role, SupportTeam, Unit, User, UserRole } from '../models';
+import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, documentStatus, formatDate, isTeamLeaderPosition, memberDocumentSchema, todayIso, type AdultStatus } from '../shared';
+import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
 import { personSearchWhere } from '../lib/personSearch';
 import { adultRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
@@ -93,7 +93,19 @@ adultsRouter.get(
     });
     const unitId = String(req.query.unitId ?? '');
     const list = unitId ? adults.filter((a) => (a.assignments ?? []).some((x) => x.unitId === unitId)) : adults;
-    res.json(list);
+    // Resumen de documentación (cuántos documentos obligatorios tiene al día)
+    const [types, docs] = await Promise.all([
+      DocumentType.findAll({ where: { active: true, appliesTo: 'adult' } }),
+      list.length ? AdultDocument.findAll({ where: { adultId: list.map((a) => a.id) } }) : Promise.resolve([] as AdultDocument[]),
+    ]);
+    const today = todayIso();
+    res.json(
+      list.map((a) => {
+        const s = { ok: 0, expiring: 0, expired: 0, missing: 0, total: types.length };
+        for (const t of types) s[documentStatus(docs.find((d) => d.adultId === a.id && d.documentTypeId === t.id), t.hasExpiry, today, t.required)]++;
+        return { ...a.toJSON(), docs: s };
+      }),
+    );
   }),
 );
 
@@ -151,7 +163,28 @@ adultsRouter.get(
     });
     if (!adult) throw notFound();
     const advisees = await Adult.findAll({ where: { advisorAdultId: adult.id }, attributes: ['id', 'firstName', 'lastName', 'totem'] });
-    res.json({ ...adult.toJSON(), advisees });
+    const [types, docs] = await Promise.all([
+      DocumentType.findAll({ where: { appliesTo: 'adult' }, order: [['sortOrder', 'ASC']] }),
+      AdultDocument.findAll({ where: { adultId: adult.id } }),
+    ]);
+    const documents = types
+      .filter((t) => t.active || docs.some((d) => d.documentTypeId === t.id))
+      .map((t) => {
+        const d = docs.find((x) => x.documentTypeId === t.id);
+        return {
+          documentTypeId: t.id,
+          name: t.name,
+          hasExpiry: t.hasExpiry,
+          required: t.required,
+          presented: d?.presented ?? false,
+          notApplicable: (!d?.presented && d?.notApplicable) ?? false,
+          presentedAt: d?.presentedAt ?? null,
+          expiresAt: d?.expiresAt ?? null,
+          notes: d?.notes ?? null,
+          status: documentStatus(d, t.hasExpiry, todayIso(), t.required),
+        };
+      });
+    res.json({ ...adult.toJSON(), advisees, documents });
   }),
 );
 
@@ -236,6 +269,30 @@ adultsRouter.delete(
     await a.destroy();
     if (a.year >= currentYear()) await syncUnitRoles(a.adultId, [a.unitId]);
     await syncTeamLeader(a.adultId, a, null);
+    res.json({ ok: true });
+  }),
+);
+
+// ---- Documentación del adulto ----
+adultsRouter.put(
+  '/:id/documents',
+  authorize('adults', 'edit'),
+  ah(async (req, res) => {
+    const adult = await Adult.findByPk(req.params.id);
+    if (!adult) throw notFound();
+    const data = parse(memberDocumentSchema, req.body);
+    const type = await DocumentType.findByPk(data.documentTypeId);
+    if (!type || type.appliesTo !== 'adult') throw badRequest('Tipo de documento inexistente');
+    const values = {
+      presented: data.presented,
+      notApplicable: !data.presented && data.notApplicable,
+      presentedAt: data.presented ? data.presentedAt ?? todayIso() : null,
+      expiresAt: data.presented && type.hasExpiry ? data.expiresAt : null,
+      notes: data.notes,
+    };
+    const doc = await AdultDocument.findOne({ where: { adultId: adult.id, documentTypeId: type.id } });
+    if (doc) await doc.update(values);
+    else await AdultDocument.create({ adultId: adult.id, documentTypeId: type.id, ...values });
     res.json({ ok: true });
   }),
 );

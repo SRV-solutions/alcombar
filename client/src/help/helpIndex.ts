@@ -105,6 +105,16 @@ export const HELP_INDEX: HelpEntry[] = [
     show: can('member_documents', 'view'),
   },
   {
+    id: 'autorizaciones-firmadas',
+    title: 'Firmar autorizaciones con el dedo',
+    description:
+      'Autorizaciones: la madre, el padre o el tutor firma en persona, con el dedo, en el celular o la tablet del educador, sobre la planilla oficial de Scouts de Argentina (ingreso, uso de imagen, anual de salidas cercanas y salidas/campamentos). Se descarga en PDF y el legajo queda al día. La de ingreso lleva dos educadores testigos; las de salidas y campamentos, el aval del Jefe/a de Unidad o de Grupo.',
+    path: '/autorizaciones',
+    section: 'Protagonistas',
+    keywords: ['firmar', 'firma digital', 'firma electrónica', 'firmar con el dedo', 'autorización', 'autorizaciones', 'planilla saac', 'aval', 'testigos', 'pdf autorización', 'uso de imagen', 'salidas cercanas', 'ingreso'],
+    show: can('member_documents', 'view'),
+  },
+  {
     id: 'afiliacion',
     title: 'Afiliación anual a SAAC',
     description: 'En la ficha del protagonista, pestaña Pases y afiliación: estado de la afiliación de cada año.',
@@ -471,6 +481,16 @@ export const HELP_INDEX: HelpEntry[] = [
     path: '/adultos',
     section: 'Grupo',
     keywords: ['cargo', 'cargos', 'jefe de unidad', 'ayudante', 'jefe de grupo', 'función', 'funciones', 'rol en el grupo'],
+    show: can('adults', 'view'),
+  },
+  {
+    id: 'documentacion-adultos',
+    title: 'Documentación de los adultos',
+    description:
+      'En la ficha de cada adulto: ficha médica, DNI, credencial de obra social y certificado de antecedentes penales, con su vencimiento. La lista de adultos muestra quién la tiene completa. Los documentos que se piden se cambian en Administración → Catálogos.',
+    path: '/adultos',
+    section: 'Grupo',
+    keywords: ['documentación de adultos', 'legajo del adulto', 'antecedentes penales', 'ficha médica adulto', 'certificado de antecedentes'],
     show: can('adults', 'view'),
   },
   {

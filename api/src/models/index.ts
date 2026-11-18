@@ -549,6 +549,8 @@ export class DocumentType extends Model<InferAttributes<DocumentType>, InferCrea
   declare hasExpiry: CreationOptional<boolean>;
   /** Obligatorio para tener el legajo completo; los opcionales (p. ej. "retirarse solo") no cuentan como faltantes. */
   declare required: CreationOptional<boolean>;
+  /** A quién se le pide: 'member' (protagonistas) o 'adult' (adultos). */
+  declare appliesTo: CreationOptional<'member' | 'adult'>;
   declare active: CreationOptional<boolean>;
   declare sortOrder: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
@@ -562,6 +564,7 @@ DocumentType.init(
     name: { type: STRING(120), allowNull: false },
     hasExpiry: { type: BOOLEAN, allowNull: false, defaultValue: false },
     required: { type: BOOLEAN, allowNull: false, defaultValue: true },
+    appliesTo: { type: STRING(10), allowNull: false, defaultValue: 'member' },
     active: { type: BOOLEAN, allowNull: false, defaultValue: true },
     sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 },
     createdAt: DATE,
@@ -599,6 +602,36 @@ MemberDocument.init(
     deletedAt: DATE,
   },
   { sequelize, tableName: 'member_documents', modelName: 'MemberDocument' },
+);
+
+/** Documentación de un adulto (mismo esquema que la de protagonistas). */
+export class AdultDocument extends Model<InferAttributes<AdultDocument>, InferCreationAttributes<AdultDocument>> {
+  declare id: CreationOptional<string>;
+  declare adultId: ForeignKey<Adult['id']>;
+  declare documentTypeId: ForeignKey<DocumentType['id']>;
+  declare presented: boolean;
+  declare notApplicable: CreationOptional<boolean>;
+  declare presentedAt: string | null;
+  declare expiresAt: string | null;
+  declare notes: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+  declare deletedAt: CreationOptional<Date | null>;
+  declare documentType?: NonAttribute<DocumentType>;
+}
+AdultDocument.init(
+  {
+    id,
+    presented: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    notApplicable: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    presentedAt: DATEONLY,
+    expiresAt: DATEONLY,
+    notes: TEXT,
+    createdAt: DATE,
+    updatedAt: DATE,
+    deletedAt: DATE,
+  },
+  { sequelize, tableName: 'adult_documents', modelName: 'AdultDocument' },
 );
 
 export class Attendance extends Model<InferAttributes<Attendance>, InferCreationAttributes<Attendance>> {
@@ -664,6 +697,9 @@ UnitTransfer.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
 UnitTransfer.belongsTo(Unit, { as: 'toUnit', foreignKey: 'toUnitId' });
 Member.hasMany(Affiliation, { as: 'affiliations', foreignKey: 'memberId' });
 Member.hasMany(MemberDocument, { as: 'documents', foreignKey: 'memberId' });
+Adult.hasMany(AdultDocument, { as: 'documents', foreignKey: 'adultId' });
+AdultDocument.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
+AdultDocument.belongsTo(DocumentType, { as: 'documentType', foreignKey: 'documentTypeId' });
 MemberDocument.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
 MemberDocument.belongsTo(DocumentType, { as: 'documentType', foreignKey: 'documentTypeId' });
 Member.hasMany(Attendance, { as: 'attendances', foreignKey: 'memberId' });
