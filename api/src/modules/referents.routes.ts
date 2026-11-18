@@ -43,10 +43,10 @@ referentsRouter.get(
         let warning: string | null = null;
         if (!user || !user.active) warning = a.adult?.email ? 'No tiene usuario: los avisos le llegan solo por mail.' : 'No tiene usuario ni mail: no le llegan los avisos.';
         else {
-          const subject = await loadSubject(user.id);
+          const subject = await loadSubject(user.id, user.adultId ?? null);
           const branchUnits = units.filter((u) => u.branch === a.branch);
           if (branchUnits.length && !branchUnits.every((u) => can(subject, 'activities', 'view', u.id))) {
-            warning = 'Su usuario no puede ver todas las fichas de esta rama: dale el rol "Programa / APF".';
+            warning = 'Su usuario todavía no puede abrir las fichas de todas las unidades de esta rama.';
           }
         }
         warnings.set(a.id, warning);

@@ -34,7 +34,7 @@ export const authenticate = ah(async (req, _res, next) => {
   if (!user || !user.active) throw unauthorized('Usuario inactivo', 'session_expired');
   req.user = user;
   req.sessionId = session.id;
-  req.auth = await loadSubject(user.id);
+  req.auth = await loadSubject(user.id, user.adultId ?? null);
   currentContext().userId = user.id;
   next();
 });

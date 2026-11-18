@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Mail, Phone, Plus, Trash2 } from 'lucide-react';
 import { BRANCH_INFO, type Branch } from '@shared';
@@ -178,8 +177,8 @@ export function ReferentsPage() {
       )}
       {d.canManage ? (
         <p className="muted" style={{ marginTop: 16 }}>
-          Para que un referente pueda abrir las fichas y campamentos de su rama, su usuario necesita el rol «Programa / APF». Lo podés revisar en{' '}
-          <Link to="/admin/usuarios">Usuarios</Link>.
+          Ser referente ya le da a su usuario permiso de solo lectura en las unidades de su rama: fichas, campamentos, progresión y calendario. No hace
+          falta darle ningún rol; si deja de ser referente, ese permiso se va solo.
         </p>
       ) : null}
     </>
