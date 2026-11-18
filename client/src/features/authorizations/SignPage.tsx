@@ -80,7 +80,7 @@ const REQ = { required: 'Completá este dato' };
  * tutor, le pasa el dispositivo, y la persona lee la planilla y firma con el dedo.
  */
 export function SignPage() {
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
@@ -351,6 +351,37 @@ export function SignPage() {
 
           <Card title="La autorización">
             <div className="form-grid">
+              {kind === 'campamento' && (p.campOptions.length || campId) ? (
+                <Field
+                  label="Campamento o salida"
+                  full
+                  hint={campId ? 'Sale con el tipo, las fechas y el lugar cargados en el campamento.' : 'Si ya está cargado en la app, elegilo y se completa solo. Si no, completá los datos a mano.'}
+                >
+                  <Select
+                    value={campId}
+                    onChange={(ev) => {
+                      const next = new URLSearchParams(params);
+                      if (ev.target.value) next.set('campId', ev.target.value);
+                      else next.delete('campId');
+                      setParams(next, { replace: true });
+                    }}
+                  >
+                    <option value="">No está cargado: completar a mano</option>
+                    {p.campOptions.map((c) => (
+                      <option key={c.id} value={c.id} disabled={!c.enrolled}>
+                        {c.name} · {formatDate(c.startDate)}
+                        {c.endDate !== c.startDate ? ` al ${formatDate(c.endDate)}` : ''}
+                        {c.enrolled ? '' : ` (${p.member.firstName} no está inscripto)`}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              ) : null}
+              {kind === 'campamento' && p.campOptions.some((c) => !c.enrolled) && !campId ? (
+                <p className="full muted" style={{ margin: 0 }}>
+                  Los campamentos donde {p.member.firstName} no está inscripto aparecen en gris: primero inscribilo desde el campamento (pestaña «Inscripción y legajo»).
+                </p>
+              ) : null}
               {p.camp ? (
                 <p className="full" style={{ margin: 0 }}>
                   <b>{p.camp.name}</b> · del {formatDate(p.camp.startDate)} al {formatDate(p.camp.endDate)} · {p.camp.place || <span className="muted">sin lugar cargado: completalo en el campamento</span>}

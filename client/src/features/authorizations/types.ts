@@ -59,5 +59,7 @@ export interface Prefill {
   guardians: { name: string; dni: string | null; phone: string | null; address: string | null; relationship: string | null }[];
   last: { signer: AuthorizationContent['signer']; minor: AuthorizationContent['minor']; place: AuthorizationContent['place']; range: string | null } | null;
   existing: { id: string; signerName: string; signedAt: string; status: AuthStatus }[];
+  /** Campamentos ya cargados de su unidad, para elegir (enrolled = el chico está inscripto). */
+  campOptions: { id: string; name: string; type: string; startDate: string; endDate: string; enrolled: boolean }[];
   attendedBy: { name: string; hasAdult: boolean };
 }

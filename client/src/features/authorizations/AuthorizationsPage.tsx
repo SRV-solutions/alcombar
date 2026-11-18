@@ -84,14 +84,14 @@ export function NewAuthorizationDialog({ unitId, memberId, onClose }: { unitId?:
             />
           </Field>
         ) : null}
-        <Field label="Autorización" required hint="Si el campamento está cargado en la app, conviene firmarla desde su legajo: sale todo completo.">
+        <Field label="Autorización" required hint="Para un campamento o salida: en el paso siguiente elegís el campamento ya cargado (sale todo completo) o completás lugar y fechas a mano.">
           <Select value={kind} onChange={(e) => setKind(e.target.value as AuthKind)}>
             <option value="salidas_cercanas">{AUTH_KIND_LABELS.salidas_cercanas}</option>
             <option value="imagen">{AUTH_KIND_LABELS.imagen}</option>
             <option value="ingreso">{AUTH_KIND_LABELS.ingreso}</option>
             <option value="retiro_solo">{AUTH_KIND_LABELS.retiro_solo}</option>
             <option value="retiro_terceros">{AUTH_KIND_LABELS.retiro_terceros}</option>
-            <option value="campamento">Salida, acantonamiento o campamento (lugar y fechas a mano)</option>
+            <option value="campamento">Salida, acantonamiento o campamento</option>
           </Select>
         </Field>
       </div>

@@ -34,7 +34,7 @@ import {
 import { sequelize } from '../db';
 import { Adult, AdultAssignment, DocumentType, Guardian, Member, MemberDocument, MemberGuardian, Unit, User } from '../models';
 import { SignedAuthorization, type AdultSignature } from '../models/authorizations';
-import { Camp, CampEnrollment, CampSite } from '../models/treasury';
+import { Camp, CampEnrollment, CampSite, CampUnit } from '../models/treasury';
 import { authorizationsPdf, type PdfAuthorization } from '../lib/authorizationPdf';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { sha256 } from '../lib/security';
@@ -67,6 +67,24 @@ async function adultOf(user: User, unitId?: string | null) {
   const cargos = await AdultAssignment.findAll({ where: { adultId: adult.id, year: new Date().getFullYear() } });
   const cargo = cargos.find((c) => unitId && c.unitId === unitId) ?? cargos.find((c) => /de grupo/i.test(c.position)) ?? cargos[0];
   return { adult, name: `${adult.firstName} ${adult.lastName}`, dni: digits(adult.dni) || null, function: cargo?.position ?? null };
+}
+
+/** Campamentos y salidas de la unidad del protagonista (o en los que está inscripto), recientes o por venir. */
+async function campOptionsFor(member: Member) {
+  const since = new Date(Date.now() - 62 * 86400_000).toISOString().slice(0, 10);
+  const [camps, mine] = await Promise.all([
+    Camp.findAll({
+      where: { endDate: { [Op.gte]: since } },
+      include: [{ model: CampUnit, as: 'campUnits', attributes: ['unitId'] }],
+      attributes: ['id', 'name', 'type', 'startDate', 'endDate', 'ownerUnitId'],
+      order: [['startDate', 'ASC']],
+    }),
+    CampEnrollment.findAll({ where: { memberId: member.id }, attributes: ['campId'] }),
+  ]);
+  const enrolled = new Set(mine.map((e) => e.campId));
+  return camps
+    .filter((c) => enrolled.has(c.id) || (!!member.unitId && (c.ownerUnitId === member.unitId || (c.campUnits ?? []).some((cu) => cu.unitId === member.unitId))))
+    .map((c) => ({ id: c.id, name: c.name, type: c.type, startDate: c.startDate, endDate: c.endDate, enrolled: enrolled.has(c.id) }));
 }
 
 /** Fila liviana (sin los trazos) para listas. */
@@ -130,6 +148,8 @@ authorizationsRouter.get(
       last: previous[0] ? { signer: previous[0].content.signer, minor: previous[0].content.minor, place: previous[0].content.place, range: previous.find((p) => p.content.range)?.content.range ?? null } : null,
       // Ya hay una vigente del mismo tipo (se puede firmar otra igual, por ejemplo del otro progenitor)
       existing: same.map((p) => ({ id: p.id, signerName: p.content.signer.name, signedAt: p.signedAt, status: p.status })),
+      // Para elegir un campamento ya cargado: los de su unidad que no terminaron hace más de dos meses
+      campOptions: kind === 'campamento' ? await campOptionsFor(member) : [],
       attendedBy: { name: me?.name ?? req.user!.name, hasAdult: !!me },
     });
   }),
