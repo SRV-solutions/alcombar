@@ -356,6 +356,12 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
   .att-table .segmented { display: flex; width: 100%; }
   .att-table .segmented button { flex: 1; padding: 9px 4px; }
 }
+/* Encabezado de grupo (asistencia de educadores: por unidad o equipo) */
+.att-table .att-group th { background: var(--surface-2); text-transform: none; letter-spacing: 0; font-size: 0.85rem; color: var(--text); }
+@media (max-width: 640px) {
+  .att-table tr.att-group { display: block; padding: 0; }
+  .att-table .att-group th { display: block; padding: 8px 14px; }
+}
 /* Columnas lado a lado que pasan a una sola en pantallas chicas */
 .split { display: grid; gap: 16px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
 @media (max-width: 1000px) { .split { grid-template-columns: minmax(0, 1fr); } }
@@ -497,3 +503,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
   .filterbar-filters.open { display: grid; grid-template-columns: 1fr; gap: 8px; }
   .filterbar-filters .select, .filterbar-filters .input { width: 100%; min-width: 0; min-height: 42px; font-size: 16px; }
 }
+
+/* Usuarios: nombre, email y adulto en una sola columna */
+.user-cell { min-width: 180px; }
+.user-email { font-size: 0.82rem; overflow-wrap: anywhere; }

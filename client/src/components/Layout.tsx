@@ -103,6 +103,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
     items: [
       { to: '/grupo/unidades', label: 'Unidades', icon: <Tent />, perm: ['group', 'view'] },
       { to: '/adultos', label: 'Adultos', icon: <UsersRound />, perm: ['adults', 'view'] },
+      { to: '/asistencia-educadores', label: 'Asistencia de educadores', icon: <CalendarCheck />, perm: ['adult_attendance', 'view'] },
       { to: '/grupo/equipos', label: 'Equipos de apoyo', icon: <ClipboardList />, perm: ['group', 'view'] },
       { to: '/grupo/organigrama', label: 'Organigrama', icon: <Network />, perm: ['group', 'view'] },
       { to: '/calendario', label: 'Calendario', icon: <Compass />, perm: ['calendar', 'view'], end: true },

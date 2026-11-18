@@ -25,6 +25,7 @@ import { InventoryRoutes } from './features/inventory/InventoryRoutes';
 import { CalendarRoutes } from './features/calendar/CalendarRoutes';
 import { LibraryRoutes } from './features/library/LibraryRoutes';
 import { AttendancePage } from './features/attendance/AttendancePage';
+import { AdultAttendancePage } from './features/attendance/AdultAttendancePage';
 import { DocumentsPage } from './features/documents/DocumentsPage';
 import { AuthorizationsPage } from './features/authorizations/AuthorizationsPage';
 import { AuthorizationDocPage } from './features/authorizations/AuthorizationDocPage';
@@ -84,6 +85,7 @@ export function App() {
         <Route path="protagonistas/:id/editar" element={<Guard perm={['members', 'edit']}><MemberFormPage /></Guard>} />
         <Route path="pases" element={<Guard perm={['members', 'edit']}><TransfersPage /></Guard>} />
         <Route path="asistencia" element={<Guard perm={['attendance', 'view']}><AttendancePage /></Guard>} />
+        <Route path="asistencia-educadores" element={<Guard perm={['adult_attendance', 'view']}><AdultAttendancePage /></Guard>} />
         <Route path="documentacion" element={<Guard perm={['member_documents', 'view']}><DocumentsPage /></Guard>} />
         <Route path="autorizaciones" element={<Guard perm={['member_documents', 'view']}><AuthorizationsPage /></Guard>} />
         <Route path="autorizaciones/firmar" element={<Guard perm={['member_documents', 'edit']}><SignPage /></Guard>} />

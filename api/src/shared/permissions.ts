@@ -39,6 +39,13 @@ export const MODULES = {
   small_groups: { label: 'Pequeños grupos', section: 'Grupo', actions: ['view', 'create', 'edit', 'delete'], unitScoped: true },
   adults: { label: 'Adultos', section: 'Adultos', actions: ['view', 'create', 'edit', 'delete', 'export'], unitScoped: false },
   training: { label: 'Formación', section: 'Adultos', actions: ['view', 'create', 'edit', 'delete'], unitScoped: false },
+  adult_attendance: {
+    label: 'Asistencia de educadores',
+    section: 'Adultos',
+    actions: ['view', 'edit'],
+    unitScoped: false,
+    description: 'Quiénes de los adultos con cargo vinieron a cada actividad del Grupo. La toma la Jefatura de Grupo.',
+  },
   members: {
     label: 'Protagonistas',
     section: 'Protagonistas',
@@ -199,6 +206,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
       ...all('small_groups'),
       ...all('adults'),
       ...all('training'),
+      ...all('adult_attendance'),
       'members:view',
       'members:export',
       'member_contacts:view',

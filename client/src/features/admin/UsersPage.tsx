@@ -80,9 +80,7 @@ export function UsersPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Adulto vinculado</th>
+                  <th>Usuario</th>
                   <th>Roles</th>
                   <th>Estado</th>
                   <th>Último ingreso</th>
@@ -92,9 +90,18 @@ export function UsersPage() {
               <tbody>
                 {list.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ fontWeight: 600 }}>{u.name}</td>
-                    <td>{u.email}</td>
-                    <td>{u.adult ? adultName(u.adult) : <span className="muted">—</span>}</td>
+                    {/* Nombre, email y adulto en una sola columna: casi siempre el adulto es la misma persona */}
+                    <td className="user-cell">
+                      <div style={{ fontWeight: 600 }}>{u.name}</div>
+                      <div className="muted user-email">{u.email}</div>
+                      {u.adult && adultName(u.adult).replace(/s*(«.*»)$/, '').trim().toLowerCase() !== u.name.trim().toLowerCase() ? (
+                        <div className="muted user-email">Adulto: {adultName(u.adult)}</div>
+                      ) : u.adult?.totem ? (
+                        <div className="muted user-email">«{u.adult.totem}»</div>
+                      ) : !u.adult ? (
+                        <div className="muted user-email">Sin adulto vinculado</div>
+                      ) : null}
+                    </td>
                     <td>
                       {u.userRoles.length ? (
                         <div className="row" style={{ gap: 4 }}>
@@ -110,10 +117,16 @@ export function UsersPage() {
                       )}
                     </td>
                     <td>
-                      <div className="row" style={{ gap: 4 }}>
-                        {u.active ? <Badge tone="ok">Activo</Badge> : <Badge>Desactivado</Badge>}
-                        {u.active && !u.hasPassword ? <Badge tone="warn">Pendiente de definir contraseña</Badge> : null}
-                      </div>
+                      {/* Un solo estado: desactivado, sin contraseña todavía o activo */}
+                      {!u.active ? (
+                        <Badge>Desactivado</Badge>
+                      ) : !u.hasPassword ? (
+                        <Badge tone="warn">
+                          Sin contraseña
+                        </Badge>
+                      ) : (
+                        <Badge tone="ok">Activo</Badge>
+                      )}
                     </td>
                     <td className="nowrap">{fmtDateTime(u.lastLoginAt)}</td>
                     {canEdit ? (

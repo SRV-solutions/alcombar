@@ -242,6 +242,10 @@ export const attendanceSaveSchema = z.object({
   date: reqDate,
   records: z.array(z.object({ memberId: z.string().uuid(), status: z.enum(ATTENDANCE_STATUSES), notes: optStr(200) })),
 });
+export const adultAttendanceSaveSchema = z.object({
+  date: reqDate,
+  records: z.array(z.object({ adultId: z.string().uuid(), status: z.enum(ATTENDANCE_STATUSES), notes: optStr(200) })),
+});
 export const memberImportSchema = z.object({
   rows: z.array(z.record(z.string(), z.string().nullish())).min(1, 'La planilla no tiene filas').max(2000),
 });

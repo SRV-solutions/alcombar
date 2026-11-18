@@ -656,6 +656,28 @@ Attendance.init(
   { sequelize, tableName: 'attendances', modelName: 'Attendance', paranoid: false },
 );
 
+/** Asistencia de un adulto (educador) a una actividad del Grupo. */
+export class AdultAttendance extends Model<InferAttributes<AdultAttendance>, InferCreationAttributes<AdultAttendance>> {
+  declare id: CreationOptional<string>;
+  declare adultId: ForeignKey<Adult['id']>;
+  declare date: string;
+  declare status: string;
+  declare notes: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+AdultAttendance.init(
+  {
+    id,
+    date: { type: DATEONLY, allowNull: false },
+    status: { type: STRING(20), allowNull: false },
+    notes: STRING(200),
+    createdAt: DATE,
+    updatedAt: DATE,
+  },
+  { sequelize, tableName: 'adult_attendances', modelName: 'AdultAttendance', paranoid: false },
+);
+
 // ======================= RELACIONES =======================
 Unit.hasMany(SmallGroup, { as: 'smallGroups', foreignKey: 'unitId' });
 SmallGroup.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
@@ -704,6 +726,8 @@ MemberDocument.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
 MemberDocument.belongsTo(DocumentType, { as: 'documentType', foreignKey: 'documentTypeId' });
 Member.hasMany(Attendance, { as: 'attendances', foreignKey: 'memberId' });
 Attendance.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+AdultAttendance.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
+Adult.hasMany(AdultAttendance, { as: 'attendances', foreignKey: 'adultId' });
 Attendance.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
 
 export type { Base };
