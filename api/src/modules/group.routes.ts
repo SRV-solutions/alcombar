@@ -11,7 +11,7 @@ import {
   type Branch,
 } from '../shared';
 import { sequelize } from '../db';
-import { Adult, AdultAssignment, Course, DocumentType, Member, SmallGroup, SupportTeam, Unit } from '../models';
+import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Member, MemberDocument, SmallGroup, SupportTeam, Unit } from '../models';
 import { ah, badRequest, conflict, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
 
@@ -356,6 +356,28 @@ groupRouter.put(
   }),
 );
 
+/**
+ * Eliminar un documento del catálogo: solo si nadie lo tiene cargado (si no, se perdería ese registro del legajo)
+ * y si no es uno de los del legajo de Scouts de Argentina que usa la app (esos se desactivan).
+ */
+groupRouter.delete(
+  '/document-types/:id',
+  authorize('group', 'edit'),
+  ah(async (req, res) => {
+    const dt = await DocumentType.findByPk(req.params.id);
+    if (!dt) throw notFound();
+    if (dt.code) throw badRequest('Es uno de los documentos del legajo que usa la app (autorizaciones, campamentos): no se elimina. Si no lo usan, desactivalo con «Editar».');
+    const used = (await MemberDocument.count({ where: { documentTypeId: dt.id } })) + (await AdultDocument.count({ where: { documentTypeId: dt.id } }));
+    if (used) {
+      throw badRequest(
+        `Ya está cargado en ${used} ${used === 1 ? 'legajo' : 'legajos'}: no se puede eliminar sin perder ese registro. Desactivalo con «Editar» y deja de pedirse.`,
+      );
+    }
+    await dt.destroy();
+    res.json({ ok: true });
+  }),
+);
+
 groupRouter.get(
   '/courses',
   ah(async (_req, res) => {
@@ -377,5 +399,22 @@ groupRouter.put(
     if (!c) throw notFound();
     await c.update(parse(courseSchema, req.body));
     res.json(c);
+  }),
+);
+/** Eliminar un curso: solo si ningún adulto lo tiene registrado en su formación (si no, se desactiva). */
+groupRouter.delete(
+  '/courses/:id',
+  authorize('training', 'delete'),
+  ah(async (req, res) => {
+    const c = await Course.findByPk(req.params.id);
+    if (!c) throw notFound();
+    const used = await AdultCourse.count({ where: { courseId: c.id } });
+    if (used) {
+      throw badRequest(
+        `Está en la formación de ${used} ${used === 1 ? 'adulto' : 'adultos'}: no se puede eliminar sin perder ese registro. Desactivalo con «Editar» y deja de ofrecerse.`,
+      );
+    }
+    await c.destroy();
+    res.json({ ok: true });
   }),
 );

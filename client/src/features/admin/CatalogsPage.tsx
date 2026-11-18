@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { COURSE_KIND_LABELS, COURSE_KINDS, courseSchema, documentTypeSchema, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -10,7 +10,7 @@ import { applyServerErrors } from '../../lib/forms';
 import { useCourses, useDocumentTypes } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { Course, DocumentType } from '../../lib/types';
-import { Badge, Button, Card, Checkbox, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select } from '../../components/ui';
+import { Badge, Button, Card, Checkbox, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select } from '../../components/ui';
 
 export function CatalogsPage() {
   const { can } = useAuth();
@@ -21,6 +21,19 @@ export function CatalogsPage() {
   const canDocs = can('group', 'edit');
   const canCourseCreate = can('training', 'create');
   const canCourseEdit = can('training', 'edit');
+  const canCourseDelete = can('training', 'delete');
+  const toast = useToast();
+  const qc = useQueryClient();
+  // Si ya se usa en un legajo o en la formación de alguien, el servidor no lo borra y explica que se desactive
+  const remove = async (path: string, key: string, label: string) => {
+    try {
+      await api.del(path);
+      await qc.invalidateQueries({ queryKey: [key] });
+      toast.ok(`«${label}» eliminado`);
+    } catch (e) {
+      toast.error(e);
+    }
+  };
 
   return (
     <>
@@ -75,10 +88,23 @@ export function CatalogsPage() {
                       </td>
                       <td>{d.active ? <Badge tone="ok">Activo</Badge> : <Badge>Inactivo</Badge>}</td>
                       {canDocs ? (
-                        <td className="num">
+                        <td className="num nowrap">
                           <Button variant="ghost" size="sm" onClick={() => setDocEdit(d)}>
                             <Pencil /> Editar
                           </Button>
+                          {/* Los del legajo de SAAC que usa la app no se borran: se desactivan */}
+                          {!d.code ? (
+                            <ConfirmButton
+                              size="sm"
+                              variant="ghost"
+                              title="Eliminar documento"
+                              message={<p>¿Eliminar «{d.name}» del catálogo? Si ya está cargado en algún legajo no se va a poder: en ese caso desactivalo.</p>}
+                              confirmLabel="Eliminar"
+                              onConfirm={() => remove(`/group/document-types/${d.id}`, 'document-types', d.name)}
+                            >
+                              <Trash2 />
+                            </ConfirmButton>
+                          ) : null}
                         </td>
                       ) : null}
                     </tr>
@@ -116,7 +142,7 @@ export function CatalogsPage() {
                     <th>Curso</th>
                     <th>Tipo</th>
                     <th>Estado</th>
-                    {canCourseEdit ? <th /> : null}
+                    {canCourseEdit || canCourseDelete ? <th /> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -125,11 +151,25 @@ export function CatalogsPage() {
                       <td style={{ fontWeight: 600 }}>{c.name}</td>
                       <td>{COURSE_KIND_LABELS[c.kind as CourseKind] ?? c.kind}</td>
                       <td>{c.active ? <Badge tone="ok">Activo</Badge> : <Badge>Inactivo</Badge>}</td>
-                      {canCourseEdit ? (
-                        <td className="num">
-                          <Button variant="ghost" size="sm" onClick={() => setCourseEdit(c)}>
-                            <Pencil /> Editar
-                          </Button>
+                      {canCourseEdit || canCourseDelete ? (
+                        <td className="num nowrap">
+                          {canCourseEdit ? (
+                            <Button variant="ghost" size="sm" onClick={() => setCourseEdit(c)}>
+                              <Pencil /> Editar
+                            </Button>
+                          ) : null}
+                          {canCourseDelete ? (
+                            <ConfirmButton
+                              size="sm"
+                              variant="ghost"
+                              title="Eliminar curso"
+                              message={<p>¿Eliminar «{c.name}» del catálogo? Si algún adulto ya lo tiene en su formación no se va a poder: en ese caso desactivalo.</p>}
+                              confirmLabel="Eliminar"
+                              onConfirm={() => remove(`/group/courses/${c.id}`, 'courses', c.name)}
+                            >
+                              <Trash2 />
+                            </ConfirmButton>
+                          ) : null}
                         </td>
                       ) : null}
                     </tr>
