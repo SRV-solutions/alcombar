@@ -204,6 +204,11 @@ export const memberSchema = z.object({
   status: z.enum(MEMBER_STATUSES).default('activo'),
   notes: optStr(2000),
 });
+/** Rover en rotación (su último tiempo en la rama). */
+export const roverRotationSchema = z.object({ inRotation: z.boolean() });
+/** Partida del rover: pasa a ser adulto del Grupo. */
+export const departureSchema = z.object({ date: reqDate });
+
 export const guardianSchema = z.object({
   name: reqStr(160),
   relationship: optStr(60),

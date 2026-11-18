@@ -180,7 +180,7 @@ export function MemberFormPage() {
               {isEdit ? (
                 <Field label="Estado">
                   <Select {...register('status')}>
-                    {MEMBER_STATUSES.map((s) => (
+                    {MEMBER_STATUSES.filter((s) => s !== 'partida' || existing.data?.status === 'partida').map((s) => (
                       <option key={s} value={s}>
                         {MEMBER_STATUS_LABELS[s]}
                       </option>

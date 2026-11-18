@@ -184,6 +184,7 @@ export function MembersPage() {
           <Select value={status} onChange={(e) => set('status', e.target.value)} aria-label="Estado">
             <option value="activo">Activos</option>
             <option value="baja">Dados de baja</option>
+            <option value="partida">Hicieron la partida</option>
             <option value="todos">Todos</option>
           </Select>
         ) : null}
@@ -262,7 +263,7 @@ export function MembersPage() {
                     </td>
                   ) : null}
                   <td>
-                    <strong>{m.lastName}</strong>, {m.firstName}
+                    <strong>{m.lastName}</strong>, {m.firstName} {m.inRotation ? <Badge tone="info">En rotación</Badge> : null}
                   </td>
                   {pendingView ? (
                     <td>
@@ -283,7 +284,7 @@ export function MembersPage() {
                     </td>
                   ) : null}
                   {status !== 'activo' && !pendingView ? (
-                    <td>{m.status === 'baja' ? <Badge>Baja</Badge> : <Badge tone="ok">Activo/a</Badge>}</td>
+                    <td>{m.status === 'baja' ? <Badge>Baja</Badge> : m.status === 'partida' ? <Badge tone="info">Hizo la partida</Badge> : <Badge tone="ok">Activo/a</Badge>}</td>
                   ) : null}
                 </tr>
               ))}

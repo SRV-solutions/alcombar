@@ -6,9 +6,10 @@ export const ADULT_STATUS_LABELS: Record<AdultStatus, string> = {
   baja: 'Baja',
 };
 
-export const MEMBER_STATUSES = ['activo', 'baja'] as const;
+/** 'partida': el rover terminó su etapa de protagonista y pasó a ser adulto del Grupo. */
+export const MEMBER_STATUSES = ['activo', 'baja', 'partida'] as const;
 export type MemberStatus = (typeof MEMBER_STATUSES)[number];
-export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = { activo: 'Activo/a', baja: 'Baja' };
+export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = { activo: 'Activo/a', baja: 'Baja', partida: 'Hizo la partida' };
 
 export const AFFILIATION_STATUSES = ['pendiente', 'en_tramite', 'afiliado', 'no_corresponde'] as const;
 export type AffiliationStatus = (typeof AFFILIATION_STATUSES)[number];

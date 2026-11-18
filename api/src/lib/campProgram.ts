@@ -62,6 +62,7 @@ export async function campProgram(auth: PermissionSubject | undefined, camp: Cam
         durationMin: i.durationMin,
         notes: i.notes,
         responsible: i.responsible ?? null,
+        responsibleText: i.responsibleText ?? null,
         sheet: i.sheet ? { id: i.sheet.id, code: i.sheet.code, name: i.sheet.name, status: i.sheet.status } : null,
       })),
     })),

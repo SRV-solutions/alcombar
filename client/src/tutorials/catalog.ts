@@ -307,6 +307,37 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'rover-en-rotacion-y-partida',
+    title: 'Rovers: rotación y partida',
+    description: 'Marcar a un rover en su último tiempo como «en rotación» y, cuando hace la partida, pasarlo a adulto del Grupo sin perder su historia.',
+    keywords: ['rover', 'rovers', 'rotación', 'rover en rotación', 'partida', 'hizo la partida', 'pasar a adulto', 'egreso', 'último año', 'historial'],
+    audience: (c) => c.can('members', 'edit'),
+    steps: [
+      {
+        route: '/protagonistas',
+        target: nav('/protagonistas'),
+        pose: 'point',
+        title: 'Desde la ficha del rover',
+        text: 'Entrá a la ficha de un rover de la Comunidad. Arriba vas a ver dos botones que solo aparecen en los rovers: «Pasar a rotación» e «Hizo la partida».',
+      },
+      {
+        pose: 'think',
+        title: 'Rover en rotación',
+        text: 'Es para los que están en su último tiempo en la rama. Sigue siendo rover (aparece en la lista, en la asistencia y en todo), pero con la marca «En rotación». Se puede sacar cuando quieras.',
+      },
+      {
+        pose: 'point',
+        title: 'La partida',
+        text: 'Cuando hace la partida, poné la fecha y confirmá. Se crea su ficha de adulto con sus datos y queda avisado el equipo que carga Cruz del Sur. Después le cargás el cargo desde Adultos.',
+      },
+      {
+        pose: 'cheer',
+        title: 'Su historia no se pierde',
+        text: 'La ficha de protagonista queda como «Hizo la partida», con sus pases, progresión y asistencia, y enlazada a su ficha de adulto. Así queda toda su vida en el Grupo.',
+      },
+    ],
+  },
+  {
     id: 'pase-de-unidad',
     title: 'Pases de unidad',
     description: 'Pasar chicos de unidad: por edad (cambio de rama) o por elección (por ejemplo, de la Pedro Bártolo a la Luis Conde), de a varios.',
@@ -503,7 +534,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: 'button.meeting-add' },
         pose: 'point',
         title: 'Agregar momentos',
-        text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada) y responsable. Los podés subir y bajar para ordenarlos.',
+        text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada) y responsable. El responsable puede ser alguien de la unidad, otro adulto del Grupo o un «Otro» que escribís vos: Jefatura de Grupo para el izado, el Párroco para la misa, un rover en servicio…',
       },
       {
         target: button('Guardar programa'),

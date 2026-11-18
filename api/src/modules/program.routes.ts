@@ -711,6 +711,8 @@ programRouter.put(
             activitySheetId: it.activitySheetId,
             title: it.title,
             responsibleAdultId: it.responsibleAdultId,
+            // Si se eligió una persona, el texto libre no se guarda
+            responsibleText: it.responsibleAdultId ? null : it.responsibleText,
             durationMin: it.durationMin,
             notes: it.notes,
           },

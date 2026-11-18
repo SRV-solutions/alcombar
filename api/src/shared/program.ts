@@ -171,10 +171,19 @@ export const meetingItemSchema = z
     activitySheetId: optUuid,
     title: optStr(200),
     responsibleAdultId: optUuid,
+    responsibleText: optStr(120),
     durationMin: optInt(0, 600),
     notes: optStr(500),
   })
   .refine((v) => v.activitySheetId || v.title, { message: 'Poné una ficha o un título', path: ['title'] });
+/** Responsables frecuentes de un momento que no son un adulto de la unidad. */
+export const MEETING_RESPONSIBLE_PRESETS = ['Jefatura de Grupo', 'Párroco', 'Todos los educadores', 'Rama de servicio', 'Rover en servicio'] as const;
+/** Cómo se muestra el responsable de un momento: la persona elegida o el texto escrito. */
+export const meetingResponsibleLabel = (i: {
+  responsible?: { firstName: string; lastName: string; totem?: string | null } | null;
+  responsibleText?: string | null;
+}): string => (i.responsible ? `${i.responsible.firstName} ${i.responsible.lastName}${i.responsible.totem ? ` («${i.responsible.totem}»)` : ''}` : (i.responsibleText ?? ''));
+
 export const meetingSchema = z.object({
   unitId: z.string().uuid('Elegí la unidad'),
   date: reqDate,

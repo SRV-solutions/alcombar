@@ -4,6 +4,8 @@ import { Op, type Transaction, type WhereOptions } from 'sequelize';
 import {
   affiliationSchema,
   can,
+  departureSchema,
+  roverRotationSchema,
   documentStatus,
   formatDate,
   guardianSchema,
@@ -22,6 +24,7 @@ import {
 } from '../shared';
 import { sequelize } from '../db';
 import {
+  Adult,
   Affiliation,
   Attendance,
   DocumentType,
@@ -34,7 +37,7 @@ import {
   UnitTransfer,
 } from '../models';
 import { writeAudit } from '../lib/audit';
-import { memberRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
+import { adultRegistered, memberRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
 import { sendCsv, toCsv } from '../lib/csv';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
@@ -102,6 +105,7 @@ membersRouter.get(
         joinedAt: m.joinedAt,
         promiseDate: m.promiseDate,
         status: m.status,
+        inRotation: m.inRotation,
         branch: m.branch ?? m.unit?.branch ?? null,
         unit: m.unit,
         smallGroup: m.smallGroup,
@@ -317,6 +321,8 @@ membersRouter.get(
         })
       : [];
     const data = m.toJSON() as Record<string, unknown>;
+    // Si hizo la partida: el adulto que pasó a ser
+    const adult = m.adultId ? await Adult.findByPk(m.adultId, { attributes: ['id', 'firstName', 'lastName', 'totem'] }) : null;
     if (!flags.canViewContacts) {
       data.address = null;
       data.phone = null;
@@ -345,6 +351,7 @@ membersRouter.get(
               };
             })
         : null,
+      adult,
       transfers,
       affiliations,
       attendance,
@@ -396,13 +403,18 @@ membersRouter.put(
       const dup = await Member.findOne({ where: { dni: data.dni, id: { [Op.ne]: member.id } } });
       if (dup) throw badRequest('Revisá los datos', { dni: 'Ya hay otro protagonista con ese DNI' });
     }
+    if (data.status === 'partida' && member.status !== 'partida') {
+      throw badRequest('Revisá los datos', { status: 'La partida se registra con el botón «Hizo la partida» de su ficha' });
+    }
     const canContacts = can(req.auth, 'member_contacts', 'edit', member.unitId ?? data.unitId);
     const { address, phone, email, unitId: _unitId, ...rest } = data;
-    const leftAt = data.status === 'baja' ? (member.status === 'baja' ? member.leftAt : todayIso()) : null;
+    const leftAt = data.status === 'activo' ? null : member.status === data.status ? member.leftAt : todayIso();
     const wasRegistered = memberRegistered(member.status);
     await member.update({
       ...rest,
       leftAt,
+      // Si vuelve a estar activo, se deshace la partida (el adulto creado no se borra)
+      ...(data.status === 'activo' ? { departedAt: null, adultId: null } : { inRotation: false, rotationSince: null }),
       ...(assignUnit ? { unitId: assignUnit.id, branch: assignUnit.branch } : {}),
       ...(canContacts ? { address, phone, email } : {}),
     });
@@ -464,6 +476,84 @@ membersRouter.post(
     const toUnit = await destination(data);
     await sequelize.transaction((transaction) => moveMember(member, toUnit, data, transaction));
     res.json(member);
+  }),
+);
+
+/** Solo un rover activo pasa a rotación o hace la partida. */
+async function activeRover(id: string) {
+  const member = await Member.findByPk(id, { include: [{ model: Unit, as: 'unit', attributes: ['id', 'name', 'branch'] }] });
+  if (!member) throw notFound();
+  if ((member.unit?.branch ?? member.branch) !== 'rovers') throw badRequest('Solo los rovers pasan a rotación o hacen la partida');
+  if (member.status !== 'activo') throw badRequest('No está activo/a');
+  return member;
+}
+
+/** Rover en rotación: su último tiempo en la rama, antes de la partida. Sigue siendo rover. */
+membersRouter.post(
+  '/:id/rotation',
+  authorize('members', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const member = await activeRover(req.params.id);
+    const { inRotation } = parse(roverRotationSchema, req.body);
+    await member.update({ inRotation, rotationSince: inRotation ? (member.inRotation ? member.rotationSince : todayIso()) : null });
+    await writeAudit({
+      action: 'update',
+      entity: 'Member',
+      entityId: member.id,
+      summary: `${member.firstName} ${member.lastName}: ${inRotation ? 'pasa a rover en rotación' : 'deja de estar en rotación'}`,
+    });
+    res.json({ ok: true, inRotation: member.inRotation, rotationSince: member.rotationSince });
+  }),
+);
+
+/**
+ * Partida: el rover termina su etapa de protagonista y pasa a ser adulto del Grupo. Su ficha de protagonista no se
+ * pierde: queda con estado «Hizo la partida» y enlazada al adulto, con todo su historial (pases, progresión, asistencia).
+ */
+membersRouter.post(
+  '/:id/departure',
+  authorize('members', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const member = await activeRover(req.params.id);
+    const { date } = parse(departureSchema, req.body);
+    if (date > todayIso()) throw badRequest('Revisá los datos', { date: 'La partida todavía no pasó' });
+    let created = false;
+    const adult = await sequelize.transaction(async (transaction) => {
+      // Si ya estaba cargado como adulto (mismo DNI), se enlaza en lugar de duplicarlo
+      let a = member.dni ? await Adult.findOne({ where: { dni: member.dni }, transaction }) : null;
+      if (!a) {
+        a = await Adult.create(
+          {
+            firstName: member.firstName,
+            lastName: member.lastName,
+            totem: null,
+            dni: member.dni,
+            birthDate: member.birthDate,
+            email: member.email,
+            phone: member.phone,
+            address: member.address,
+            joinedAt: member.joinedAt,
+            status: 'alta',
+            advisorAdultId: null,
+            notes: `Fue protagonista del Grupo. Hizo la partida el ${formatDate(date)}.`,
+          },
+          { transaction },
+        );
+        created = true;
+      }
+      await member.update({ status: 'partida', leftAt: date, departedAt: date, inRotation: false, adultId: a.id }, { transaction });
+      await writeAudit(
+        { action: 'update', entity: 'Member', entityId: member.id, summary: `${member.firstName} ${member.lastName} hizo la partida (${date}) y pasa a ser adulto del Grupo` },
+        transaction,
+      );
+      return a;
+    });
+    // Cruz del Sur: baja como protagonista y, si el adulto es nuevo, alta como adulto
+    await recordRegistryChanges(req, [
+      { kind: 'baja', member, detail: 'Hizo la partida: pasa a ser adulto del Grupo' },
+      ...(created && adultRegistered(adult.status) ? [{ kind: 'alta' as const, adult, detail: 'Viene de la Comunidad Rover (partida)' }] : []),
+    ]);
+    res.json({ ok: true, adultId: adult.id, created });
   }),
 );
 

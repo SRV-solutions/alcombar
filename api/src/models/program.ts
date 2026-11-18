@@ -208,6 +208,8 @@ export class MeetingItem extends Model<InferAttributes<MeetingItem>, InferCreati
   declare activitySheetId: ForeignKey<ActivitySheet['id']> | null;
   declare title: string | null;
   declare responsibleAdultId: ForeignKey<Adult['id']> | null;
+  /** Responsable que no es un adulto cargado: «Párroco», «Jefatura de Grupo», «Todos», dos personas… */
+  declare responsibleText: CreationOptional<string | null>;
   declare durationMin: number | null;
   declare notes: string | null;
   declare createdAt: CreationOptional<Date>;
@@ -216,7 +218,7 @@ export class MeetingItem extends Model<InferAttributes<MeetingItem>, InferCreati
   declare responsible?: NonAttribute<Adult | null>;
 }
 MeetingItem.init(
-  { id, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, time: STRING(5), title: STRING(200), durationMin: INTEGER, notes: STRING(500), ...stampsHard },
+  { id, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, time: STRING(5), title: STRING(200), responsibleText: STRING(120), durationMin: INTEGER, notes: STRING(500), ...stampsHard },
   { sequelize, tableName: 'meeting_items', modelName: 'MeetingItem', paranoid: false },
 );
 

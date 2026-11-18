@@ -424,11 +424,19 @@ export class Member extends Model<InferAttributes<Member>, InferCreationAttribut
   declare email: string | null;
   declare status: CreationOptional<string>;
   declare leftAt: string | null;
+  /** Rover en rotación: sigue siendo rover, en su último tiempo antes de la partida. */
+  declare inRotation: CreationOptional<boolean>;
+  declare rotationSince: CreationOptional<string | null>;
+  /** Fecha de la partida (el estado pasa a 'partida'). */
+  declare departedAt: CreationOptional<string | null>;
+  /** El adulto que pasó a ser después de la partida. */
+  declare adultId: CreationOptional<ForeignKey<Adult['id']> | null>;
   declare notes: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
   declare unit?: NonAttribute<Unit | null>;
+  declare adultRecord?: NonAttribute<Adult | null>;
   declare smallGroup?: NonAttribute<SmallGroup | null>;
   declare guardianLinks?: NonAttribute<MemberGuardian[]>;
   declare documents?: NonAttribute<MemberDocument[]>;
@@ -449,6 +457,9 @@ Member.init(
     email: STRING(200),
     status: { type: STRING(20), allowNull: false, defaultValue: 'activo' },
     leftAt: DATEONLY,
+    inRotation: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    rotationSince: DATEONLY,
+    departedAt: DATEONLY,
     notes: TEXT,
     createdAt: DATE,
     updatedAt: DATE,
@@ -707,6 +718,9 @@ PasswordToken.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 AuditLog.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
 Member.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
+// Después de la partida, el protagonista queda enlazado al adulto que pasó a ser
+Member.belongsTo(Adult, { as: 'adultRecord', foreignKey: 'adultId' });
+Adult.hasOne(Member, { as: 'memberRecord', foreignKey: 'adultId' });
 Unit.hasMany(Member, { as: 'members', foreignKey: 'unitId' });
 Member.belongsTo(SmallGroup, { as: 'smallGroup', foreignKey: 'smallGroupId' });
 Member.hasMany(MemberGuardian, { as: 'guardianLinks', foreignKey: 'memberId' });

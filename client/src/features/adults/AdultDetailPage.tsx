@@ -241,6 +241,23 @@ export function AdultDetailPage() {
               <dd>{a.address ?? dash}</dd>
               <dt>Ingreso al Grupo</dt>
               <dd>{a.joinedAt ? formatDate(a.joinedAt) : dash}</dd>
+              {a.memberRecord ? (
+                <>
+                  <dt>Fue protagonista</dt>
+                  <dd>
+                    <Link to={`/protagonistas/${a.memberRecord.id}`}>Ver su historia como protagonista</Link>
+                    <div className="muted">
+                      {[
+                        a.memberRecord.promiseDate ? `Promesa: ${formatDate(a.memberRecord.promiseDate)}` : null,
+                        a.memberRecord.departedAt ? `Partida: ${formatDate(a.memberRecord.departedAt)}` : null,
+                        a.memberRecord.unit ? `desde ${a.memberRecord.unit.name}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
+                  </dd>
+                </>
+              ) : null}
               {a.notes ? (
                 <>
                   <dt>Notas</dt>

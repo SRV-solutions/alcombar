@@ -110,6 +110,8 @@ export interface AdultDetail extends Adult {
   advisor: AdultRef | null;
   advisees: AdultRef[];
   documents: MemberDoc[];
+  /** Su ficha de protagonista, si pasó por el Grupo antes de ser adulto. */
+  memberRecord: { id: string; joinedAt: string | null; promiseDate: string | null; departedAt: string | null; unit: UnitRef | null } | null;
 }
 
 export interface DocSummary {
@@ -128,6 +130,8 @@ export interface MemberListItem {
   joinedAt: string | null;
   promiseDate: string | null;
   status: string;
+  /** Rover en rotación. */
+  inRotation?: boolean;
   /** Rama: la de la unidad, o la conocida si está "por asignar". */
   branch: string | null;
   /** null = por asignar unidad */
@@ -175,6 +179,11 @@ export interface MemberDetail {
   email: string | null;
   status: string;
   leftAt: string | null;
+  inRotation: boolean;
+  rotationSince: string | null;
+  departedAt: string | null;
+  /** El adulto que pasó a ser después de la partida. */
+  adult: AdultRef | null;
   notes: string | null;
   unit: UnitRef | null;
   smallGroup: { id: string; name: string; kind: string } | null;

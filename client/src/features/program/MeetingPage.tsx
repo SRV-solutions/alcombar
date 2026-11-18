@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, CalendarDays, Plus, Printer, Save, Trash2, X } from 'lucide-react';
-import { formatDate, meetingSchema } from '@shared';
+import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
 import { adultName, useAdults } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
@@ -16,6 +16,10 @@ interface Row {
   activitySheetId: string;
   title: string;
   responsibleAdultId: string;
+  /** Responsable escrito a mano (párroco, Jefatura, dos personas…). */
+  responsibleText: string;
+  /** Está eligiendo «Otro»: muestra el campo para escribir. */
+  other: boolean;
   durationMin: string;
   notes: string;
 }
@@ -41,10 +45,12 @@ const toRow = (i: MeetingItemRow): Row => ({
   activitySheetId: i.activitySheetId ?? '',
   title: i.title ?? '',
   responsibleAdultId: i.responsibleAdultId ?? '',
+  responsibleText: i.responsibleAdultId ? '' : (i.responsibleText ?? ''),
+  other: !i.responsibleAdultId && !!i.responsibleText,
   durationMin: i.durationMin?.toString() ?? '',
   notes: i.notes ?? '',
 });
-const emptyRow = (time = ''): Row => ({ key: ++seq, time, activitySheetId: '', title: '', responsibleAdultId: '', durationMin: '', notes: '' });
+const emptyRow = (time = ''): Row => ({ key: ++seq, time, activitySheetId: '', title: '', responsibleAdultId: '', responsibleText: '', other: false, durationMin: '', notes: '' });
 
 /** Programa → Programa del sábado: la grilla de la reunión de una unidad, con fichas o momentos sueltos. */
 export function MeetingPage() {
@@ -95,6 +101,14 @@ export function MeetingPage() {
     };
   }, [sheets.data, date]);
   const adultOptions = useMemo(() => (adults.data ?? []).filter((a) => a.status !== 'baja').sort((a, b) => a.lastName.localeCompare(b.lastName)), [adults.data]);
+  // Primero los de la unidad; después el resto del Grupo (un sinodal de otra unidad que viene a dar un taller)
+  const unitAdults = useMemo(() => adultOptions.filter((a) => (a.assignments ?? []).some((c) => c.unitId === unitId)), [adultOptions, unitId]);
+  const otherAdults = useMemo(() => adultOptions.filter((a) => !unitAdults.includes(a)), [adultOptions, unitAdults]);
+  const pickResponsible = (key: number, value: string) => {
+    if (value === '__otro') update(key, { responsibleAdultId: '', other: true });
+    else if (value.startsWith('txt:')) update(key, { responsibleAdultId: '', other: true, responsibleText: value.slice(4) });
+    else update(key, { responsibleAdultId: value, other: false, responsibleText: '' });
+  };
 
   const update = (key: number, patch: Partial<Row>) => {
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -136,6 +150,7 @@ export function MeetingPage() {
         activitySheetId: r.activitySheetId || null,
         title: r.title,
         responsibleAdultId: r.responsibleAdultId || null,
+        responsibleText: r.responsibleAdultId ? null : r.responsibleText.trim() || null,
         durationMin: r.durationMin,
         notes: r.notes,
       })),
@@ -172,7 +187,7 @@ export function MeetingPage() {
     time: i.time?.slice(0, 5) ?? '',
     what: i.sheet ? `${i.sheet.name} (${i.sheet.code})` : i.title ?? '',
     extra: [i.sheet && i.title ? i.title : '', i.notes ?? ''].filter(Boolean).join(' · '),
-    who: i.responsible ? adultName(i.responsible) : '',
+    who: meetingResponsibleLabel(i),
     dur: minutes(i.durationMin),
   }));
   const readTable = (
@@ -335,15 +350,45 @@ export function MeetingPage() {
                         ) : null}
                       </div>
                       <Field label="Responsable">
-                        <Select value={r.responsibleAdultId} onChange={(e) => update(r.key, { responsibleAdultId: e.target.value })}>
+                        <Select value={r.other ? '__otro' : r.responsibleAdultId} onChange={(e) => pickResponsible(r.key, e.target.value)}>
                           <option value="">—</option>
-                          {adultOptions.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.lastName}, {a.firstName}
-                              {a.totem ? ` «${a.totem}»` : ''}
-                            </option>
-                          ))}
+                          {unitAdults.length ? (
+                            <optgroup label={`De ${unit?.name ?? 'la unidad'}`}>
+                              {unitAdults.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.lastName}, {a.firstName}
+                                  {a.totem ? ` «${a.totem}»` : ''}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                          <optgroup label="Otro">
+                            {MEETING_RESPONSIBLE_PRESETS.map((p) => (
+                              <option key={p} value={`txt:${p}`}>
+                                {p}
+                              </option>
+                            ))}
+                            <option value="__otro">Otro (escribirlo)…</option>
+                          </optgroup>
+                          <optgroup label="Otros adultos del Grupo">
+                            {otherAdults.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.lastName}, {a.firstName}
+                                {a.totem ? ` «${a.totem}»` : ''}
+                              </option>
+                            ))}
+                          </optgroup>
                         </Select>
+                        {r.other ? (
+                          <Input
+                            style={{ marginTop: 4 }}
+                            value={r.responsibleText}
+                            maxLength={120}
+                            placeholder="Quién lo lleva: Párroco, Puma y Aldi…"
+                            aria-label="Responsable (otro)"
+                            onChange={(e) => update(r.key, { responsibleText: e.target.value })}
+                          />
+                        ) : null}
                       </Field>
                       <Field label="Min.">
                         <Input type="number" min={0} max={600} value={r.durationMin} onChange={(e) => update(r.key, { durationMin: e.target.value })} />

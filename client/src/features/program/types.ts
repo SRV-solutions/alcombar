@@ -112,6 +112,7 @@ export interface MeetingItemRow {
   activitySheetId: string | null;
   title: string | null;
   responsibleAdultId: string | null;
+  responsibleText?: string | null;
   durationMin: number | null;
   notes: string | null;
   sheet?: { id: string; code: string; name: string; durationMin: number | null; place: string | null; status: string } | null;

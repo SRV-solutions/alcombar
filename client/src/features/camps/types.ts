@@ -136,6 +136,7 @@ export interface CampProgramItem {
   durationMin: number | null;
   notes: string | null;
   responsible: AdultMini | null;
+  responsibleText: string | null;
   sheet: { id: string; code: string; name: string; status: string } | null;
 }
 export interface CampProgram {

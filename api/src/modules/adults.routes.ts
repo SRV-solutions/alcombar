@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { Op, type WhereOptions } from 'sequelize';
 import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, documentStatus, formatDate, isTeamLeaderPosition, memberDocumentSchema, todayIso, type AdultStatus } from '../shared';
-import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Role, SupportTeam, Unit, User, UserRole } from '../models';
+import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Member, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
 import { personSearchWhere } from '../lib/personSearch';
 import { adultRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
@@ -192,7 +192,13 @@ adultsRouter.get(
           status: documentStatus(d, t.hasExpiry, todayIso(), t.required),
         };
       });
-    res.json({ ...adult.toJSON(), advisees, documents });
+    // Si fue protagonista del Grupo (hizo la partida), el enlace a esa ficha con su historia
+    const memberRecord = await Member.findOne({
+      where: { adultId: adult.id },
+      attributes: ['id', 'joinedAt', 'promiseDate', 'departedAt'],
+      include: [{ model: Unit, as: 'unit', attributes: ['id', 'code', 'name', 'branch'] }],
+    });
+    res.json({ ...adult.toJSON(), advisees, documents, memberRecord });
   }),
 );
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeftRight, Mail, MessageCircle, Pencil, Phone, Plus, Tent, Trash2, Unlink } from 'lucide-react';
+import { ArrowLeftRight, Flag, Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw, Tent, Trash2, Unlink } from 'lucide-react';
 import {
   ageAt,
   AFFILIATION_STATUS_LABELS,
@@ -10,6 +10,7 @@ import {
   DOC_STATUS_LABELS,
   documentLabel,
   formatDate,
+  todayIso,
   TRANSFER_REASON_LABELS,
   type TransferReason,
   type AffiliationStatus,
@@ -19,7 +20,8 @@ import {
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
 import type { Guardian, MemberDetail, MemberDoc } from '../../lib/types';
-import { Badge, Button, Card, ConfirmButton, DocDot, Empty, ErrorBox, LinkButton, Loading, PageHeader, Tabs, UnitBadge, type Tone } from '../../components/ui';
+import { Badge, Button, Card, ConfirmButton, DocDot, Empty, ErrorBox, Field, Input, LinkButton, Loading, PageHeader, Tabs, UnitBadge, type Tone } from '../../components/ui';
+import { adultName } from '../../lib/queries';
 import { AffiliationDialog, DocumentDialog, GuardianDialog, TransferDialog } from './MemberDialogs';
 import { MemberAuthorizationsCard } from '../authorizations/MemberAuthorizationsCard';
 import { AssignUnitDialog } from './AssignUnitDialog';
@@ -58,6 +60,7 @@ export function MemberDetailPage() {
     | null
   >(null);
   const q = useQuery({ queryKey: ['member', id], queryFn: () => api.get<MemberDetail>(`/members/${id}`) });
+  const [departureDate, setDepartureDate] = useState(todayIso());
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['member', id] });
@@ -71,6 +74,17 @@ export function MemberDetailPage() {
   const branch = BRANCH_INFO[(m.unit?.branch ?? m.branch) as Branch];
   // Sin unidad: puede asignarla quien edita protagonistas en alguna unidad (el servidor valida la rama)
   const canAssign = !m.unit && can('members', 'edit');
+  // Rover activo: puede pasar a rotación y hacer la partida
+  const isRover = (m.unit?.branch ?? m.branch) === 'rovers' && m.status === 'activo';
+  const setRotation = async (inRotation: boolean) => {
+    try {
+      await api.post(`/members/${m.id}/rotation`, { inRotation });
+      toast.ok(inRotation ? 'Pasó a rover en rotación' : 'Ya no está en rotación');
+      refresh();
+    } catch (e) {
+      toast.error(e);
+    }
+  };
   const pendingDocs = m.documents?.filter((d) => d.status === 'missing' || d.status === 'expired').length ?? 0;
   const presentCount = m.attendance.filter((a) => a.status === 'presente' || a.status === 'tarde').length;
 
@@ -91,6 +105,8 @@ export function MemberDetailPage() {
         title={
           <>
             {m.firstName} {m.lastName} {m.status === 'baja' ? <Badge>Baja</Badge> : null}
+            {m.status === 'partida' ? <Badge tone="info">Hizo la partida</Badge> : null}
+            {m.inRotation ? <Badge tone="info">Rover en rotación</Badge> : null}
           </>
         }
         sub={
@@ -104,6 +120,7 @@ export function MemberDetailPage() {
             )}
             {m.smallGroup ? <span>· {m.smallGroup.name}</span> : null}
             {age !== null ? <span>· {age} años</span> : null}
+            {m.inRotation && m.rotationSince ? <span>· En rotación desde el {formatDate(m.rotationSince)}</span> : null}
           </span>
         }
         actions={
@@ -112,6 +129,44 @@ export function MemberDetailPage() {
               <Button onClick={() => setDialog({ kind: 'assign' })}>
                 <Tent /> Asignar unidad
               </Button>
+            ) : null}
+            {m.canEdit && isRover ? (
+              <>
+                <Button variant="secondary" onClick={() => setRotation(!m.inRotation)} title="Su último tiempo en la rama, antes de la partida">
+                  <RefreshCw /> {m.inRotation ? 'Quitar de rotación' : 'Pasar a rotación'}
+                </Button>
+                <ConfirmButton
+                  variant="secondary"
+                  title="Partida del rover"
+                  confirmLabel="Registrar la partida"
+                  message={
+                    <>
+                      <p>
+                        <strong>
+                          {m.firstName} {m.lastName}
+                        </strong>{' '}
+                        termina su etapa de protagonista y pasa a ser <strong>adulto del Grupo</strong>.
+                      </p>
+                      <p className="muted">
+                        Se crea su ficha de adulto con sus datos (si ya estaba cargado con el mismo DNI, se enlaza). Esta ficha no se pierde: queda como «Hizo la partida», con
+                        sus pases, progresión y asistencia. Se avisa para cargarlo en Cruz del Sur.
+                      </p>
+                      <Field label="Fecha de la partida" required>
+                        <Input type="date" value={departureDate} max={todayIso()} onChange={(e) => setDepartureDate(e.target.value)} />
+                      </Field>
+                    </>
+                  }
+                  onConfirm={async () => {
+                    const r = await api.post<{ adultId: string }>(`/members/${m.id}/departure`, { date: departureDate });
+                    toast.ok('Partida registrada: ya está en Adultos');
+                    await qc.invalidateQueries({ queryKey: ['adults'] });
+                    refresh();
+                    navigate(`/adultos/${r.adultId}`);
+                  }}
+                >
+                  <Flag /> Hizo la partida
+                </ConfirmButton>
+              </>
             ) : null}
             {m.canEdit ? (
               <>
@@ -151,6 +206,17 @@ export function MemberDetailPage() {
         }
       />
 
+      {m.status === 'partida' ? (
+        <div className="alert alert-info" style={{ marginBottom: 12 }}>
+          Hizo la partida{m.departedAt ? ` el ${formatDate(m.departedAt)}` : ''}.{' '}
+          {m.adult ? (
+            <>
+              Sigue en el Grupo como adulto: <Link to={`/adultos/${m.adult.id}`}>{adultName(m.adult)}</Link>.{' '}
+            </>
+          ) : null}
+          Esta ficha queda como su historia de protagonista.
+        </div>
+      ) : null}
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
 
       {tab === 'datos' ? (
