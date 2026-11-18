@@ -55,7 +55,8 @@ async function memberOr404(id: string) {
   if (!m) throw notFound('Protagonista inexistente');
   return m;
 }
-const campPlace = (camp: Camp) => [camp.site?.name, camp.place || camp.site?.address, camp.site?.location].filter(Boolean).join(', ');
+/** Lugar del campamento para la planilla: el lugar de acampe vinculado (nombre, dirección y localidad) o, si no hay, el texto cargado. */
+const campPlace = (camp: Camp) => (camp.site ? [camp.site.name, camp.site.address, camp.site.location].filter(Boolean).join(', ') : camp.place ?? '');
 const campInfo = (camp: Camp) => ({ id: camp.id, name: camp.name, type: camp.type, startDate: camp.startDate, endDate: camp.endDate, place: campPlace(camp) });
 const loadCamp = (id: string) => Camp.findByPk(id, { include: [{ model: CampSite, as: 'site' }] });
 
