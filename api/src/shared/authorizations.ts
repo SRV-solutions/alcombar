@@ -178,6 +178,11 @@ const B1 = '\u0002';
 // Negrita cursiva (el nombre de la autorización de ingreso dentro del aval, como en la planilla).
 const I0 = '\u0003';
 const I1 = '\u0004';
+// Tachado ("tachar lo que no corresponda").
+const S0 = '\u0005';
+const S1 = '\u0006';
+/** Partido o provincia que no corresponde (CABA): guiones en la planilla firmada, puntos si es para completar a mano. */
+const orDashes = (v: string | null | undefined, signed: boolean) => (v && v.trim() ? V(v) : signed ? '----------' : '.'.repeat(30));
 /** Dato completado; si falta, quedan los puntos para completarlo a mano. */
 const V = (v: string | number | null | undefined, dots = 22) => {
   const s = v === null || v === undefined ? '' : String(v).trim();
@@ -193,29 +198,31 @@ const dayDate = (iso: string | null | undefined) => {
 };
 
 /** Parte un texto de la planilla en tramos normales, en negrita (datos) y en negrita cursiva. */
-export function splitMarked(text: string): { text: string; bold: boolean; italic: boolean }[] {
-  const out: { text: string; bold: boolean; italic: boolean }[] = [];
+export function splitMarked(text: string): { text: string; bold: boolean; italic: boolean; strike: boolean }[] {
+  const out: { text: string; bold: boolean; italic: boolean; strike: boolean }[] = [];
   let bold = false;
   let italic = false;
+  let strike = false;
   let cur = '';
   const push = () => {
-    if (cur) out.push({ text: cur, bold: bold || italic, italic });
+    if (cur) out.push({ text: cur, bold: bold || italic, italic, strike });
     cur = '';
   };
   for (const ch of text) {
-    if (ch === B0 || ch === B1 || ch === I0 || ch === I1) {
+    if (ch === B0 || ch === B1 || ch === I0 || ch === I1 || ch === S0 || ch === S1) {
       push();
       if (ch === B0) bold = true;
       else if (ch === B1) bold = false;
       else if (ch === I0) italic = true;
-      else italic = false;
+      else if (ch === I1) italic = false;
+      else strike = ch === S0;
     } else cur += ch;
   }
   push();
   return out;
 }
 /** El texto sin marcas (para buscar o comparar). */
-export const plainText = (text: string) => text.replace(/[\u0001-\u0004]/g, '');
+export const plainText = (text: string) => text.replace(/[\u0001-\u0006]/g, '');
 
 export interface AuthorizationParagraph {
   text: string;
@@ -253,7 +260,7 @@ const CAMP_WORD: Record<string, [string, string]> = { campamento: ['el', 'CAMPAM
 /** Arma el texto de la planilla con los datos completos (lo que falte queda con puntos para completar a mano). */
 export function buildAuthorizationText(c: AuthorizationContent): AuthorizationText {
   const d = parts(c.date);
-  const where = `En la localidad de ${V(c.place.locality, 30)}, partido / departamento de ${V(c.place.department, 30)} de la provincia de ${V(c.place.province, 30)}, a los ${V(d?.d, 6)} días del mes de ${V(d?.m, 20)} del año ${V(d?.y, 8)}`;
+  const where = `En la localidad de ${V(c.place.locality, 30)}, partido / departamento de ${orDashes(c.place.department, !!d)} de la provincia de ${orDashes(c.place.province, !!d)}, a los ${V(d?.d, 6)} días del mes de ${V(d?.m, 20)} del año ${V(d?.y, 8)}`;
   const signer = `yo (1) ${V(c.signer.name, 50)} de nacionalidad ${V(c.signer.nationality, 26)}, nacido/a el ${longDate(c.signer.birthDate)} DNI ${V(dniDots(c.signer.dni), 20)} Teléfono: ${V(c.signer.phone, 24)}, y con domicilio en ${V(c.signer.address, 70)} en mi carácter de (2) ${V(c.signer.role, 40)}`;
   const minor = `${V(c.minor.name, 50)}, de nacionalidad ${V(c.minor.nationality, 26)}, nacido/a el ${longDate(c.minor.birthDate)} y DNI ${V(dniDots(c.minor.dni), 20)}, con domicilio en ${V(c.minor.address, 70)}`;
   const group = `Grupo Scout N° ${V(c.group.number, 8)} Nombre ${V(c.group.name, 30)} del Distrito N° ${V(c.group.district, 6)} de la Zona N° ${V(c.group.zone, 6)} de Scouts de Argentina Asociación Civil`;
@@ -353,8 +360,10 @@ export function buildAuthorizationText(c: AuthorizationContent): AuthorizationTe
   }
 
   const camp = c.camp;
-  const word = camp ? CAMP_WORD[camp.type] ?? CAMP_WORD.salida : null;
-  const what = word ? `${word[0]} ${V(word[1])}` : 'la SALIDA / ACANTONAMIENTO / CAMPAMENTO (tachar lo que no corresponda)';
+  // La frase de la planilla, con lo que no corresponde tachado
+  const which = camp ? (CAMP_WORD[camp.type] ?? CAMP_WORD.salida)[1] : null;
+  const opt = (w: string) => (!which ? w : w === which ? V(w) : `${S0}${w}${S1}`);
+  const what = `la ${opt('SALIDA')} / ${opt('ACANTONAMIENTO')} / ${opt('CAMPAMENTO')} (tachar lo que no corresponda)`;
   return {
     ...base,
     header: ['Autorización de Padres / Madres / Tutores para', 'Salidas, Acantonamientos y/o Campamentos'],

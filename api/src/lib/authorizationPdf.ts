@@ -57,6 +57,17 @@ const widthOf = (doc: Doc, text: string, size: number, font = FONT.r) => doc.fon
 function centered(doc: Doc, text: string, top: number, size: number, font = FONT.b, color = '#000000') {
   put(doc, text, CENTER - widthOf(doc, text, size, font) / 2, top, size, font, color);
 }
+/** Título centrado que termina en una llamada a nota, "(4)": el número va chico y elevado. */
+function centeredCall(doc: Doc, text: string, n: string, top: number, size: number) {
+  const head = `${text} (`;
+  const total = widthOf(doc, head, size, FONT.b) + widthOf(doc, n, size * 0.65, FONT.b) + widthOf(doc, ')', size, FONT.b);
+  let x = CENTER - total / 2;
+  put(doc, head, x, top, size, FONT.b);
+  x += widthOf(doc, head, size, FONT.b);
+  doc.font(FONT.b).fontSize(size * 0.65).fillColor('#000000').text(n, x, base(top, size) - size * 0.36, { lineBreak: false, baseline: 'alphabetic' });
+  x += widthOf(doc, n, size * 0.65, FONT.b);
+  put(doc, ')', x, top, size, FONT.b);
+}
 function rule(doc: Doc, x1: number, x2: number, y: number, dotted = false) {
   doc.save().lineWidth(0.5).strokeColor('#000000');
   if (dotted) doc.dash(0.7, { space: 1.6 });
@@ -68,7 +79,11 @@ interface Piece {
   text: string;
   font: string;
   width: number;
+  /** Llamada a una nota: número chico y elevado. */
+  sup?: boolean;
+  strike?: boolean;
 }
+const SUP = 0.65;
 type Word = Piece[];
 const FILLER = /^[.\-_…]{4,}[,.:]?$/;
 
@@ -83,7 +98,15 @@ function words(doc: Doc, marked: string, size: number, italic: boolean): Word[] 
       if (/^\s+$/.test(tok)) {
         if (cur.length) out.push(cur);
         cur = [];
-      } else cur.push({ text: tok, font, width: widthOf(doc, tok, size, font) });
+        continue;
+      }
+      // Llamada a una nota, "(1)": el número va chico y elevado, como en la planilla
+      const call = !seg.bold && /^\((\d)\)([,.;:]?)$/.exec(tok);
+      if (call) {
+        cur.push({ text: '(', font, width: widthOf(doc, '(', size, font) });
+        cur.push({ text: call[1], font, width: widthOf(doc, call[1], size * SUP, font), sup: true });
+        cur.push({ text: `)${call[2]}`, font, width: widthOf(doc, `)${call[2]}`, size, font) });
+      } else cur.push({ text: tok, font, width: widthOf(doc, tok, size, font), strike: seg.strike });
     }
   }
   if (cur.length) out.push(cur);
@@ -153,7 +176,12 @@ function paragraph(doc: Doc, marked: string, top: number, o: { size: number; pit
       let x = x0 + ind;
       for (const w of ln) {
         for (const p of w) {
-          put(doc, p.text, x, y, o.size, p.font);
+          if (p.sup) doc.font(p.font).fontSize(o.size * SUP).fillColor('#000000').text(p.text, x, base(y, o.size) - o.size * 0.36, { lineBreak: false, baseline: 'alphabetic' });
+          else put(doc, p.text, x, y, o.size, p.font);
+          if (p.strike) {
+            const sy = base(y, o.size) - o.size * 0.3;
+            doc.save().lineWidth(0.7).strokeColor('#000000').moveTo(x - 0.5, sy).lineTo(x + p.width + 0.5, sy).stroke().restore();
+          }
           x += p.width;
         }
         x += gap;
@@ -271,7 +299,7 @@ function page(doc: Doc, a: PdfAuthorization) {
       rule(doc, 262, 405, base(f2, 10) + 1.5, true);
       signature(doc, a.custodySignature, { x: 264, y: f2 - 28, w: 139, h: 38 });
       rule(doc, 69.5, 560, f2 + 25.7);
-      centered(doc, 'TESTIGOS (5)', f2 + 37.7, 10);
+      centeredCall(doc, 'TESTIGOS', '5', f2 + 37.7, 10);
       const wt = f2 + 86.3;
       [70.9, 318.2].forEach((x, i) => {
         const w = a.witnesses?.[i];
@@ -286,7 +314,7 @@ function page(doc: Doc, a: PdfAuthorization) {
     if (t.aval) {
       // Aval del Jefe/a de Unidad o de Grupo
       rule(doc, 69.5, 560, top + 24);
-      centered(doc, 'AVAL DE LOS RESPONSABLES SCOUTS (4)', top + 36, 10);
+      centeredCall(doc, 'AVAL DE LOS RESPONSABLES SCOUTS', '4', top + 36, 10);
       const end = paragraph(doc, t.aval, top + 59.2, { size: 10, pitch: 11.5, justify: false, width: 480, draw: true });
       const b = end + 23;
       const start = field(doc, 'Firma', null, 148.9, b, 10, 360.9);
@@ -314,37 +342,6 @@ function page(doc: Doc, a: PdfAuthorization) {
         ny = paragraph(doc, m[2], ny, { ...NOTE, indent: 6.5, draw: true }) + NOTE.pitch;
       } else ny = paragraph(doc, n, ny, { ...NOTE, draw: true }) + NOTE.pitch;
     }
-  } else ny = Math.max(top + 30, 700);
-
-  // Constancia de la firma en pantalla (no es parte de la planilla: va chica, sobre el pie)
-  if (a.proof) {
-    const parts = [
-      `Constancia de firma en pantalla: trazo manuscrito del ${when(a.proof.signedAt)}, ante ${a.proof.attendedBy.name}${a.proof.attendedBy.dni ? ` (DNI ${dniDots(a.proof.attendedBy.dni)})` : ''}, educador/a del Grupo.`,
-      ...(a.witnesses?.length ? [`Testigos: ${a.witnesses.map((w) => `${w.name} (${when(w.signedAt)})`).join('; ')}.`] : []),
-      ...(a.aval ? [`Aval: ${a.aval.name} (${when(a.aval.signedAt)}).`] : []),
-      `Código de verificación: ${a.proof.hash.slice(0, 16).toUpperCase()}. Generado por ALCOMBAR Gestión.`,
-      ...(a.voided ? [`ANULADA${a.voided.at ? ` el ${when(a.voided.at)}` : ''}${a.voided.reason ? `: ${a.voided.reason}` : ''}.`] : []),
-    ];
-    const py = Math.min(Math.max(ny - 4, 752), 756);
-    doc.fillColor('#444444');
-    const size = 6;
-    const queue = words(doc, parts.join(' '), size, false);
-    let x = L;
-    let y = py;
-    const sp = widthOf(doc, ' ', size);
-    for (const w of queue) {
-      const ww = wordWidth(w);
-      if (x + ww > R && x > L) {
-        x = L;
-        y += 6.8;
-      }
-      if (y > 766.5) break;
-      for (const p of w) {
-        doc.font(p.font).fontSize(size).fillColor('#444444').text(p.text, x, base(y, size), { lineBreak: false, baseline: 'alphabetic' });
-        x += p.width;
-      }
-      x += sp;
-    }
   }
 
   // Pie institucional
@@ -368,6 +365,47 @@ function page(doc: Doc, a: PdfAuthorization) {
   }
 }
 
+/**
+ * Hoja de constancia, al final: quién firmó cada autorización en pantalla, cuándo, ante quién, y su código de
+ * verificación. Va aparte para que cada planilla quede igual a la de Scouts de Argentina.
+ */
+function proofPages(doc: Doc, items: PdfAuthorization[]) {
+  const signed = items.filter((a) => a.proof);
+  if (!signed.length) return;
+  let y = 0;
+  const newPage = () => {
+    doc.addPage({ size: [595.32, 841.92], margin: 0 });
+    centered(doc, 'CONSTANCIA DE FIRMA EN PANTALLA', 56, 13);
+    y = paragraph(
+      doc,
+      'Las autorizaciones que siguen fueron firmadas por la madre, el padre o el tutor con trazo manuscrito sobre la pantalla, en persona, en el dispositivo de un educador o educadora del Grupo Scout que presenció la firma. El sistema ALCOMBAR Gestión guarda el trazo de cada firma, la fecha y la hora, y un código de verificación que deja de coincidir si se modifica el texto o los datos.',
+      84,
+      { size: 9, pitch: 11.5, justify: true, draw: true },
+    );
+    y += 24;
+  };
+  newPage();
+  for (const a of signed) {
+    const p = a.proof!;
+    const lines = [
+      `${a.text.title.join(' ')}`,
+      `Protagonista: ${a.content.minor.name}${a.content.minor.dni ? ` (DNI ${dniDots(a.content.minor.dni)})` : ''}`,
+      `Firmó: ${a.content.signer.name} (DNI ${dniDots(a.content.signer.dni)}), en carácter de ${a.content.signer.role}, el ${when(p.signedAt)}`,
+      `Ante: ${p.attendedBy.name}${p.attendedBy.dni ? ` (DNI ${dniDots(p.attendedBy.dni)})` : ''}`,
+      ...(a.witnesses?.length ? [`Testigos: ${a.witnesses.map((w) => `${w.name} (DNI ${dniDots(w.dni)}, ${when(w.signedAt)})`).join('; ')}`] : []),
+      ...(a.aval ? [`Aval: ${a.aval.name} (DNI ${dniDots(a.aval.dni)}${a.aval.function ? `, ${a.aval.function}` : ''}, ${when(a.aval.signedAt)})`] : []),
+      `Código de verificación: ${p.hash.slice(0, 16).toUpperCase()}`,
+      ...(a.voided ? [`ANULADA${a.voided.at ? ` el ${when(a.voided.at)}` : ''}${a.voided.reason ? `: ${a.voided.reason}` : ''}`] : []),
+    ];
+    if (y + lines.length * 11.5 + 14 > 790) newPage();
+    lines.forEach((l, i) => {
+      y = paragraph(doc, i === 0 ? `\u0001${l}\u0002` : l, y, { size: 9, pitch: 11.5, justify: false, draw: true }) + 11.5;
+    });
+    rule(doc, L, R, y + 1);
+    y += 12;
+  }
+}
+
 /** Un PDF con una hoja por autorización. */
 export function authorizationsPdf(items: PdfAuthorization[], title: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -378,6 +416,7 @@ export function authorizationsPdf(items: PdfAuthorization[], title: string): Pro
     doc.on('error', reject);
     try {
       for (const a of items) page(doc, a);
+      proofPages(doc, items);
       doc.end();
     } catch (e) {
       reject(e);

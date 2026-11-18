@@ -10,7 +10,7 @@ const when = (iso: string | null | undefined) =>
 function Marked({ text }: { text: string }) {
   return (
     <>
-      {splitMarked(text).map((s, i) => (s.italic ? <b key={i}><i>{s.text}</i></b> : s.bold ? <b key={i}>{s.text}</b> : <span key={i}>{s.text}</span>))}
+      {splitMarked(text).map((s, i) => (s.strike ? <s key={i}>{s.text}</s> : s.italic ? <b key={i}><i>{s.text}</i></b> : s.bold ? <b key={i}>{s.text}</b> : <span key={i}>{s.text}</span>))}
     </>
   );
 }
