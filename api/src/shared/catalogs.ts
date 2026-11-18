@@ -58,7 +58,8 @@ export const DEFAULT_DOCUMENT_TYPES = [
   { code: 'dni_protagonista', name: 'DNI del protagonista (fotocopia)', hasExpiry: false, required: true, sortOrder: 7 },
   { code: 'dni_responsables', name: 'DNI de madre, padre o tutor (fotocopia)', hasExpiry: false, required: true, sortOrder: 8 },
   { code: 'partida_nacimiento', name: 'Partida de nacimiento (fotocopia)', hasExpiry: false, required: true, sortOrder: 9 },
-  { code: 'aut_retiro', name: 'Autorización para retirarse solo/a', hasExpiry: false, required: false, sortOrder: 10 },
+  { code: 'aut_retiro', name: 'Autorización para retirarse solo/a', hasExpiry: true, required: false, sortOrder: 10 },
+  { code: 'aut_retiro_terceros', name: 'Autorización de retiro por otros adultos', hasExpiry: true, required: false, sortOrder: 11 },
   // Legajo de los adultos
   { code: 'ad_ficha_medica', name: 'Ficha médica / declaración jurada de salud', hasExpiry: true, required: true, appliesTo: 'adult' as const, sortOrder: 1 },
   { code: 'ad_dni', name: 'DNI (fotocopia)', hasExpiry: false, required: true, appliesTo: 'adult' as const, sortOrder: 2 },

@@ -255,7 +255,7 @@ export const TUTORIALS: Tutorial[] = [
         target: button('Hacer firmar'),
         pose: 'point',
         title: 'Hacer firmar',
-        text: 'Elegís al chico y la autorización: anual de salidas cercanas, uso de imagen o ingreso. La de un campamento se firma desde el legajo de ese campamento, con «Firmar acá».',
+        text: 'Elegís al chico y la autorización: salidas cercanas, uso de imagen, ingreso, retirarse solo/a o retiro por otros adultos. Si el campamento está cargado, firmala desde su legajo con «Firmar acá»: sale todo completo. Si no, cargás el lugar y las fechas a mano.',
       },
       {
         pose: 'think',
@@ -275,7 +275,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         pose: 'cheer',
         title: '¡Y queda el PDF!',
-        text: 'Cada autorización se ve y se descarga en PDF con el formato de Scouts de Argentina, y el legajo la marca como presentada sola.',
+        text: 'Cada autorización se baja en PDF con el mismo formato de la planilla de Scouts de Argentina, lista para imprimir. También podés bajar todas las de la unidad o de un campamento en un solo PDF, o la planilla sin firmar para hacerla firmar en papel.',
       },
     ],
   },
@@ -901,7 +901,7 @@ export const TUTORIALS: Tutorial[] = [
         target: firstRow,
         pose: 'think',
         title: 'Adentro del campamento',
-        text: '"Inscripción y legajo": inscribís a los chicos (se les genera el cargo) y el semáforo te dice a quién le falta la autorización, el DNI o la ficha médica. Con «Firmar acá», la madre, el padre o el tutor firma la autorización con el dedo en tu celular. "Presupuesto y rendición": lo previsto, los gastos y la rendición. "Logística": menú, compras, transporte y los materiales prestados del inventario.',
+        text: '"Inscripción y legajo": inscribís a los chicos (se les genera el cargo) y el semáforo te dice a quién le falta la autorización, el DNI o la ficha médica. Con «Firmar acá», la madre, el padre o el tutor firma la autorización con el dedo en tu celular, con el lugar y las fechas del campamento ya completos. «Autorizaciones en PDF» baja las de todos los inscriptos juntas. "Presupuesto y rendición": lo previsto, los gastos y la rendición. "Logística": menú, compras, transporte y los materiales prestados del inventario.',
       },
       {
         pose: 'think',

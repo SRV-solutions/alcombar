@@ -79,3 +79,10 @@
   .auth-paper, .auth-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .auth-sign, .auth-adult, .auth-proof, .auth-foot { break-inside: avoid; }
 }
+
+/* Renglones de lista y textos que no van justificados (aval, aclaraciones) */
+.auth-p.item { text-align: left; }
+.auth-p.italic { font-style: italic; margin-top: 3mm; }
+.auth-p.lead { line-height: 1.6; }
+.auth-pickup { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+@media (max-width: 700px) { .auth-pickup { grid-template-columns: 1fr 1fr; } }

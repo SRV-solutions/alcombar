@@ -6,7 +6,7 @@
  *  - Aval (salidas cercanas y salidas/campamentos) y anular: Jefe/a de Unidad o de Grupo (member_documents:approve).
  * Una autorización firmada no se modifica: si hay un error, se anula y se firma otra.
  */
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { Op, type Transaction } from 'sequelize';
 import {
   AUTH_KIND_ANNUAL,
@@ -15,6 +15,8 @@ import {
   AUTH_NEEDS_AVAL,
   AUTH_TEMPLATE_VERSION,
   AUTH_WITNESSES,
+  AUTH_ACTIVITY_LABELS,
+  AUTH_KIND_LABELS,
   authorizationAvalSchema,
   authorizationPending,
   authorizationSignSchema,
@@ -25,6 +27,7 @@ import {
   GROUP_INFO,
   todayIso,
   unitsWith,
+  SIGNER_ROLES,
   type AuthKind,
   type AuthorizationContent,
 } from '../shared';
@@ -32,6 +35,7 @@ import { sequelize } from '../db';
 import { Adult, AdultAssignment, DocumentType, Guardian, Member, MemberDocument, MemberGuardian, Unit, User } from '../models';
 import { SignedAuthorization, type AdultSignature } from '../models/authorizations';
 import { Camp, CampEnrollment, CampSite } from '../models/treasury';
+import { authorizationsPdf, type PdfAuthorization } from '../lib/authorizationPdf';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { sha256 } from '../lib/security';
 
@@ -77,6 +81,8 @@ function row(a: SignedAuthorization, req: Request) {
     signedAt: a.signedAt,
     member: a.member ? { id: a.member.id, firstName: a.member.firstName, lastName: a.member.lastName, unit: a.member.unit ?? null } : null,
     camp: a.camp ? { id: a.camp.id, name: a.camp.name } : null,
+    // Salida o campamento cargado a mano (no está en la app)
+    activity: !a.campId && a.kind === 'campamento' && a.content.camp ? `${a.content.camp.name} · ${a.content.camp.place}` : null,
     signerName: a.content.signer.name,
     signerRole: a.content.signer.role,
     witnesses: a.witnesses.map((w) => w.name),
@@ -103,7 +109,7 @@ authorizationsRouter.get(
     if (!can(req.auth, 'member_documents', 'edit', member.unitId)) throw forbidden();
     const campId = String(req.query.campId ?? '');
     const camp = kind === 'campamento' && campId ? await loadCamp(campId) : null;
-    if (kind === 'campamento' && !camp) throw badRequest('Falta el campamento o la salida');
+    if (kind === 'campamento' && campId && !camp) throw badRequest('Campamento o salida inexistente');
     const year = kind === 'campamento' && camp ? Number(camp.startDate.slice(0, 4)) : Number(req.query.year) || new Date().getFullYear();
 
     const [links, previous, me] = await Promise.all([
@@ -111,7 +117,7 @@ authorizationsRouter.get(
       SignedAuthorization.findAll({ where: { memberId: member.id, status: { [Op.ne]: 'anulada' } }, order: [['signedAt', 'DESC']], limit: 20 }),
       adultOf(req.user!, member.unitId),
     ]);
-    const same = previous.filter((p) => p.kind === kind && (kind === 'campamento' ? p.campId === camp?.id : kind === 'ingreso' || p.year === year));
+    const same = previous.filter((p) => p.kind === kind && (kind === 'campamento' ? !!camp && p.campId === camp.id : kind === 'ingreso' || p.year === year));
     res.json({
       kind,
       year,
@@ -157,6 +163,147 @@ authorizationsRouter.get(
       limit: 500,
     });
     res.json(list.map((a) => row(a, req)));
+  }),
+);
+
+// ---------------- PDF ----------------
+const fileName = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9 _.-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 110);
+function sendPdf(res: Response, pdf: Buffer, name: string) {
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName(name)}.pdf"`);
+  res.send(pdf);
+}
+/** Quién ve el contenido de una autorización (tiene datos de contacto del responsable). */
+const canRead = (req: Request, unitId: string | null) =>
+  can(req.auth, 'member_documents', 'edit', unitId) || can(req.auth, 'member_contacts', 'view', unitId) || can(req.auth, 'member_documents', 'approve', unitId);
+
+const toPdf = (a: SignedAuthorization): PdfAuthorization => ({
+  content: a.content,
+  text: buildAuthorizationText(a.content),
+  signature: a.signature,
+  custodySignature: a.custodySignature,
+  witnesses: a.witnesses,
+  aval: a.aval,
+  proof: { signedAt: a.signedAt.toISOString(), attendedBy: a.attendedBy, hash: a.hash },
+  voided: a.status === 'anulada' ? { at: a.voidedAt ? a.voidedAt.toISOString() : null, reason: a.voidReason } : null,
+});
+
+/** Planilla precargada para firmar en papel: lo que la app ya sabe va completo y el resto queda con puntos. */
+async function blankPdf(member: Member, kind: AuthKind, camp: Camp | null, year: number): Promise<PdfAuthorization> {
+  const [link, last] = await Promise.all([
+    MemberGuardian.findOne({ where: { memberId: member.id }, include: [{ model: Guardian, as: 'guardian' }], order: [['sortOrder', 'ASC']] }),
+    SignedAuthorization.findOne({ where: { memberId: member.id, status: { [Op.ne]: 'anulada' } }, order: [['signedAt', 'DESC']] }),
+  ]);
+  const g = link?.guardian;
+  const s = last?.content.signer;
+  const content: AuthorizationContent = {
+    kind,
+    date: '',
+    year,
+    place: { locality: GROUP_INFO.locality, department: null, province: null },
+    signer: {
+      name: s?.name ?? g?.name ?? '',
+      nationality: s?.nationality ?? '',
+      birthDate: s?.birthDate ?? '',
+      dni: s?.dni ?? digits(g?.dni),
+      phone: s?.phone ?? g?.phone ?? '',
+      address: s?.address ?? g?.address ?? '',
+      role: s?.role ?? (SIGNER_ROLES as readonly string[]).find((r) => r === link?.relationship) ?? '',
+    },
+    minor: { name: `${member.firstName} ${member.lastName}`, nationality: last?.content.minor.nationality ?? '', birthDate: member.birthDate ?? null, dni: digits(member.dni) || null, address: last?.content.minor.address ?? member.address ?? '' },
+    group: { number: GROUP_INFO.number, name: GROUP_INFO.name, district: GROUP_INFO.district, zone: GROUP_INFO.zone },
+    camp: camp ? { name: camp.name, type: camp.type, startDate: camp.startDate, endDate: camp.endDate, place: campPlace(camp) } : null,
+    range: null,
+    custodyNotes: null,
+    pickups: null,
+    details: null,
+  };
+  return { content, text: buildAuthorizationText(content) };
+}
+
+/** Una planilla sin firmar, precargada, para imprimir y firmar en papel. */
+authorizationsRouter.get(
+  '/blank-pdf',
+  ah(async (req, res) => {
+    const kind = String(req.query.kind ?? '') as AuthKind;
+    if (!AUTH_KINDS.includes(kind)) throw badRequest('Tipo de autorización inválido');
+    const member = await memberOr404(String(req.query.memberId ?? ''));
+    if (!can(req.auth, 'member_documents', 'edit', member.unitId)) throw forbidden();
+    const camp = kind === 'campamento' && req.query.campId ? await loadCamp(String(req.query.campId)) : null;
+    const year = camp ? Number(camp.startDate.slice(0, 4)) : Number(req.query.year) || new Date().getFullYear();
+    const pdf = await authorizationsPdf([await blankPdf(member, kind, camp, year)], AUTH_KIND_LABELS[kind]);
+    sendPdf(res, pdf, `${AUTH_KIND_LABELS[kind]} - ${member.lastName} ${member.firstName} (para firmar)`);
+  }),
+);
+
+/** Todas las autorizaciones de un campamento en un solo PDF: la firmada de cada inscripto o, si falta, la planilla precargada. */
+authorizationsRouter.get(
+  '/camp/:campId/pdf',
+  ah(async (req, res) => {
+    const camp = await loadCamp(req.params.campId);
+    if (!camp) throw notFound();
+    const enrollments = await CampEnrollment.findAll({
+      where: { campId: camp.id, memberId: { [Op.ne]: null } },
+      include: [{ model: Member, as: 'member', include: [{ model: Unit, as: 'unit', attributes: unitAttrs }] }],
+    });
+    const members = enrollments
+      .map((e) => e.member)
+      .filter((m): m is Member => !!m && can(req.auth, 'member_documents', 'edit', m.unitId))
+      .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+    if (!members.length) throw forbidden('No hay protagonistas inscriptos de una unidad en la que cargues documentación');
+    const signed = await SignedAuthorization.findAll({ where: { campId: camp.id, kind: 'campamento', status: { [Op.ne]: 'anulada' }, memberId: members.map((m) => m.id) }, order: [['signedAt', 'DESC']] });
+    const only = String(req.query.only ?? '');
+    const pages: PdfAuthorization[] = [];
+    for (const m of members) {
+      const a = signed.find((x) => x.memberId === m.id);
+      if (a && only !== 'faltan') pages.push(toPdf(a));
+      else if (!a && only !== 'firmadas') pages.push(await blankPdf(m, 'campamento', camp, Number(camp.startDate.slice(0, 4))));
+    }
+    if (!pages.length) throw badRequest(only === 'firmadas' ? 'Todavía no hay ninguna firmada' : 'No falta ninguna: están todas firmadas');
+    sendPdf(res, await authorizationsPdf(pages, `Autorizaciones - ${camp.name}`), `Autorizaciones - ${camp.name}`);
+  }),
+);
+
+/** Las autorizaciones firmadas de una unidad (con los mismos filtros de la lista) en un solo PDF. */
+authorizationsRouter.get(
+  '/pdf',
+  ah(async (req, res) => {
+    const unitId = String(req.query.unitId ?? '');
+    if (!unitId) throw badRequest('Falta la unidad');
+    if (!canRead(req, unitId)) throw forbidden();
+    const where: Record<string, unknown> = {};
+    if (req.query.kind) where.kind = String(req.query.kind);
+    const status = String(req.query.status ?? '');
+    if (status === 'pendientes') where.status = 'firmada';
+    else if (status) where.status = status;
+    else where.status = { [Op.ne]: 'anulada' };
+    const list = await SignedAuthorization.findAll({
+      where,
+      include: [{ ...listInclude[0], where: { unitId }, required: true }, listInclude[1]],
+      order: [[{ model: Member, as: 'member' }, 'lastName', 'ASC'], ['signedAt', 'DESC']],
+      limit: 300,
+    });
+    if (!list.length) throw badRequest('No hay autorizaciones con ese filtro');
+    sendPdf(res, await authorizationsPdf(list.map(toPdf), 'Autorizaciones firmadas'), `Autorizaciones firmadas - ${list[0].member?.unit?.code ?? 'unidad'}`);
+  }),
+);
+
+/** Una autorización firmada, en PDF. */
+authorizationsRouter.get(
+  '/:id/pdf',
+  ah(async (req, res) => {
+    const a = await SignedAuthorization.findByPk(req.params.id, { include: listInclude });
+    if (!a) throw notFound();
+    if (!canRead(req, a.member?.unitId ?? null)) throw forbidden();
+    const kid = a.member ? `${a.member.lastName} ${a.member.firstName}` : '';
+    sendPdf(res, await authorizationsPdf([toPdf(a)], AUTH_KIND_LABELS[a.kind]), `${AUTH_KIND_LABELS[a.kind]} - ${kid}${a.camp ? ` - ${a.camp.name}` : ''}`);
   }),
 );
 
@@ -219,14 +366,16 @@ authorizationsRouter.post(
     const data = parse(authorizationSignSchema, req.body);
     const member = await memberOr404(data.memberId);
     if (!can(req.auth, 'member_documents', 'edit', member.unitId)) throw forbidden();
-    const camp = data.kind === 'campamento' ? await loadCamp(data.campId!) : null;
-    if (data.kind === 'campamento') {
+    const camp = data.kind === 'campamento' && data.campId ? await loadCamp(data.campId) : null;
+    if (data.kind === 'campamento' && data.campId) {
       if (!camp) throw badRequest('Campamento o salida inexistente');
       if (!(await CampEnrollment.findOne({ where: { campId: camp.id, memberId: member.id } }))) throw badRequest('Primero hay que inscribir al protagonista en el campamento o la salida');
     }
+    // Salida, acantonamiento o campamento que no está cargado en la app: lugar y fechas completados a mano
+    const activity = data.kind === 'campamento' && !camp ? data.activity ?? null : null;
     const me = await adultOf(req.user!, member.unitId);
     const now = new Date();
-    const year = camp ? Number(camp.startDate.slice(0, 4)) : AUTH_KIND_ANNUAL[data.kind] ? data.year ?? now.getFullYear() : now.getFullYear();
+    const year = camp ? Number(camp.startDate.slice(0, 4)) : activity ? Number(activity.startDate.slice(0, 4)) : AUTH_KIND_ANNUAL[data.kind] ? data.year ?? now.getFullYear() : now.getFullYear();
     const content: AuthorizationContent = {
       kind: data.kind,
       date: todayIso(),
@@ -235,9 +384,15 @@ authorizationsRouter.post(
       signer: data.signer,
       minor: { name: `${member.firstName} ${member.lastName}`, nationality: data.minor.nationality, birthDate: member.birthDate ?? null, dni: digits(member.dni) || null, address: data.minor.address },
       group: { number: GROUP_INFO.number, name: GROUP_INFO.name, district: GROUP_INFO.district, zone: GROUP_INFO.zone },
-      camp: camp ? { name: camp.name, type: camp.type, startDate: camp.startDate, endDate: camp.endDate, place: campPlace(camp) } : null,
+      camp: camp
+        ? { name: camp.name, type: camp.type, startDate: camp.startDate, endDate: camp.endDate, place: campPlace(camp) }
+        : activity
+          ? { name: AUTH_ACTIVITY_LABELS[activity.type], type: activity.type, startDate: activity.startDate, endDate: activity.endDate, place: activity.place }
+          : null,
       range: data.kind === 'salidas_cercanas' ? data.range : null,
       custodyNotes: data.kind === 'ingreso' ? data.custodyNotes : null,
+      pickups: data.kind === 'retiro_terceros' ? (data.pickups ?? []).map((p) => ({ name: p.name, dni: p.dni, relationship: p.relationship, phone: p.phone })) : null,
+      details: data.kind === 'retiro_solo' ? data.details : null,
     };
     const custodySignature = content.custodyNotes ? data.custodySignature ?? null : null;
     const complete = !AUTH_WITNESSES[data.kind] && !AUTH_NEEDS_AVAL[data.kind];

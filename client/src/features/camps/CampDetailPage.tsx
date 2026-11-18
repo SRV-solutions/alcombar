@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import { CheckCircle2, Download, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -224,6 +224,19 @@ const nameOf = (l: LegajoRow) => (l.member ? `${l.member.lastName}, ${l.member.f
 function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
   const toast = useToast();
   const { can: canDo } = useAuth();
+  // Autorizaciones del campamento en PDF: la firmada de cada chico o, si falta, la planilla ya completa para firmar en papel
+  const canAuth = c.legajo.some((l) => l.member && canDo('member_documents', 'edit', l.member.unitId));
+  const [pdfBusy, setPdfBusy] = useState('');
+  const authPdf = async (only: '' | 'faltan' | 'firmadas') => {
+    setPdfBusy(only || 'todas');
+    try {
+      await api.download(`/authorizations/camp/${c.id}/pdf${only ? `?only=${only}` : ''}`, `Autorizaciones - ${c.name}.pdf`);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setPdfBusy('');
+    }
+  };
   const [picking, setPicking] = useState(false);
   const [editing, setEditing] = useState<LegajoRow | null>(null);
   const [filter, setFilter] = useState<'todos' | 'incompletos'>('todos');
@@ -279,6 +292,22 @@ function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
           <label className="row muted" style={{ gap: 6 }}>
             <input type="checkbox" checked={filter === 'incompletos'} onChange={(e) => setFilter(e.target.checked ? 'incompletos' : 'todos')} /> Solo legajos incompletos
           </label>
+          {canAuth && c.legajo.some((l) => l.member) ? (
+            <>
+              <Button
+                variant="secondary"
+                id="btn-camp-authorizations"
+                loading={pdfBusy === 'todas'}
+                title="Un PDF con la autorización de cada inscripto: la firmada o, si falta, la planilla ya completa con los datos del campamento"
+                onClick={() => authPdf('')}
+              >
+                <Download /> Autorizaciones en PDF
+              </Button>
+              <Button variant="ghost" size="sm" loading={pdfBusy === 'faltan'} title="Solo las que faltan, con los datos del campamento ya completos, para imprimir y firmar en papel" onClick={() => authPdf('faltan')}>
+                Solo las que faltan firmar
+              </Button>
+            </>
+          ) : null}
         </div>
         <Button variant="secondary" onClick={() => window.print()}>
           <Printer /> Imprimir legajo

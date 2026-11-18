@@ -14,6 +14,8 @@ export interface AuthRow {
   signedAt: string;
   member: { id: string; firstName: string; lastName: string; unit: UnitLite | null } | null;
   camp: { id: string; name: string } | null;
+  /** Salida o campamento cargado a mano (no está en la app): "Salida · lugar". */
+  activity: string | null;
   signerName: string;
   signerRole: string;
   witnesses: string[];

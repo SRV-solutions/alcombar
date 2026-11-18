@@ -15,13 +15,6 @@ import type { AuthDetail } from './types';
 
 export const AUTH_STATUS_TONE: Record<AuthStatus, Tone> = { firmada: 'warn', completa: 'ok', anulada: 'danger' };
 
-/** Imágenes cargadas antes de abrir la impresión (si no, el PDF sale sin los logos). */
-const imagesReady = () =>
-  Promise.all(
-    Array.from(document.querySelectorAll<HTMLImageElement>('.auth-paper img')).map((img) =>
-      img.complete ? Promise.resolve() : new Promise<void>((r) => { img.onload = img.onerror = () => r(); }),
-    ),
-  );
 
 /** Autorización firmada: se ve como la planilla oficial, se descarga en PDF y desde acá firman testigos y aval. */
 export function AuthorizationDocPage() {
@@ -38,18 +31,18 @@ export function AuthorizationDocPage() {
   const adults = useQuery({ queryKey: ['adults', 'for-witness'], queryFn: () => api.get<Adult[]>('/adults'), enabled: dialog === 'other', staleTime: 60_000 });
 
   const kid = a?.member ? `${a.member.firstName} ${a.member.lastName}` : '';
-  // Nombre del archivo al guardar como PDF
-  useEffect(() => {
-    if (!a) return;
-    const prev = document.title;
-    document.title = `${AUTH_KIND_LABELS[a.kind]} - ${kid}`.replace(/[\\/:*?"<>|]/g, '');
-    return () => {
-      document.title = prev;
-    };
-  }, [a, kid]);
+  const [downloading, setDownloading] = useState(false);
+  // El PDF lo arma el servidor, con la disposición de la planilla oficial
   const download = async () => {
-    await imagesReady();
-    window.print();
+    if (!a) return;
+    setDownloading(true);
+    try {
+      await api.download(`/authorizations/${a.id}/pdf`, `${AUTH_KIND_LABELS[a.kind]} - ${kid}.pdf`);
+    } catch (err) {
+      toast.error(err);
+    } finally {
+      setDownloading(false);
+    }
   };
   useEffect(() => {
     if (a && params.get('descargar') === '1') void download();
@@ -71,7 +64,7 @@ export function AuthorizationDocPage() {
         <Button variant="secondary" onClick={() => (params.get('nueva') ? navigate(a.camp ? `/campamentos/${a.camp.id}?tab=legajo` : a.member ? `/protagonistas/${a.member.id}?tab=docs` : '/autorizaciones') : navigate(-1))}>
           <ArrowLeft /> Volver
         </Button>
-        <Button onClick={download}>
+        <Button onClick={download} loading={downloading}>
           <Download /> Descargar PDF
         </Button>
         <Badge tone={AUTH_STATUS_TONE[a.status]}>{AUTH_STATUS_LABELS[a.status]}</Badge>

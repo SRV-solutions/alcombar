@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Download, FileSignature } from 'lucide-react';
+import { FileSignature } from 'lucide-react';
 import { AUTH_KIND_LABELS, AUTH_STATUS_LABELS, formatDate } from '@shared';
 import { api, qs } from '../../lib/api';
 import { Badge, Button, Card, Empty } from '../../components/ui';
 import { AUTH_STATUS_TONE } from './AuthorizationDocPage';
-import { authScope, NewAuthorizationDialog } from './AuthorizationsPage';
+import { authScope, NewAuthorizationDialog, PdfButton } from './AuthorizationsPage';
 import type { AuthRow } from './types';
 
 /** En la ficha del protagonista: sus autorizaciones firmadas en la app y el botón para hacer firmar otra. */
@@ -56,9 +56,7 @@ export function MemberAuthorizationsCard({ memberId, canSign }: { memberId: stri
                   {r.pending ? <div className="muted">{r.pending}</div> : null}
                 </td>
                 <td className="num nowrap">
-                  <Link className="btn btn-ghost btn-sm" to={`/autorizaciones/${r.id}?descargar=1`} title="Descargar en PDF">
-                    <Download /> PDF
-                  </Link>
+                  <PdfButton row={r} />
                 </td>
               </tr>
             ))}

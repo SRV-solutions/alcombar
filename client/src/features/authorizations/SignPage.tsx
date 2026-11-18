@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { ArrowLeft, ArrowRight, PenLine } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, PenLine, Plus, Trash2 } from 'lucide-react';
 import {
+  AUTH_ACTIVITY_LABELS,
+  AUTH_ACTIVITY_TYPES,
   AUTH_KIND_ANNUAL,
   AUTH_KIND_LABELS,
   AUTH_KINDS,
@@ -39,7 +41,19 @@ interface Form {
   sameAddress: boolean;
   range: string;
   custodyNotes: string;
+  details: string;
+  actType: string;
+  actStart: string;
+  actEnd: string;
+  actPlace: string;
 }
+interface Pickup {
+  name: string;
+  dni: string;
+  relationship: string;
+  phone: string;
+}
+const EMPTY_PICKUP: Pickup = { name: '', dni: '', relationship: '', phone: '' };
 // Campo del servidor → campo del formulario (para mostrar el error donde corresponde)
 const SERVER_FIELDS: Record<string, keyof Form> = {
   'place.locality': 'locality',
@@ -54,6 +68,10 @@ const SERVER_FIELDS: Record<string, keyof Form> = {
   'minor.address': 'minorAddress',
   range: 'range',
   custodyNotes: 'custodyNotes',
+  details: 'details',
+  'activity.startDate': 'actStart',
+  'activity.endDate': 'actEnd',
+  'activity.place': 'actPlace',
 };
 const REQ = { required: 'Completá este dato' };
 
@@ -80,8 +98,12 @@ export function SignPage() {
   const p = q.data;
 
   const { register, handleSubmit, reset, setValue, watch, getValues, setError, formState } = useForm<Form>({
-    defaultValues: { locality: '', department: '', province: '', signerName: '', role: 'madre', nationality: 'argentina', birthDate: '', dni: '', phone: '', address: '', minorNationality: 'argentina', minorAddress: '', sameAddress: true, range: '', custodyNotes: '' },
+    defaultValues: { locality: '', department: '', province: '', signerName: '', role: 'madre', nationality: 'argentina', birthDate: '', dni: '', phone: '', address: '', minorNationality: 'argentina', minorAddress: '', sameAddress: true, range: '', custodyNotes: '', details: '', actType: 'salida', actStart: '', actEnd: '', actPlace: '' },
   });
+  // Salida o campamento que no está cargado en la app: el lugar y las fechas se completan acá
+  const manualActivity = kind === 'campamento' && !campId;
+  const [pickups, setPickups] = useState<Pickup[]>([{ ...EMPTY_PICKUP }]);
+  const [pickupError, setPickupError] = useState('');
   const e = formState.errors;
   const [step, setStep] = useState<'datos' | 'firma'>('datos');
   const [signature, setSignature] = useState<SignatureData | null>(null);
@@ -114,6 +136,11 @@ export function SignPage() {
       sameAddress: !minorAddress || minorAddress === address,
       range: p.last?.range ?? '5 km',
       custodyNotes: '',
+      details: '',
+      actType: 'salida',
+      actStart: p.today,
+      actEnd: p.today,
+      actPlace: '',
     });
   }, [p]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -128,11 +155,13 @@ export function SignPage() {
       signer: { name: v.signerName, nationality: v.nationality, birthDate: v.birthDate, dni: (v.dni ?? '').replace(/\D/g, ''), phone: v.phone, address: v.address, role: v.role },
       minor: { name: `${p.member.firstName} ${p.member.lastName}`, nationality: v.minorNationality, birthDate: p.member.birthDate, dni: (p.member.dni ?? '').replace(/\D/g, '') || null, address: v.sameAddress ? v.address : v.minorAddress },
       group: p.group,
-      camp: p.camp,
+      camp: p.camp ?? (manualActivity ? { name: '', type: v.actType, startDate: v.actStart, endDate: v.actEnd || v.actStart, place: v.actPlace } : null),
       range: kind === 'salidas_cercanas' ? v.range : null,
       custodyNotes: kind === 'ingreso' ? v.custodyNotes || null : null,
+      pickups: kind === 'retiro_terceros' ? pickups.filter((x) => x.name.trim()).map((x) => ({ name: x.name.trim(), dni: x.dni.replace(/\D/g, ''), relationship: x.relationship.trim() || null, phone: x.phone.trim() || null })) : null,
+      details: kind === 'retiro_solo' ? v.details || null : null,
     };
-  }, [p, kind, JSON.stringify(v)]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [p, kind, JSON.stringify(v), JSON.stringify(pickups)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!valid) return <Empty>Falta elegir la autorización y el protagonista. Entrá desde la ficha del protagonista o desde el legajo del campamento.</Empty>;
   if (q.isLoading) return <Loading />;
@@ -144,6 +173,15 @@ export function SignPage() {
   const signed = signaturePoints(signature) >= MIN_SIGNATURE_POINTS && (!needsCustody || signaturePoints(custodySignature) >= MIN_SIGNATURE_POINTS);
 
   const toSign = handleSubmit(() => {
+    if (kind === 'retiro_terceros') {
+      const filled = pickups.filter((x) => x.name.trim() || x.dni.trim());
+      const bad = filled.find((x) => !x.name.trim() || !/^\d{6,9}$/.test(x.dni.replace(/\D/g, '')));
+      if (!filled.length || bad) {
+        setPickupError(!filled.length ? 'Cargá al menos una persona autorizada' : 'Cada persona autorizada lleva nombre y DNI');
+        return;
+      }
+      setPickupError('');
+    }
     setStep('firma');
     window.scrollTo({ top: 0 });
   });
@@ -160,8 +198,11 @@ export function SignPage() {
         place: { locality: f.locality, department: f.department, province: f.province },
         signer: { name: f.signerName, nationality: f.nationality, birthDate: f.birthDate, dni: f.dni, phone: f.phone, address: f.address, role: f.role },
         minor: { nationality: f.minorNationality, address: f.sameAddress ? f.address : f.minorAddress },
+        activity: manualActivity ? { type: f.actType, startDate: f.actStart, endDate: f.actEnd || f.actStart, place: f.actPlace } : null,
         range: kind === 'salidas_cercanas' ? f.range : null,
         custodyNotes: kind === 'ingreso' ? f.custodyNotes : null,
+        pickups: kind === 'retiro_terceros' ? content.pickups : null,
+        details: kind === 'retiro_solo' ? f.details : null,
         signature,
         custodySignature: needsCustody ? custodySignature : null,
         accepted,
@@ -225,6 +266,14 @@ export function SignPage() {
           <span className={`auth-step ${step === 'datos' ? 'on' : ''}`}>1 · Datos</span>
           <span className={`auth-step ${step === 'firma' ? 'on' : ''}`}>2 · Leer y firmar</span>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          title="Baja la planilla en PDF con lo que la app ya sabe, para imprimirla y firmarla en papel"
+          onClick={() => api.download(`/authorizations/blank-pdf${qs({ kind, memberId, campId, year: p.year })}`, `${AUTH_KIND_LABELS[kind]} - ${kidName} (para firmar).pdf`).catch(toast.error)}
+        >
+          <Download /> Bajar para firmar en papel
+        </Button>
       </div>
 
       {p.existing.length ? (
@@ -322,6 +371,70 @@ export function SignPage() {
                 <Field label="Hasta qué distancia de la sede" required error={e.range?.message} hint="«En un rango no mayor a…»">
                   <Input {...register('range', REQ)} invalid={!!e.range} placeholder="5 km" />
                 </Field>
+              ) : null}
+              {manualActivity ? (
+                <>
+                  <Field label="Qué es" required>
+                    <Select {...register('actType')}>
+                      {AUTH_ACTIVITY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {AUTH_ACTIVITY_LABELS[t]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Lugar" required full error={e.actPlace?.message} hint="Nombre del lugar y dirección">
+                    <Input {...register('actPlace', REQ)} invalid={!!e.actPlace} autoComplete="off" />
+                  </Field>
+                  <Field label="Desde el día" required error={e.actStart?.message}>
+                    <Input type="date" {...register('actStart', REQ)} invalid={!!e.actStart} />
+                  </Field>
+                  <Field label="Hasta el día" required error={e.actEnd?.message} hint="Si es en el día, la misma fecha">
+                    <Input type="date" {...register('actEnd', { ...REQ, validate: (x) => x >= getValues('actStart') || 'No puede terminar antes de empezar' })} invalid={!!e.actEnd} />
+                  </Field>
+                </>
+              ) : null}
+              {kind === 'retiro_solo' ? (
+                <Field label="Aclaraciones (opcional)" full error={e.details?.message} hint="Por ejemplo: solo los sábados de reunión; hasta su casa, a dos cuadras">
+                  <Input {...register('details')} autoComplete="off" />
+                </Field>
+              ) : null}
+              {kind === 'retiro_terceros' ? (
+                <div className="full stack">
+                  <p style={{ margin: 0 }}>
+                    <b>Personas adultas autorizadas a retirarlo/a</b> <span className="muted">(hasta 5)</span>
+                  </p>
+                  {pickups.map((x, i) => {
+                    const set = (k: keyof Pickup, val: string) => setPickups((list) => list.map((y, j) => (j === i ? { ...y, [k]: val } : y)));
+                    return (
+                      <div key={i} className="auth-pickup">
+                        <Field label="Nombre y apellido">
+                          <Input value={x.name} onChange={(ev) => set('name', ev.target.value)} autoComplete="off" />
+                        </Field>
+                        <Field label="DNI">
+                          <Input inputMode="numeric" value={x.dni} onChange={(ev) => set('dni', ev.target.value)} autoComplete="off" />
+                        </Field>
+                        <Field label="Vínculo">
+                          <Input value={x.relationship} onChange={(ev) => set('relationship', ev.target.value)} placeholder="abuela, tío…" autoComplete="off" />
+                        </Field>
+                        <Field label="Teléfono">
+                          <Input inputMode="tel" value={x.phone} onChange={(ev) => set('phone', ev.target.value)} autoComplete="off" />
+                        </Field>
+                        <Button type="button" variant="ghost" size="sm" aria-label="Quitar" disabled={pickups.length === 1} onClick={() => setPickups((list) => list.filter((_, j) => j !== i))}>
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  {pickupError ? <p className="field-error" style={{ margin: 0, color: 'var(--danger)' }}>{pickupError}</p> : null}
+                  {pickups.length < 5 ? (
+                    <div>
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setPickups((list) => [...list, { ...EMPTY_PICKUP }])}>
+                        <Plus /> Agregar otra persona
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               {kind === 'ingreso' ? (
                 <Field label="Aclaraciones sobre la tenencia o guarda (si corresponde)" full error={e.custodyNotes?.message} hint="Solo si hay guarda, tenencia judicial o tutela. Lleva una segunda firma.">

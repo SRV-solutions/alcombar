@@ -15,8 +15,34 @@ import { SignDialog } from './SignDialog';
 import type { AuthRow } from './types';
 import './authorization.css';
 
+/** Botón que baja el PDF de una autorización firmada. */
+export function PdfButton({ row }: { row: Pick<AuthRow, 'id' | 'kind' | 'member'> }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      loading={busy}
+      title="Descargar en PDF"
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await api.download(`/authorizations/${row.id}/pdf`, `${AUTH_KIND_LABELS[row.kind]} - ${row.member?.lastName ?? ''} ${row.member?.firstName ?? ''}.pdf`);
+        } catch (e) {
+          toast.error(e);
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Download /> PDF
+    </Button>
+  );
+}
+
 /** Detalle corto de a qué se refiere: el año o el campamento. */
-export const authScope = (a: Pick<AuthRow, 'kind' | 'year' | 'camp'>) => (a.camp ? a.camp.name : AUTH_KIND_ANNUAL[a.kind] ? `Año ${a.year}` : '');
+export const authScope = (a: Pick<AuthRow, 'kind' | 'year' | 'camp' | 'activity'>) => (a.camp ? a.camp.name : a.activity ? a.activity : AUTH_KIND_ANNUAL[a.kind] ? `Año ${a.year}` : '');
 
 /** Elegir a quién hacerle firmar y qué autorización (las de campamento se firman desde el legajo del campamento). */
 export function NewAuthorizationDialog({ unitId, memberId, onClose }: { unitId?: string; memberId?: string; onClose: () => void }) {
@@ -58,11 +84,14 @@ export function NewAuthorizationDialog({ unitId, memberId, onClose }: { unitId?:
             />
           </Field>
         ) : null}
-        <Field label="Autorización" required hint="La de una salida, acantonamiento o campamento se firma desde el legajo de ese campamento.">
+        <Field label="Autorización" required hint="Si el campamento está cargado en la app, conviene firmarla desde su legajo: sale todo completo.">
           <Select value={kind} onChange={(e) => setKind(e.target.value as AuthKind)}>
             <option value="salidas_cercanas">{AUTH_KIND_LABELS.salidas_cercanas}</option>
             <option value="imagen">{AUTH_KIND_LABELS.imagen}</option>
             <option value="ingreso">{AUTH_KIND_LABELS.ingreso}</option>
+            <option value="retiro_solo">{AUTH_KIND_LABELS.retiro_solo}</option>
+            <option value="retiro_terceros">{AUTH_KIND_LABELS.retiro_terceros}</option>
+            <option value="campamento">Salida, acantonamiento o campamento (lugar y fechas a mano)</option>
           </Select>
         </Field>
       </div>
@@ -135,6 +164,16 @@ export function AuthorizationsPage() {
           <option value="completa">Completas</option>
           <option value="anulada">Anuladas</option>
         </Select>
+        {rows.length ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            title="Un solo PDF con todas las de la lista, una por hoja"
+            onClick={() => api.download(`/authorizations/pdf${qs({ unitId, status })}`, 'Autorizaciones firmadas.pdf').catch(toast.error)}
+          >
+            <Download /> Bajar todas en un PDF
+          </Button>
+        ) : null}
         {approvable.length ? (
           <Button variant="secondary" size="sm" onClick={() => setSelected(new Set(selected.size === approvable.length ? [] : approvable.map((r) => r.id)))}>
             {selected.size === approvable.length ? 'Quitar la selección' : `Elegir las ${approvable.length} que esperan tu aval`}
@@ -207,9 +246,7 @@ export function AuthorizationsPage() {
                     {r.pending ? <div className="muted">{r.pending}</div> : null}
                   </td>
                   <td className="num nowrap">
-                    <Link className="btn btn-ghost btn-sm" to={`/autorizaciones/${r.id}?descargar=1`} title="Descargar en PDF">
-                      <Download /> PDF
-                    </Link>
+                    <PdfButton row={r} />
                   </td>
                 </tr>
               ))}

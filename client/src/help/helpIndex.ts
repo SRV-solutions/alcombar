@@ -108,10 +108,10 @@ export const HELP_INDEX: HelpEntry[] = [
     id: 'autorizaciones-firmadas',
     title: 'Firmar autorizaciones con el dedo',
     description:
-      'Autorizaciones: la madre, el padre o el tutor firma en persona, con el dedo, en el celular o la tablet del educador, sobre la planilla oficial de Scouts de Argentina (ingreso, uso de imagen, anual de salidas cercanas y salidas/campamentos). Se descarga en PDF y el legajo queda al día. La de ingreso lleva dos educadores testigos; las de salidas y campamentos, el aval del Jefe/a de Unidad o de Grupo.',
+      'Autorizaciones: la madre, el padre o el tutor firma en persona, con el dedo, en el celular o la tablet del educador, sobre la planilla oficial de Scouts de Argentina (ingreso, uso de imagen, anual de salidas cercanas y salidas/campamentos) y dos planillas del Grupo (retirarse solo/a y retiro por otros adultos). Cada una se baja en PDF con el mismo formato de la planilla, sola o todas juntas, y también sin firmar para firmarla en papel. El legajo queda al día. La de ingreso lleva dos educadores testigos; las de salidas y campamentos, el aval del Jefe/a de Unidad o de Grupo.',
     path: '/autorizaciones',
     section: 'Protagonistas',
-    keywords: ['firmar', 'firma digital', 'firma electrónica', 'firmar con el dedo', 'autorización', 'autorizaciones', 'planilla saac', 'aval', 'testigos', 'pdf autorización', 'uso de imagen', 'salidas cercanas', 'ingreso'],
+    keywords: ['firmar', 'firma digital', 'firma electrónica', 'firmar con el dedo', 'autorización', 'autorizaciones', 'planilla saac', 'aval', 'testigos', 'pdf autorización', 'descargar autorización', 'imprimir autorización', 'uso de imagen', 'salidas cercanas', 'ingreso', 'retirarse solo', 'retiro', 'quién lo retira', 'autorizados a retirar'],
     show: can('member_documents', 'view'),
   },
   {
