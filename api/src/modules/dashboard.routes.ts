@@ -71,7 +71,7 @@ dashboardRouter.get(
     const [pendingAdults] = await sequelize.query<{ n: number }>(
       `SELECT COUNT(DISTINCT a.adult_id)::int AS n FROM adult_assignments a
        JOIN adults ad ON ad.id=a.adult_id AND ad.deleted_at IS NULL AND ad.status <> 'baja'
-       WHERE a.deleted_at IS NULL AND a.year=:year AND a.unit_id IS NULL AND a.branch IS NOT NULL`,
+       WHERE a.deleted_at IS NULL AND a.year=:year AND a.unit_id IS NULL AND a.support_team_id IS NULL AND a.branch IS NOT NULL`,
       { type: QueryTypes.SELECT, replacements: { year } },
     );
 
