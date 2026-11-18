@@ -82,3 +82,18 @@ export function cargoFunctionOf(scope: CargoScope, position: string): string {
   }
   return OTHER_FUNCTION_KEY;
 }
+
+/**
+ * Quién es Jefe/a de Campo por defecto: la máxima autoridad de la unidad que organiza (su Jefe/a de Unidad) o,
+ * si el campamento es de Grupo, el/la Jefe/a de Grupo. Recibe los adultos con sus cargos del año.
+ */
+export function defaultFieldChief<T extends { assignments?: { position: string; unitId?: string | null; supportTeamId?: string | null; branch?: string | null }[] }>(
+  adults: T[],
+  ownerUnitId: string | null | undefined,
+): T | null {
+  const isChief = (a: T) =>
+    (a.assignments ?? []).some((c) =>
+      ownerUnitId ? c.unitId === ownerUnitId && cargoFunctionOf('unidad', c.position) === 'jefe' : cargoScopeOf(c) === 'grupo' && cargoFunctionOf('grupo', c.position) === 'jefe',
+    );
+  return adults.find(isChief) ?? null;
+}

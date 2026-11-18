@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Plus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CAMP_STATUS_LABELS, CAMP_TYPE_LABELS, CAMP_TYPES, campNights, campSchema, formatDate, type CampInput, type CampStatus } from '@shared';
+import { CAMP_STATUS_LABELS, CAMP_TYPE_LABELS, CAMP_TYPES, campNights, campSchema, defaultFieldChief, formatDate, hasProgramWoodBadge, type CampInput, type CampStatus } from '@shared';
 import { api, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
@@ -185,6 +185,17 @@ export function CampDialog({ camp, onClose, onSaved }: { camp?: CampDetail; onCl
   const end = watch('endDate');
   const siteId = watch('campSiteId');
   const nights = start && end && end >= start ? campNights(start, end) : null;
+  // Jefe/a de Campo: en un campamento nuevo se propone la máxima autoridad de quien organiza (Jefe/a de Unidad, o de
+  // Grupo si es de Grupo) mientras no se haya elegido a otra persona a mano. Siempre se puede cambiar.
+  const chiefId = watch('responsibleAdultId');
+  const chiefTouched = !!formState.dirtyFields.responsibleAdultId;
+  const suggested = defaultFieldChief((adults.data ?? []).filter((a) => a.status !== 'baja'), owner || null);
+  useEffect(() => {
+    if (camp || chiefTouched || !adults.data) return;
+    setValue('responsibleAdultId', suggested?.id ?? '');
+  }, [camp, chiefTouched, adults.data, suggested?.id, setValue]);
+  const chief = adults.data?.find((a) => a.id === chiefId);
+  const chiefLacksBadge = !!chief && !hasProgramWoodBadge((chief.courses ?? []).map((c) => ({ name: c.course?.name ?? '' })));
   const onSubmit = handleSubmit(async (v) => {
     try {
       const saved = camp ? await api.put<{ id: string }>(`/camps/${camp.id}`, v) : await api.post<{ id: string }>('/camps', v);
@@ -274,7 +285,16 @@ export function CampDialog({ camp, onClose, onSaved }: { camp?: CampDetail; onCl
         <Field label={siteId ? 'Detalle del lugar (opcional)' : 'Lugar'} error={e.place?.message}>
           <Input {...register('place')} placeholder="Ej: Parque Pereyra Iraola" />
         </Field>
-        <Field label="Responsable">
+        <Field
+          label="Jefe/a de Campo"
+          hint={
+            !camp && suggested && chiefId === suggested.id
+              ? `Se propone a quien es ${owner ? 'Jefe/a de la Unidad' : 'Jefe/a de Grupo'}. Lo podés cambiar.`
+              : !camp && !suggested && adults.data
+                ? `No hay ${owner ? 'Jefe/a de Unidad' : 'Jefe/a de Grupo'} con cargo este año: elegilo a mano.`
+                : undefined
+          }
+        >
           <Select {...register('responsibleAdultId')}>
             <option value="">—</option>
             {adults.data
@@ -286,6 +306,11 @@ export function CampDialog({ camp, onClose, onSaved }: { camp?: CampDetail; onCl
               ))}
           </Select>
         </Field>
+        {chiefLacksBadge ? (
+          <div className="alert alert-warn full" role="alert">
+            <strong>{adultName(chief)}</strong> no tiene registrada la Insignia de Madera en Programa, que es requisito para ser Jefe/a de Campo. Podés guardarlo igual, pero revisalo (o cargale la formación en su ficha si ya la tiene).
+          </div>
+        ) : null}
         <Field label="Costo por protagonista" error={e.cost?.message} hint="Se carga como cargo en la cuenta de cada inscripto">
           <Input type="number" step="0.01" min="0" {...register('cost')} invalid={!!e.cost} />
         </Field>

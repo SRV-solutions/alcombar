@@ -23,6 +23,7 @@ import {
   documentStatus,
   enrollmentSchema,
   formatDate,
+  hasProgramWoodBadge,
   enrollSchema,
   round2,
   unitsWith,
@@ -30,7 +31,7 @@ import {
   type CampType,
 } from '../shared';
 import { sequelize } from '../db';
-import { Adult, DocumentType, Member, MemberDocument, SmallGroup, Unit, User } from '../models';
+import { Adult, AdultCourse, Course, DocumentType, Member, MemberDocument, SmallGroup, Unit, User } from '../models';
 import { SignedAuthorization } from '../models/authorizations';
 import {
   Account,
@@ -488,8 +489,13 @@ campsRouter.get(
       : [];
     const u = camp.ownerUnitId;
     const program = await campProgram(req.auth, camp);
+    // Jefe/a de Campo: necesita la Insignia de Madera en Programa
+    const chiefCourses = camp.responsibleAdultId
+      ? await AdultCourse.findAll({ where: { adultId: camp.responsibleAdultId }, include: [{ model: Course, as: 'course', attributes: ['name'] }] })
+      : [];
     res.json({
       ...camp.toJSON(),
+      responsibleWoodBadge: camp.responsibleAdultId ? hasProgramWoodBadge(chiefCourses.map((c) => ({ name: c.course?.name ?? '' }))) : null,
       program,
       nights: campNights(camp.startDate, camp.endDate),
       units: (camp.campUnits ?? []).map((cu) => (cu as unknown as { unit: Unit }).unit).filter(Boolean),

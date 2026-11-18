@@ -188,8 +188,15 @@ function DataTab({ c }: { c: CampDetail }) {
               c.place ?? '—'
             )}
           </dd>
-          <dt>Responsable</dt>
-          <dd>{c.responsible ? adultName(c.responsible) : '—'}</dd>
+          <dt>Jefe/a de Campo</dt>
+          <dd>
+            {c.responsible ? <Link to={`/adultos/${c.responsible.id}`}>{adultName(c.responsible)}</Link> : <span className="muted">Sin elegir</span>}
+            {c.responsibleWoodBadge === false ? (
+              <div className="alert alert-warn" style={{ marginTop: 6 }}>
+                No tiene registrada la Insignia de Madera en Programa, que es requisito para ser Jefe/a de Campo.
+              </div>
+            ) : null}
+          </dd>
           <dt>Costo por protagonista</dt>
           <dd>{formatMoney(c.cost)}</dd>
           <dt>Descripción</dt>

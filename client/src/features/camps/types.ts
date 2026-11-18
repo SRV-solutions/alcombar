@@ -103,6 +103,8 @@ export interface CampDetail {
   units: UnitRef[];
   site: CampSiteRow | null;
   responsible: AdultMini | null;
+  /** Si el/la Jefe/a de Campo tiene la Insignia de Madera en Programa (null si no hay nadie elegido). */
+  responsibleWoodBadge: boolean | null;
   legajo: LegajoRow[];
   program: CampProgram;
   budgetLines: CampBudgetRow[];

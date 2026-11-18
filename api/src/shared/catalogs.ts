@@ -155,3 +155,7 @@ export const MEMBER_IMPORT_COLUMNS = [
 
 export type MemberImportKey = (typeof MEMBER_IMPORT_COLUMNS)[number]['key'];
 export type MemberImportRow = Partial<Record<MemberImportKey, string>>;
+
+/** Insignia de Madera en Programa (o la IM a secas): es requisito para ser Jefe/a de Campo. La de Gestión sola no alcanza. */
+export const hasProgramWoodBadge = (courses: { name: string }[]): boolean =>
+  courses.some((c) => /^insignia de madera/i.test(c.name.trim()) && !/gesti[oó]n/i.test(c.name));

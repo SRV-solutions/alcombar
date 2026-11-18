@@ -895,7 +895,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: '#btn-new-camp' },
         pose: 'point',
         title: 'Nuevo campamento',
-        text: 'Tipo, fechas, lugar, unidades que van, responsable y costo por chico. Queda en borrador hasta que Jefatura lo aprueba.',
+        text: 'Tipo, fechas, lugar, unidades que van, Jefe/a de Campo y costo por chico. Queda en borrador hasta que Jefatura lo aprueba.',
       },
       {
         target: firstRow,
