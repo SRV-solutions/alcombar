@@ -41,3 +41,8 @@
 .camp-sheets .name { font-weight: 600; min-width: 0; }
 .camp-banner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sheet-schedule { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* Autorización firmada en el legajo */
+.camp-auth { font-size: 0.85rem; margin-top: 2px; }
+.camp-auth .link-btn { font-size: inherit; }
+.camp-auth-warn { color: var(--warn); font-size: 0.78rem; }

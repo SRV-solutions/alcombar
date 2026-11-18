@@ -111,13 +111,16 @@ export function AuthorizationsPage() {
   const [dialog, setDialog] = useState<'new' | 'aval' | null>(null);
   const viewable = (units.data ?? []).filter((u) => can('member_documents', 'view', u.id));
   const myUnit = me?.roles.find((r) => r.unit)?.unit?.id;
-  const unitId = params.get('unitId') || (viewable.some((u) => u.id === myUnit) ? myUnit! : viewable[0]?.id ?? '');
+  // Desde un campamento: sus autorizaciones, de todas las unidades que van
+  const campId = params.get('campId') ?? '';
+  const unitId = campId ? '' : params.get('unitId') || (viewable.some((u) => u.id === myUnit) ? myUnit! : viewable[0]?.id ?? '');
 
   const list = useQuery({
-    queryKey: ['authorizations', 'list', unitId, status],
-    queryFn: () => api.get<AuthRow[]>(`/authorizations${qs({ unitId, status })}`),
-    enabled: !!unitId,
+    queryKey: ['authorizations', 'list', unitId, campId, status],
+    queryFn: () => api.get<AuthRow[]>(`/authorizations${qs({ unitId, campId, status })}`),
+    enabled: !!unitId || !!campId,
   });
+  const campName = campId ? list.data?.find((r) => r.camp)?.camp?.name : null;
   if (units.isLoading) return <Loading />;
   const rows = list.data ?? [];
   const approvable = rows.filter((r) => r.canApprove);
@@ -144,20 +147,30 @@ export function AuthorizationsPage() {
         }
       />
       <div className="toolbar">
-        <Select
-          value={unitId}
-          onChange={(e) => {
-            setParams({ unitId: e.target.value }, { replace: true });
-            setSelected(new Set());
-          }}
-          aria-label="Unidad"
-        >
-          {viewable.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
-          ))}
-        </Select>
+        {campId ? (
+          <span className="row" style={{ gap: 8 }}>
+            <b>{campName ?? 'Campamento'}</b>
+            <Link to={`/campamentos/${campId}`}>Volver al campamento</Link>
+            <button type="button" className="link-btn" onClick={() => setParams({}, { replace: true })}>
+              Ver todas las de la unidad
+            </button>
+          </span>
+        ) : (
+          <Select
+            value={unitId}
+            onChange={(e) => {
+              setParams({ unitId: e.target.value }, { replace: true });
+              setSelected(new Set());
+            }}
+            aria-label="Unidad"
+          >
+            {viewable.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Estado">
           <option value="">Vigentes</option>
           <option value="pendientes">Les falta el aval o un testigo</option>
@@ -169,7 +182,11 @@ export function AuthorizationsPage() {
             variant="secondary"
             size="sm"
             title="Un solo PDF con todas las de la lista, una por hoja"
-            onClick={() => api.download(`/authorizations/pdf${qs({ unitId, status })}`, 'Autorizaciones firmadas.pdf').catch(toast.error)}
+            onClick={() =>
+              api
+                .download(campId ? `/authorizations/camp/${campId}/pdf?only=firmadas` : `/authorizations/pdf${qs({ unitId, status })}`, 'Autorizaciones firmadas.pdf')
+                .catch(toast.error)
+            }
           >
             <Download /> Bajar todas en un PDF
           </Button>

@@ -45,6 +45,8 @@ export interface LegajoRow {
   charge: { id: string; amount: number; paid: number; status: 'pendiente' | 'parcial' | 'pagado' | 'anulado' } | null;
   authorizationPresented: boolean;
   authorizationDate: string | null;
+  /** Autorización firmada en la app (si hay). */
+  signedAuthorization: { id: string; status: 'firmada' | 'completa' | 'anulada'; signedAt: string; signerName: string; hasAval: boolean } | null;
   dniPresented: boolean;
   fichaMedica: DocStatus | null;
   complete: boolean;

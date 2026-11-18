@@ -31,6 +31,7 @@ import {
 } from '../shared';
 import { sequelize } from '../db';
 import { Adult, DocumentType, Member, MemberDocument, SmallGroup, Unit, User } from '../models';
+import { SignedAuthorization } from '../models/authorizations';
 import {
   Account,
   Camp,
@@ -414,6 +415,14 @@ campsRouter.get(
     const fichaType = await DocumentType.findOne({ where: { code: 'ficha_medica' } });
     const memberIds = enrollments.map((e) => e.memberId).filter(Boolean) as string[];
     const fichas = fichaType && memberIds.length ? await MemberDocument.findAll({ where: { memberId: memberIds, documentTypeId: fichaType.id } }) : [];
+    // Autorización firmada en la app (la más reciente que no esté anulada), sin los trazos
+    const signed = memberIds.length
+      ? await SignedAuthorization.findAll({
+          where: { campId: camp.id, kind: 'campamento', memberId: memberIds, status: { [Op.ne]: 'anulada' } },
+          attributes: ['id', 'memberId', 'status', 'signedAt', 'content', 'aval'],
+          order: [['signedAt', 'DESC']],
+        })
+      : [];
     const legajo = enrollments
       .map((e) => {
         const ficha = e.memberId ? documentStatus(fichas.find((f) => f.memberId === e.memberId), fichaType?.hasExpiry ?? true, camp.startDate) : null;
@@ -430,6 +439,10 @@ campsRouter.get(
           charge: e.charge ? { id: e.charge.id, amount: e.charge.amount, paid: e.charge.paidAmount, status: e.charge.status } : null,
           authorizationPresented: e.authorizationPresented,
           authorizationDate: e.authorizationDate,
+          signedAuthorization: (() => {
+            const a = e.memberId ? signed.find((x) => x.memberId === e.memberId) : null;
+            return a ? { id: a.id, status: a.status, signedAt: a.signedAt, signerName: a.content.signer.name, hasAval: !!a.aval } : null;
+          })(),
           dniPresented: e.dniPresented,
           fichaMedica: ficha,
           complete,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Download, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import { CheckCircle2, Download, FileSignature, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,7 +20,7 @@ import { applyServerErrors } from '../../lib/forms';
 import { adultName, useAdults } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import { useAuth } from '../../lib/auth';
-import { Badge, Button, Card, Checkbox, ConfirmButton, DocDot, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Tabs, UnitBadge } from '../../components/ui';
+import { Badge, Button, Card, Checkbox, ConfirmButton, DocDot, Empty, ErrorBox, Field, Input, LinkButton, Loading, Modal, PageHeader, Tabs, UnitBadge } from '../../components/ui';
 import type { MemberListItem } from '../../lib/types';
 import { Money, Stat } from '../accounting/common';
 import { CAMP_STATUS_TONE, CampDialog, campDates } from './CampsPage';
@@ -227,6 +227,15 @@ function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
   // Autorizaciones del campamento en PDF: la firmada de cada chico o, si falta, la planilla ya completa para firmar en papel
   const canAuth = c.legajo.some((l) => l.member && canDo('member_documents', 'edit', l.member.unitId));
   const [pdfBusy, setPdfBusy] = useState('');
+  const signedCount = c.legajo.filter((l) => l.signedAuthorization).length;
+  const downloadAuth = async (l: LegajoRow) => {
+    if (!l.signedAuthorization) return;
+    try {
+      await api.download(`/authorizations/${l.signedAuthorization.id}/pdf`, `Autorización - ${l.member?.lastName ?? ''} ${l.member?.firstName ?? ''}.pdf`);
+    } catch (e) {
+      toast.error(e);
+    }
+  };
   const authPdf = async (only: '' | 'faltan' | 'firmadas') => {
     setPdfBusy(only || 'todas');
     try {
@@ -306,6 +315,11 @@ function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
               <Button variant="ghost" size="sm" loading={pdfBusy === 'faltan'} title="Solo las que faltan, con los datos del campamento ya completos, para imprimir y firmar en papel" onClick={() => authPdf('faltan')}>
                 Solo las que faltan firmar
               </Button>
+              {signedCount ? (
+                <LinkButton to={`/autorizaciones?campId=${c.id}`} variant="secondary" size="sm">
+                  <FileSignature /> Ver las {signedCount} firmadas
+                </LinkButton>
+              ) : null}
             </>
           ) : null}
         </div>
@@ -357,11 +371,23 @@ function LegajoTab({ c, refetch }: { c: CampDetail; refetch: () => unknown }) {
                     {l.kind === 'protagonista' ? (
                       <>
                         <Check ok={l.authorizationPresented} label="Autorización" disabled={!editable} onClick={() => quick(l, { authorizationPresented: !l.authorizationPresented })} />
-                        {/* Firma en pantalla: la madre, el padre o el tutor firma con el dedo sobre la planilla de SAAC */}
-                        {l.member && canDo('member_documents', 'edit', l.member.unitId) ? (
+                        {/* Firmada en la app: verla, bajarla y saber si le falta el aval */}
+                        {l.signedAuthorization ? (
+                          <div className="no-print camp-auth">
+                            <Link to={`/autorizaciones/${l.signedAuthorization.id}`} title={`Firmó ${l.signedAuthorization.signerName} el ${formatDate(l.signedAuthorization.signedAt.slice(0, 10))}`}>
+                              Ver
+                            </Link>
+                            {' · '}
+                            <button type="button" className="link-btn" onClick={() => void downloadAuth(l)} title="Descargar en PDF">
+                              PDF
+                            </button>
+                            {!l.signedAuthorization.hasAval ? <div className="camp-auth-warn">Falta el aval</div> : null}
+                          </div>
+                        ) : l.member && canDo('member_documents', 'edit', l.member.unitId) ? (
+                          /* Firma en pantalla: la madre, el padre o el tutor firma con el dedo sobre la planilla de SAAC */
                           <div className="no-print">
                             <Link to={`/autorizaciones/firmar?kind=campamento&memberId=${l.member.id}&campId=${c.id}`} title="Hacer firmar la autorización en este dispositivo">
-                              {l.authorizationPresented ? 'Firmar otra' : 'Firmar acá'}
+                              Firmar acá
                             </Link>
                           </div>
                         ) : null}
