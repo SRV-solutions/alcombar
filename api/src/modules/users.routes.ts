@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { Op } from 'sequelize';
 import { userCreateSchema, userUpdateSchema } from '../shared';
 import { sequelize } from '../db';
-import { Adult, Role, Unit, User, UserRole } from '../models';
+import { Adult, PasswordToken, Role, Unit, User, UserRole } from '../models';
 import { ah, badRequest, conflict, forbidden, notFound, parse } from '../lib/errors';
 import { createPasswordLink, sendInvite, sendReset } from '../lib/passwordTokens';
 import { revokeAllSessions } from '../lib/session';
@@ -91,8 +91,13 @@ usersRouter.put(
       throw badRequest('No se puede quitar o desactivar al último superadmin');
     }
     if (user.id === req.user!.id && !data.active) throw badRequest('No podés desactivar tu propio usuario');
+    const emailChanged = !!data.email && data.email !== user.email;
+    if (emailChanged && (await User.findOne({ where: { email: data.email, id: { [Op.ne]: user.id } }, paranoid: false }))) {
+      throw conflict('Ya existe un usuario con ese email');
+    }
 
     await sequelize.transaction(async (transaction) => {
+      if (emailChanged) user.email = data.email!;
       user.name = data.name;
       user.adultId = data.adultId;
       user.active = data.active;
@@ -106,7 +111,18 @@ usersRouter.put(
       for (const r of data.roles) if (!have.has(key(r))) await UserRole.create({ userId: user.id, roleId: r.roleId, unitId: r.unitId }, { transaction });
     });
     if (!data.active) await revokeAllSessions(user.id);
-    res.json(await User.findByPk(user.id, { include }));
+    // Email corregido: los enlaces que salieron a la dirección anterior dejan de servir. Si todavía no había elegido
+    // contraseña, la invitación sale de nuevo a la dirección correcta.
+    let invite: { url: string; emailSent: boolean } | null = null;
+    if (emailChanged) {
+      await PasswordToken.update({ usedAt: new Date() }, { where: { userId: user.id, usedAt: null, purpose: ['invite', 'reset'] } });
+      if (data.active && !user.passwordHash) {
+        const url = await createPasswordLink(user, 'invite');
+        invite = { url, emailSent: await sendInvite(user, url) };
+      }
+    }
+    const saved = await User.findByPk(user.id, { include });
+    res.json({ ...(saved!.toJSON() as object), invite });
   }),
 );
 

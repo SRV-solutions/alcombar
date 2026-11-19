@@ -299,10 +299,18 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
         toast.ok('Usuario creado');
         onCreated({ url: r.inviteUrl, purpose: 'invite', emailSent: r.emailSent, userName: r.user.name, userEmail: r.user.email });
       } else {
-        await api.put(`/users/${user.id}`, { name: values.name, adultId: values.adultId || null, active: values.active, roles: rolesPayload });
+        const r = await api.put<UserInfo & { invite: { url: string; emailSent: boolean } | null }>(`/users/${user.id}`, {
+          email: values.email,
+          name: values.name,
+          adultId: values.adultId || null,
+          active: values.active,
+          roles: rolesPayload,
+        });
         await qc.invalidateQueries({ queryKey: ['users'] });
-        toast.ok('Usuario actualizado');
-        onClose();
+        toast.ok(r.email !== user.email ? 'Email corregido' : 'Usuario actualizado');
+        // Si todavía no había elegido contraseña, la invitación salió de nuevo a la dirección correcta
+        if (r.invite) onCreated({ url: r.invite.url, purpose: 'invite', emailSent: r.invite.emailSent, userName: r.name, userEmail: r.email });
+        else onClose();
       }
     } catch (e) {
       if (!applyServerErrors(e, setError)) toast.error(e);
@@ -339,8 +347,15 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
     >
       <form id="user-form" onSubmit={onSubmit} noValidate>
         <div className="form-grid">
-          <Field label="Email" required error={errors.email?.message} hint={isNew ? 'Con este email va a iniciar sesión' : 'El email no se puede cambiar'}>
-            <Input type="email" autoComplete="off" disabled={!isNew} invalid={!!errors.email} {...register('email')} />
+          <Field label="Email" required error={errors.email?.message} hint={
+              isNew
+                ? 'Con este email va a iniciar sesión'
+                : user.hasPassword
+                  ? 'Si lo cambiás, pasa a iniciar sesión con el nuevo (la contraseña es la misma)'
+                  : 'Si lo corregís, la invitación sale de nuevo al email nuevo y la anterior deja de servir'
+            }
+          >
+            <Input type="email" autoComplete="off" invalid={!!errors.email} {...register('email')} />
           </Field>
           <Field
             label="Adulto vinculado"

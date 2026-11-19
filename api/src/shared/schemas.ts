@@ -105,6 +105,8 @@ export const userCreateSchema = z.object({
   roles: z.array(userRoleInput).default([]),
 });
 export const userUpdateSchema = z.object({
+  /** Opcional: solo se manda para corregirlo. */
+  email: z.string().trim().toLowerCase().email('Email inválido').optional(),
   name: reqStr(120),
   adultId: optUuid,
   active: z.boolean(),
