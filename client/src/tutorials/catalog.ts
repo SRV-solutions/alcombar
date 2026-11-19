@@ -490,7 +490,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: 'select[aria-label="Estado"]' },
         pose: 'point',
         title: 'Filtrar',
-        text: 'Podés ver solo las de una unidad, un estado o un ciclo, o buscar por nombre.',
+        text: 'Podés ver solo las de una unidad, un estado o un ciclo. El buscador encuentra por el nombre y también por lo que dice la ficha adentro (objetivos, descripción, materiales…), y te muestra dónde lo encontró.',
       },
       {
         target: { selector: '.page-header .actions a[href^="/programa/fichas/nueva"]' },
@@ -501,7 +501,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         pose: 'think',
         title: 'Partir de otra ficha',
-        text: 'Arriba de la ficha nueva está «¿Partís de una ficha que ya existe?»: buscás por nombre entre las de tu unidad y las del banco del Grupo, tocás «Copiar» y se carga todo su contenido para modificarlo. Se guarda como una ficha nueva; la original no se toca.',
+        text: 'Arriba de la ficha nueva está «¿Partís de una ficha que ya existe?»: buscás por el nombre o por lo que dice adentro entre las de tu unidad y las del banco del Grupo, tocás «Copiar» y se carga todo su contenido para modificarlo. Se guarda como una ficha nueva; la original no se toca.',
       },
       {
         pose: 'think',
@@ -534,7 +534,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: 'select[aria-label="Rama"]' },
         pose: 'point',
         title: 'Buscar',
-        text: 'Filtrá por rama, área, competencia, tipo de actividad y lugar, o escribí una palabra.',
+        text: 'Filtrá por rama, área, competencia, tipo de actividad y lugar, o escribí una palabra: busca en el nombre y en todo el contenido de las fichas.',
       },
       {
         target: firstRow,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Copy, ExternalLink, Library, Search } from 'lucide-react';
+import { searchSheet, SheetHitLine } from './sheetSearch';
 import { BRANCHES, BRANCH_INFO, formatDate, OPPORTUNITY_TYPES, OPPORTUNITY_TYPE_LABELS } from '@shared';
 import { api, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -53,7 +54,11 @@ export function BankPage() {
   const list = useQuery({
     queryKey: ['program-bank', branch, areaId, competencyId, type, place, q],
     queryFn: () => api.get<SheetSummary[]>(`/program/sheets/bank${qs({ branch, areaId, competencyId, type, place, q })}`),
+    // Mientras se escribe, queda a la vista el resultado anterior en vez de parpadear
+    placeholderData: keepPreviousData,
   });
+  /** Si la ficha coincide por algo que no se ve en la fila, en qué parte está. */
+  const hitOf = (s: SheetSummary) => (q.trim() ? (searchSheet(s, q)?.where ?? null) : null);
 
   return (
     <>
@@ -64,7 +69,7 @@ export function BankPage() {
       <div className="toolbar">
         <div className="grow" style={{ position: 'relative' }}>
           <Search size={16} style={{ position: 'absolute', left: 10, top: 11, color: 'var(--muted)' }} />
-          <Input placeholder="Buscar en nombre, descripción, objetivos o lugar" value={q} onChange={(e) => setQ(e.target.value)} style={{ paddingLeft: 32, width: '100%' }} />
+          <Input placeholder="Buscar en el nombre o en el contenido de la ficha" aria-label="Buscar fichas por nombre o por contenido" value={q} onChange={(e) => setQ(e.target.value)} style={{ paddingLeft: 32, width: '100%' }} />
         </div>
         <Select value={branch} onChange={(e) => (setBranch(e.target.value), setAreaId(''), setCompetencyId(''))} aria-label="Rama" style={{ width: 'auto' }}>
           <option value="">Todas las ramas</option>
@@ -131,6 +136,7 @@ export function BankPage() {
                       {s.competencies?.length ? ` · ${s.competencies.length} competencias` : ''}
                       {s.place ? ` · ${s.place}` : ''}
                     </div>
+                    {hitOf(s) ? <SheetHitLine hit={hitOf(s)!} /> : null}
                   </td>
                   <td>
                     <UnitBadge unit={s.unit} short />

@@ -47,6 +47,14 @@ export interface SheetSummary {
   area: { id: string; name: string } | null;
   responsible: AdultLite | null;
   competencies?: { id: string; number: number | null; name: string }[];
+  /** El contenido viene también en los listados: se usa para buscar adentro de la ficha. */
+  objectives?: string[];
+  exploration?: string | null;
+  description?: string | null;
+  closing?: string | null;
+  otherEducators?: string | null;
+  materials?: string[];
+  safety?: string | null;
   canEdit: boolean;
   canApprove: boolean;
   canDelete: boolean;

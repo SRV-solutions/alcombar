@@ -8,6 +8,7 @@ import { useAuth } from '../../lib/auth';
 import { adultName } from '../../lib/queries';
 import { Card, Empty, ErrorBox, Input, LinkButton, Loading, PageHeader, Select } from '../../components/ui';
 import { SheetStatusBadge, typeLabel, UnitSelect, useProgramUnit } from './common';
+import { searchSheet, SheetHitLine } from './sheetSearch';
 import type { Cycle, SheetSummary } from './types';
 
 /** Programa → Fichas de actividad de una unidad. */
@@ -28,11 +29,15 @@ export function SheetsPage() {
     queryFn: () => api.get<Cycle[]>(`/program/cycles${qs({ unitId })}`),
     enabled: !!unitId,
   });
-  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  const rows = useMemo(
-    () => (sheets.data ?? []).filter((s) => !q.trim() || norm(`${s.code} ${s.name} ${s.place ?? ''}`).includes(norm(q.trim()))),
-    [sheets.data, q],
-  );
+  // Busca en toda la ficha (no solo en el nombre): objetivos, descripción, materiales… y muestra dónde lo encontró
+  const rows = useMemo(() => {
+    const out: { sheet: SheetSummary; hit: ReturnType<typeof searchSheet> }[] = [];
+    for (const s of sheets.data ?? []) {
+      const hit = searchSheet(s, q);
+      if (hit) out.push({ sheet: s, hit });
+    }
+    return out;
+  }, [sheets.data, q]);
   const canCreate = !!unitId && can('activities', 'create', unitId);
 
   if (loading) return <Loading />;
@@ -75,7 +80,7 @@ export function SheetsPage() {
         </Select>
         <div className="grow" style={{ position: 'relative' }}>
           <Search size={16} style={{ position: 'absolute', left: 10, top: 11, color: 'var(--muted)' }} />
-          <Input placeholder="Buscar por nombre, código o lugar" value={q} onChange={(e) => setQ(e.target.value)} style={{ paddingLeft: 32, width: '100%' }} />
+          <Input placeholder="Buscar en el nombre o en el contenido de la ficha" aria-label="Buscar fichas por nombre o por contenido" value={q} onChange={(e) => setQ(e.target.value)} style={{ paddingLeft: 32, width: '100%' }} />
         </div>
       </div>
       <Card bodyClass="table-wrap">
@@ -87,7 +92,7 @@ export function SheetsPage() {
           </div>
         ) : !rows.length ? (
           <Empty icon={<FileText />}>
-            {sheets.data?.length ? 'No hay coincidencias.' : `${unit?.name ?? 'La unidad'} todavía no tiene fichas.`}
+            {sheets.data?.length ? 'Ninguna ficha tiene eso, ni en el nombre ni en el contenido.' : `${unit?.name ?? 'La unidad'} todavía no tiene fichas.`}
             {canCreate && !sheets.data?.length ? (
               <div className="mt">
                 <LinkButton to={`/programa/fichas/nueva${qs({ unitId })}`}>
@@ -109,7 +114,7 @@ export function SheetsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((s) => (
+              {rows.map(({ sheet: s, hit }) => (
                 <tr key={s.id} className="clickable" onClick={() => navigate(`/programa/fichas/${s.id}`)}>
                   <td className="nowrap muted">{s.code}</td>
                   <td>
@@ -118,6 +123,7 @@ export function SheetsPage() {
                       {typeLabel(s.opportunityType)}
                       {s.area ? ` · ${s.area.name}` : ''}
                     </div>
+                    {hit?.where ? <SheetHitLine hit={hit.where} /> : null}
                   </td>
                   <td className="nowrap">{formatDate(s.date) || <span className="muted">Sin fecha</span>}</td>
                   <td>{s.cycle?.name ?? <span className="muted">—</span>}</td>

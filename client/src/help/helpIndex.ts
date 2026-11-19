@@ -172,10 +172,11 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'fichas-actividad',
     title: 'Fichas de actividad',
-    description: 'Planificar cada actividad: objetivos, competencias, desarrollo por momentos, materiales y seguridad. Circuito: borrador → en revisión → aprobada → realizada → evaluada.',
+    description:
+      'Planificar cada actividad: objetivos, competencias, desarrollo por momentos, materiales y seguridad. Circuito: borrador → en revisión → aprobada → realizada → evaluada. El buscador encuentra las fichas por su nombre o por lo que dicen adentro.',
     path: '/programa',
     section: 'Programa',
-    keywords: ['ficha', 'fichas', 'ficha de actividad', 'actividad', 'planificar', 'planificación', 'juego', 'objetivos', 'materiales', 'seguridad', 'qué hacemos el sábado'],
+    keywords: ['ficha', 'fichas', 'ficha de actividad', 'actividad', 'planificar', 'planificación', 'juego', 'objetivos', 'materiales', 'seguridad', 'qué hacemos el sábado', 'buscar ficha', 'buscar actividad', 'buscar por contenido'],
     show: can('activities', 'view'),
   },
   {
@@ -217,7 +218,8 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'banco-fichas',
     title: 'Banco de fichas',
-    description: 'Fichas aprobadas y realizadas de todas las unidades. Filtrás por rama, área, competencia, tipo y lugar, y con "Usar en mi unidad" la copiás para tu unidad.',
+    description:
+      'Fichas aprobadas y realizadas de todas las unidades. Buscás por nombre o por contenido, filtrás por rama, área, competencia, tipo y lugar, y con "Usar en mi unidad" la copiás para tu unidad.',
     path: '/programa/banco',
     section: 'Programa',
     keywords: ['banco', 'banco de fichas', 'ideas', 'actividades de otros', 'reutilizar', 'copiar ficha', 'duplicar ficha', 'buscar actividades'],

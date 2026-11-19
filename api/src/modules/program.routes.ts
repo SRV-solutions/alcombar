@@ -275,6 +275,27 @@ const sheetValues = (d: ReturnType<typeof sheetSchema.parse>) => ({
   nights: d.opportunityType === 'campamento' ? d.nights : null,
 });
 
+/**
+ * Búsqueda de fichas por su contenido: cada palabra tiene que estar en algún lado de la ficha (código, nombre, lugar,
+ * objetivos, competencias, marco de exploración, descripción, recupero, materiales, riesgos o demás educadores).
+ * No distingue mayúsculas ni acentos.
+ */
+const SHEET_FOLD_FROM = 'áéíóúàèìòùâêîôûäëïöüñ';
+const SHEET_FOLD_TO = 'aeiouaeiouaeiouaeioun';
+function sheetSearch(q: string) {
+  const words = q
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 8);
+  if (!words.length) return null;
+  const t = '"ActivitySheet"';
+  const hay = `translate(lower(concat_ws(' ', ${t}."code", ${t}."name", ${t}."place", ${t}."objectives"::text, ${t}."exploration", ${t}."description", ${t}."closing", ${t}."materials"::text, ${t}."safety", ${t}."other_educators", (SELECT string_agg(c.name, ' ') FROM activity_competencies ac JOIN competencies c ON c.id = ac.competency_id WHERE ac.activity_sheet_id = ${t}."id"))), '${SHEET_FOLD_FROM}', '${SHEET_FOLD_TO}')`;
+  return sequelize.literal('(' + words.map((w) => `${hay} LIKE ${sequelize.escape('%' + w.replace(/[\\%_]/g, '\\$&') + '%')}`).join(' AND ') + ')');
+}
+
 function serializeSheet(s: ActivitySheet, req: Request) {
   return {
     ...s.toJSON(),
@@ -308,8 +329,8 @@ programRouter.get(
       const y = Number(req.query.year);
       Object.assign(where, { date: { [Op.between]: [`${y}-01-01`, `${y}-12-31`] } });
     }
-    const q = String(req.query.q ?? '').trim();
-    if (q) Object.assign(where, { [Op.or]: [{ name: { [Op.iLike]: `%${q}%` } }, { code: { [Op.iLike]: `%${q}%` } }] });
+    const search = sheetSearch(String(req.query.q ?? ''));
+    if (search) Object.assign(where, { [Op.and]: [search] });
     const list = await ActivitySheet.findAll({
       where,
       include: sheetIncludes(),
@@ -336,15 +357,8 @@ programRouter.get(
     if (req.query.competencyId) {
       and.push(sequelize.literal(`"ActivitySheet"."id" IN (SELECT activity_sheet_id FROM activity_competencies WHERE competency_id = ${sequelize.escape(String(req.query.competencyId))})`));
     }
-    const q = String(req.query.q ?? '').trim();
-    if (q) {
-      const like = sequelize.escape(`%${q}%`);
-      and.push(
-        sequelize.literal(
-          `("ActivitySheet"."name" ILIKE ${like} OR "ActivitySheet"."description" ILIKE ${like} OR "ActivitySheet"."objectives"::text ILIKE ${like} OR "ActivitySheet"."place" ILIKE ${like})`,
-        ),
-      );
-    }
+    const search = sheetSearch(String(req.query.q ?? ''));
+    if (search) and.push(search);
     if (and.length) Object.assign(where, { [Op.and]: and });
     const branch = req.query.branch ? String(req.query.branch) : null;
     const list = await ActivitySheet.findAll({
