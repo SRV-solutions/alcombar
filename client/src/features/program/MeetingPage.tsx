@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, Plus, Printer, Save, Trash2, X } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, ExternalLink, FilePlus2, Plus, Printer, Save, Trash2, X } from 'lucide-react';
 import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
+import { useAuth } from '../../lib/auth';
 import { adultName, useAdults } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import { Button, Card, ConfirmButton, Empty, ErrorBox, Field, Input, LinkButton, Loading, PageHeader, Select, Textarea } from '../../components/ui';
@@ -89,15 +90,36 @@ export function MeetingPage() {
   const [dirty, setDirty] = useState(false);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
+  const linked = useRef<string | null>(null);
+  const navigate = useNavigate();
+  const { can } = useAuth();
 
   // Cargar lo guardado cada vez que cambia la unidad, la fecha o vuelve del servidor.
   useEffect(() => {
     if (!q.data) return;
     const p = q.data.program;
-    setRows(p ? p.items.map(toRow) : []);
+    let loaded = p ? p.items.map(toRow) : [];
     setNotes(p?.notes ?? '');
     setDirty(false);
     setRowErrors({});
+    // Vuelve de crear una ficha para un momento (?vincular=<ficha>&fila=<n>): se vincula y se guarda solo
+    const link = params.get('vincular');
+    const fila = Number(params.get('fila'));
+    if (link && linked.current !== link) {
+      linked.current = link;
+      const n = new URLSearchParams(params);
+      n.delete('vincular');
+      n.delete('fila');
+      setParams(n, { replace: true });
+      if (Number.isInteger(fila) && loaded[fila] && !loaded[fila].activitySheetId) {
+        loaded = loaded.map((r, j) => (j === fila ? { ...r, activitySheetId: link } : r));
+        setRows(loaded);
+        void persist(loaded, p?.notes ?? '', 'Ficha creada y vinculada al momento');
+        return;
+      }
+    }
+    setRows(loaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.data, unitId, date]);
 
   const sheetById = useMemo(() => new Map((sheets.data ?? []).map((s) => [s.id, s])), [sheets.data]);
@@ -192,18 +214,26 @@ export function MeetingPage() {
     setRows((rs) => rs.filter((r) => r.key !== key));
     setDirty(true);
   };
+  /** Crear la ficha REME de un momento: guarda lo que haya cambiado, abre la ficha nueva y al volver queda vinculada. */
+  const createSheetFor = async (i: number) => {
+    const r = rows[i];
+    if (dirty && !(await persist(rows, notes))) return;
+    navigate(`/programa/fichas/nueva${qs({ unitId, date, nombre: r.title.trim(), min: r.durationMin, volver: 'sabado', fila: String(i) })}`);
+  };
+  const canCreateSheet = !!unitId && can('activities', 'create', unitId);
   const pickSheet = (key: number, id: string) => {
     const s = sheetById.get(id);
     const row = rows.find((r) => r.key === key);
     update(key, { activitySheetId: id, ...(s?.durationMin && !row?.durationMin ? { durationMin: String(s.durationMin) } : {}) });
   };
 
-  const save = async () => {
+  /** Guarda el programa (las filas que se le pasan). Devuelve si salió bien. */
+  const persist = async (rowsArg: Row[], notesArg: string, okMessage = 'Programa guardado'): Promise<boolean> => {
     const payload = {
       unitId,
       date,
-      notes,
-      items: rows.map((r) => ({
+      notes: notesArg,
+      items: rowsArg.map((r) => ({
         time: r.time,
         activitySheetId: r.activitySheetId || null,
         title: r.title,
@@ -216,25 +246,29 @@ export function MeetingPage() {
     const check = meetingSchema.safeParse(payload);
     if (!check.success) {
       const errs: Record<number, string> = {};
-      for (const i of check.error.issues) if (i.path[0] === 'items' && typeof i.path[1] === 'number') errs[rows[i.path[1]].key] ??= i.message;
+      for (const i of check.error.issues) if (i.path[0] === 'items' && typeof i.path[1] === 'number') errs[rowsArg[i.path[1]].key] ??= i.message;
       setRowErrors(errs);
       toast.error(Object.keys(errs).length ? 'Revisá los momentos marcados' : check.error.issues[0].message);
-      return;
+      return false;
     }
     setBusy(true);
     try {
       await api.put('/program/meetings', payload);
-      toast.ok('Programa guardado');
+      toast.ok(okMessage);
+      setDirty(false);
       setRowErrors({});
       await qc.invalidateQueries({ queryKey: ['program-meeting', unitId, date] });
       void qc.invalidateQueries({ queryKey: ['program-meeting-dates', unitId] });
+      return true;
     } catch (e) {
       if (e instanceof ApiError && e.details) toast.error(`${e.message}: ${Object.values(e.details)[0]}`);
       else toast.error(e);
+      return false;
     } finally {
       setBusy(false);
     }
   };
+  const save = () => void persist(rows, notes);
 
   if (loading) return <Loading />;
   if (!options.length) return <Empty>No tenés unidades para armar el programa del sábado.</Empty>;
@@ -371,7 +405,7 @@ export function MeetingPage() {
                       </Field>
                       <div className="what stack" style={{ gap: 6 }}>
                         <Field label="Ficha (opcional)">
-                          <Select value={r.activitySheetId} onChange={(e) => pickSheet(r.key, e.target.value)}>
+                          <Select value={r.activitySheetId} onChange={(e) => pickSheet(r.key, e.target.value)} aria-label="Ficha del momento">
                             <option value="">— Sin ficha (momento suelto) —</option>
                             {sheetGroups.today.length ? (
                               <optgroup label="Fichas de este día">
@@ -400,6 +434,15 @@ export function MeetingPage() {
                           aria-label="Título"
                         />
                         <Input placeholder="Notas" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} aria-label="Notas" />
+                        {sheet ? (
+                          <Link to={`/programa/fichas/${sheet.id}`} className="meeting-sheet-link">
+                            <ExternalLink size={14} /> Ver la ficha {sheet.code}
+                          </Link>
+                        ) : canCreateSheet && !r.activitySheetId ? (
+                          <button type="button" className="meeting-sheet-link" disabled={busy} onClick={() => void createSheetFor(i)}>
+                            <FilePlus2 size={14} /> Crear la ficha REME de este momento
+                          </button>
+                        ) : null}
                         {rowErrors[r.key] ? <span className="error" style={{ color: 'var(--danger)', fontSize: '0.82rem' }}>{rowErrors[r.key]}</span> : null}
                         {sheet && sheet.status !== 'aprobada' && sheet.status !== 'realizada' && sheet.status !== 'evaluada' ? (
                           <span className="muted" style={{ fontSize: '0.82rem' }}>

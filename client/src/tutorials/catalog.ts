@@ -500,6 +500,11 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         pose: 'think',
+        title: 'Partir de otra ficha',
+        text: 'Arriba de la ficha nueva está «¿Partís de una ficha que ya existe?»: buscás por nombre entre las de tu unidad y las del banco del Grupo, tocás «Copiar» y se carga todo su contenido para modificarlo. Se guarda como una ficha nueva; la original no se toca.',
+      },
+      {
+        pose: 'think',
         title: 'El circuito de la ficha',
         text: 'Borrador → "Enviar a revisión" → Jefatura la aprueba o la devuelve con un comentario → después de hacerla, "Marcar realizada" y "Evaluar". Si editás una ficha aprobada, vuelve a borrador.',
       },
@@ -593,6 +598,16 @@ export const TUTORIALS: Tutorial[] = [
         pose: 'point',
         title: 'Agregar momentos',
         text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada) y responsable. El responsable puede ser alguien de la unidad, otro adulto del Grupo o un «Otro» que escribís vos: Jefatura de Grupo para el izado, el Párroco para la misa, un rover en servicio…',
+      },
+      {
+        pose: 'think',
+        title: 'Horas que no se pisan',
+        text: 'Si cambiás la hora de un momento, se acomodan los minutos de ese y del anterior; si cambiás los minutos, se corre la hora del siguiente. Si aun así dos se pisan, te aviso debajo.',
+      },
+      {
+        pose: 'point',
+        title: 'La ficha REME del momento',
+        text: 'Debajo de cada momento sin ficha está «Crear la ficha REME de este momento»: guardo el programa, abro la ficha nueva con el nombre, la fecha y la duración ya puestos, y al guardarla vuelve acá vinculada. Si ya tiene ficha, «Ver la ficha» te lleva a ella.',
       },
       {
         target: button('Guardar programa'),

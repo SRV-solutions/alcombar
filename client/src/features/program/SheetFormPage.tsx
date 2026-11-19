@@ -10,6 +10,7 @@ import { useToast } from '../../lib/toast';
 import { Button, Card, Checkbox, ErrorBox, Field, Input, Loading, PageHeader, Select, Textarea } from '../../components/ui';
 import { CompetencyPicker, explorationLabel, objectivesHeader, useAreas } from './common';
 import type { Cycle, Sheet } from './types';
+import { CloneSheetPicker } from './CloneSheetPicker';
 
 interface FormValues {
   unitId: string;
@@ -146,6 +147,13 @@ export function SheetFormPage() {
     if (u) setValue('unitId', u.id);
     const c = params.get('cycleId');
     if (c) setValue('cycleId', c);
+    // Desde un momento del programa del sábado: nombre, fecha y duración ya vienen
+    const nombre = params.get('nombre');
+    if (nombre) setValue('name', nombre);
+    const fecha = params.get('date');
+    if (fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) setValue('date', fecha);
+    const min = params.get('min');
+    if (min && /^\d+$/.test(min)) setValue('durationMin', min);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [units.data, isEdit]);
 
@@ -175,6 +183,38 @@ export function SheetFormPage() {
   useEffect(() => {
     if (areas.data) setValue('areaId', getValues('areaId'));
   }, [areas.data, getValues, setValue]);
+
+  /** Copia el contenido de otra ficha al formulario. Unidad y fecha quedan las de esta; área y competencias, solo si es la misma rama. */
+  const applyClone = (x: Sheet) => {
+    const sameBranch = !!branch && x.unit?.branch === branch;
+    const keep = getValues();
+    reset({
+      unitId: keep.unitId,
+      name: keep.name.trim() && params.get('nombre') ? keep.name : x.name,
+      date: keep.date,
+      place: s(x.place),
+      durationMin: keep.durationMin && params.get('min') ? keep.durationMin : s(x.durationMin),
+      opportunityType: x.opportunityType,
+      scope: x.scope,
+      nights: s(x.nights),
+      cycleId: keep.cycleId,
+      areaId: sameBranch ? s(x.areaId) : '',
+      ageMin: sameBranch ? s(x.ageMin) : keep.ageMin,
+      ageMax: sameBranch ? s(x.ageMax) : keep.ageMax,
+      participants: keep.participants,
+      responsibleAdultId: s(x.responsibleAdultId),
+      objectivesText: x.objectives.join('\n'),
+      exploration: s(x.exploration),
+      description: s(x.description),
+      closing: s(x.closing),
+      otherEducators: s(x.otherEducators),
+      materialsText: x.materials.join('\n'),
+      outside: x.outside,
+      safety: s(x.safety),
+    });
+    setCompetencyIds(sameBranch ? x.competencies.map((c) => c.id) : []);
+    toast.ok(sameBranch ? 'Ficha copiada: cambiá lo que necesites' : 'Ficha copiada. Es de otra rama: elegí el área y las competencias de nuevo.');
+  };
 
   const type = watch('opportunityType');
   const outside = watch('outside');
@@ -229,6 +269,11 @@ export function SheetFormPage() {
         const created = await api.post<{ id: string; code: string }>('/program/sheets', payload);
         toast.ok(`Ficha ${created.code} creada`);
         await qc.invalidateQueries({ queryKey: ['program-sheets'] });
+        // Se creó desde un momento del programa del sábado: vuelve ahí y queda vinculada a ese momento
+        if (params.get('volver') === 'sabado' && params.get('date')) {
+          navigate(`/programa/sabado${qs({ unitId: v.unitId, date: params.get('date')!, vincular: created.id, fila: params.get('fila') ?? '' })}`, { replace: true });
+          return;
+        }
         navigate(`/programa/fichas/${created.id}`);
       }
     } catch (err) {
@@ -250,8 +295,12 @@ export function SheetFormPage() {
         ]}
         sub={isEdit && existing.data && ['en_revision', 'aprobada'].includes(existing.data.status) ? 'Ojo: si la cambiás, vuelve a Borrador y hay que aprobarla de nuevo.' : undefined}
       />
+      {!isEdit && params.get('volver') === 'sabado' ? (
+        <div className="alert alert-info">Al guardar, la ficha queda vinculada al momento del programa del sábado y volvés ahí.</div>
+      ) : null}
       <form onSubmit={onSubmit} noValidate>
         <div className="stack">
+          {!isEdit ? <CloneSheetPicker unitId={unitId} onPick={applyClone} /> : null}
           <Card title="La actividad">
             <div className="form-grid">
               <Field label="Unidad" required error={e.unitId?.message}>

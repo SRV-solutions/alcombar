@@ -53,3 +53,17 @@
   .print-table th, .print-table td { border-color: #999 !important; color: #000 !important; }
   .print-head { border-bottom-color: #7a1f2b !important; }
 }
+
+/* Enlace a la ficha del momento, o crearla */
+.meeting-sheet-link { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 2px 0; border: 0; background: none; color: var(--link); font: inherit; font-size: 0.87rem; cursor: pointer; text-decoration: none; }
+.meeting-sheet-link:hover { text-decoration: underline; }
+.meeting-sheet-link:disabled { opacity: 0.6; cursor: default; }
+/* Copiar una ficha existente al crear una nueva */
+.clone-search { position: relative; }
+.clone-search > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.clone-search input { padding-left: 34px; }
+.clone-results { margin-top: 10px; }
+.clone-results li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; }
+.clone-main { display: flex; flex-direction: column; min-width: 0; }
+.clone-main .muted { font-size: 0.85rem; }
+@media (max-width: 600px) { .clone-results li { flex-direction: column; align-items: flex-start; } }

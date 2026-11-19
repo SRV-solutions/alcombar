@@ -93,5 +93,7 @@ export function qs(params: Record<string, string | number | undefined | null>) {
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
+  // Un texto armado en la pantalla (ej. «Revisá los campos marcados») se muestra tal cual
+  if (typeof err === 'string' && err.trim()) return err;
   return 'Ocurrió un error';
 }
