@@ -47,6 +47,7 @@ export class Competency extends Model<InferAttributes<Competency>, InferCreation
   declare description: string | null;
   declare requiredChallenges: CreationOptional<string[]>;
   declare optionalChallenges: CreationOptional<string[]>;
+  declare specialtyChallenges: CreationOptional<string[]>;
   declare active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -62,6 +63,7 @@ Competency.init(
     description: TEXT,
     requiredChallenges: { type: JSONB, allowNull: false, defaultValue: [] },
     optionalChallenges: { type: JSONB, allowNull: false, defaultValue: [] },
+    specialtyChallenges: { type: JSONB, allowNull: false, defaultValue: [] },
     active: { type: BOOLEAN, allowNull: false, defaultValue: true },
     ...stamps,
   },
@@ -288,13 +290,22 @@ export class MemberCompetency extends Model<InferAttributes<MemberCompetency>, I
   declare status: CreationOptional<string>;
   declare achievedAt: string | null;
   declare notes: string | null;
+  /** Desafíos asignados: [{ text, kind, done, doneAt }]. */
+  declare challenges: CreationOptional<{ text: string; kind: string; done: boolean; doneAt: string | null }[]>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
   declare competency?: NonAttribute<Competency>;
 }
 MemberCompetency.init(
-  { id, status: { type: STRING(20), allowNull: false, defaultValue: 'elegida' }, achievedAt: DATEONLY, notes: TEXT, ...stamps },
+  {
+    id,
+    status: { type: STRING(20), allowNull: false, defaultValue: 'elegida' },
+    achievedAt: DATEONLY,
+    notes: TEXT,
+    challenges: { type: JSONB, allowNull: false, defaultValue: [] },
+    ...stamps,
+  },
   { sequelize, tableName: 'member_competencies', modelName: 'MemberCompetency' },
 );
 

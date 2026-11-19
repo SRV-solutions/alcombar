@@ -76,6 +76,8 @@ export interface MemberCompetencyRow {
   status: string;
   achievedAt: string | null;
   notes: string | null;
+  /** Desafíos asignados (del catálogo o propios). */
+  challenges: import('@shared').MemberChallenge[];
   createdAt: string;
   competency: {
     id: string;
@@ -84,6 +86,7 @@ export interface MemberCompetencyRow {
     areaId: string | null;
     requiredChallenges: string[];
     optionalChallenges: string[];
+    specialtyChallenges: string[];
     area: { id: string; name: string } | null;
   } | null;
 }

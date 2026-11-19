@@ -26,6 +26,7 @@ export interface CompetencyItem {
   description: string | null;
   requiredChallenges: string[];
   optionalChallenges: string[];
+  specialtyChallenges?: string[];
   active: boolean;
   area?: { id: string; name: string; sortOrder?: number } | null;
 }

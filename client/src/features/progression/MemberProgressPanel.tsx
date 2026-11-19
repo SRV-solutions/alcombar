@@ -22,6 +22,7 @@ import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Input, Loading, Modal, Select, type Tone } from '../../components/ui';
 import { typeLabel } from '../program/common';
 import { AreaBalance } from './BoardPage';
+import { CompetencyDialog } from './CompetencyDialog';
 import { FormDialog, type FieldDef, type FormValue } from './FormDialog';
 import type { MemberCompetencyRow, MemberProgressData } from './types';
 import './progression.css';
@@ -157,6 +158,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
   const qc = useQueryClient();
   const toast = useToast();
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [editComp, setEditComp] = useState<MemberCompetencyRow | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const q = useQuery({ queryKey: ['progression-member', memberId], queryFn: () => api.get<MemberProgressData>(`/progression/members/${memberId}`) });
@@ -287,47 +289,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
         refresh();
       },
     });
-  const compDialog = (c: MemberCompetencyRow) =>
-    setDialog({
-      title: c.competency ? `${c.competency.number ? `${c.competency.number}. ` : ''}${c.competency.name}` : 'Competencia',
-      wide: true,
-      intro:
-        c.competency && (c.competency.requiredChallenges.length || c.competency.optionalChallenges.length) ? (
-          <div className="stack" style={{ gap: 6 }}>
-            {c.competency.requiredChallenges.length ? (
-              <div>
-                <strong>Desafíos obligatorios</strong>
-                <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-                  {c.competency.requiredChallenges.map((x, i) => (
-                    <li key={i}>{x}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {c.competency.optionalChallenges.length ? (
-              <div>
-                <strong>Desafíos opcionales</strong>
-                <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-                  {c.competency.optionalChallenges.map((x, i) => (
-                    <li key={i}>{x}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        ) : undefined,
-      fields: [
-        { key: 'status', label: 'Estado', type: 'select', options: COMPETENCY_STATUSES.map((s) => ({ value: s, label: COMPETENCY_STATUS_LABELS[s] })) },
-        { key: 'achievedAt', label: 'Lograda el', type: 'date', hint: 'Si la marcás lograda sin fecha, queda hoy' },
-        { key: 'notes', label: 'Notas y desafíos elegidos', type: 'textarea', rows: 4 },
-      ],
-      initial: { status: c.status, achievedAt: c.achievedAt ?? '', notes: c.notes ?? '' },
-      onSave: async (v) => {
-        await api.put(`/progression/member-competencies/${c.id}`, v);
-        toast.ok('Competencia guardada');
-        refresh();
-      },
-    });
+  const compDialog = (c: MemberCompetencyRow) => setEditComp(c);
   const roleDialog = (r?: MemberProgressData['roles'][number]) =>
     setDialog({
       title: r ? 'Editar rol' : 'Nuevo rol',
@@ -408,8 +370,17 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
               <div className="name">
                 {c.competency?.number ? <strong>{c.competency.number}. </strong> : null}
                 {c.competency?.name ?? 'Competencia eliminada'}
+                {c.challenges?.length ? (
+                  <ul className="challenge-list">
+                    {c.challenges.map((x) => (
+                      <li key={x.text} className={x.done ? 'done' : ''} title={x.done && x.doneAt ? `Logrado el ${formatDate(x.doneAt)}` : undefined}>
+                        {x.text}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 {c.notes || c.achievedAt ? (
-                  <div className="muted">
+                  <div className="muted" style={{ whiteSpace: 'pre-wrap' }}>
                     {c.achievedAt ? `Lograda el ${formatDate(c.achievedAt)}` : ''}
                     {c.achievedAt && c.notes ? ' · ' : ''}
                     {c.notes ?? ''}
@@ -429,7 +400,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
               )}
               {editable ? (
                 <div className="row-actions">
-                  <Button variant="ghost" size="sm" className="btn-icon" onClick={() => compDialog(c)} aria-label="Notas y desafíos" title="Notas y desafíos">
+                  <Button variant="ghost" size="sm" className="btn-icon" onClick={() => compDialog(c)} aria-label="Desafíos y seguimiento" title="Desafíos y seguimiento">
                     <NotebookPen />
                   </Button>
                   {del('Quitar competencia', `¿Quitar «${c.competency?.name ?? ''}» de su progresión?`, `/progression/member-competencies/${c.id}`, 'Competencia quitada')}
@@ -736,6 +707,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
       </div>
 
       {dialog ? <FormDialog key={dialog.title} {...dialog} onClose={() => setDialog(null)} /> : null}
+      {editComp ? <CompetencyDialog key={editComp.id} row={editComp} onClose={() => setEditComp(null)} onSaved={refresh} /> : null}
       {choosing ? (
         <ChooseDialog data={d} memberStageId={current && !current.endedAt ? current.id : null} already={currentComps} onClose={() => setChoosing(false)} onDone={refresh} />
       ) : null}

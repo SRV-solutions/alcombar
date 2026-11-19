@@ -110,8 +110,9 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
         { key: 'areaId', label: 'Área', type: 'select', options: areaOptions },
         { key: 'name', label: 'Competencia', required: true, full: true },
         { key: 'description', label: 'Descripción', type: 'textarea' },
-        { key: 'requiredChallenges', label: 'Desafíos obligatorios', type: 'textarea', hint: 'Uno por línea' },
+        { key: 'requiredChallenges', label: 'Desafíos requeridos', type: 'textarea', hint: 'Uno por línea' },
         { key: 'optionalChallenges', label: 'Desafíos opcionales', type: 'textarea', hint: 'Uno por línea' },
+        { key: 'specialtyChallenges', label: 'Desafíos de especialidad', type: 'textarea', hint: 'Uno por línea' },
         { key: 'active', label: 'Activa (se puede elegir)', type: 'checkbox' },
       ],
       initial: {
@@ -121,10 +122,17 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
         description: c?.description ?? '',
         requiredChallenges: (c?.requiredChallenges ?? []).join('\n'),
         optionalChallenges: (c?.optionalChallenges ?? []).join('\n'),
+        specialtyChallenges: (c?.specialtyChallenges ?? []).join('\n'),
         active: c?.active ?? true,
       },
       onSave: async (v) => {
-        const body = { ...v, branch, requiredChallenges: toLines(v.requiredChallenges), optionalChallenges: toLines(v.optionalChallenges) };
+        const body = {
+          ...v,
+          branch,
+          requiredChallenges: toLines(v.requiredChallenges),
+          optionalChallenges: toLines(v.optionalChallenges),
+          specialtyChallenges: toLines(v.specialtyChallenges),
+        };
         if (c) await api.put(`/program/competencies/${c.id}`, body);
         else await api.post('/program/competencies', body);
         toast.ok(c ? 'Competencia guardada' : 'Competencia creada');
@@ -173,9 +181,10 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
                     {c.number ? <strong>{c.number}. </strong> : null}
                     {c.name} {!c.active ? <Badge tone="neutral">Inactiva</Badge> : null}
                     {c.description ? <p className="muted">{c.description}</p> : null}
-                    {c.requiredChallenges.length || c.optionalChallenges.length ? (
+                    {c.requiredChallenges.length || c.optionalChallenges.length || c.specialtyChallenges?.length ? (
                       <p className="muted">
-                        {c.requiredChallenges.length} desafíos obligatorios · {c.optionalChallenges.length} opcionales
+                        {c.requiredChallenges.length} desafíos requeridos · {c.optionalChallenges.length} opcionales
+                        {c.specialtyChallenges?.length ? ` · ${c.specialtyChallenges.length} de especialidad` : ''}
                       </p>
                     ) : null}
                   </div>

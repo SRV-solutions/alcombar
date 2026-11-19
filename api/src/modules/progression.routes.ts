@@ -330,7 +330,7 @@ progressionRouter.get(
           {
             model: Competency,
             as: 'competency',
-            attributes: ['id', 'number', 'name', 'areaId', 'requiredChallenges', 'optionalChallenges'],
+            attributes: ['id', 'number', 'name', 'areaId', 'requiredChallenges', 'optionalChallenges', 'specialtyChallenges'],
             include: [{ model: BranchArea, as: 'area', attributes: ['id', 'name'] }],
             paranoid: false,
           },
@@ -508,10 +508,20 @@ progressionRouter.put(
   ah(async (req, res) => {
     const mc = await findChild(MemberCompetency, req.params.id);
     const d = parse(memberCompetencySchema, req.body);
+    const today = new Date().toISOString().slice(0, 10);
+    // Desafíos asignados: sin repetidos; el logrado lleva fecha (hoy si no vino) y el pendiente no
+    const seen = new Set<string>();
+    const challenges = d.challenges
+      ?.filter((c) => (seen.has(c.text) ? false : (seen.add(c.text), true)))
+      .map((c) => {
+        const before = mc.challenges?.find((x) => x.text === c.text);
+        return { text: c.text, kind: c.kind, done: c.done, doneAt: c.done ? c.doneAt ?? (before?.done ? before.doneAt : null) ?? today : null };
+      });
     await mc.update({
       status: d.status,
       notes: d.notes,
-      achievedAt: d.status === 'lograda' ? d.achievedAt ?? mc.achievedAt ?? new Date().toISOString().slice(0, 10) : null,
+      achievedAt: d.status === 'lograda' ? d.achievedAt ?? mc.achievedAt ?? today : null,
+      ...(challenges ? { challenges } : {}),
     });
     res.json(mc);
   }),

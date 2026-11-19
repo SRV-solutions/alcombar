@@ -201,6 +201,7 @@ export const competencySchema = z.object({
   description: optStr(4000),
   requiredChallenges: lines(),
   optionalChallenges: lines(),
+  specialtyChallenges: lines(),
   active: z.boolean().default(true),
 });
 export const competencyBulkSchema = z.object({
@@ -257,10 +258,34 @@ export const chooseCompetenciesSchema = z.object({
   competencyIds: z.array(z.string().uuid()).min(1, 'Elegí al menos una competencia').max(30),
   memberStageId: optUuid,
 });
+/** Desafíos de una competencia: los tres tipos del catálogo y los que se le agregan a mano a un protagonista. */
+export const CHALLENGE_KINDS = ['requerido', 'opcional', 'especialidad', 'propio'] as const;
+export type ChallengeKind = (typeof CHALLENGE_KINDS)[number];
+export const CHALLENGE_KIND_LABELS: Record<ChallengeKind, string> = {
+  requerido: 'Requeridos',
+  opcional: 'Opcionales',
+  especialidad: 'De especialidad',
+  propio: 'Propios',
+};
+/** Un desafío asignado a un protagonista dentro de una competencia. */
+export interface MemberChallenge {
+  text: string;
+  kind: ChallengeKind;
+  done: boolean;
+  doneAt: string | null;
+}
+export const memberChallengeSchema = z.object({
+  text: reqStr(600),
+  kind: z.enum(CHALLENGE_KINDS),
+  done: z.boolean().default(false),
+  doneAt: optDate,
+});
 export const memberCompetencySchema = z.object({
   status: z.enum(COMPETENCY_STATUSES),
   achievedAt: optDate,
   notes: optStr(4000),
+  /** Si no viene, los desafíos asignados no se tocan. */
+  challenges: z.array(memberChallengeSchema).max(80).optional(),
 });
 export const memberRoleSchema = z.object({ cycleId: optUuid, role: reqStr(80), notes: optStr(1000) });
 export const cycleReviewSchema = z.object({
