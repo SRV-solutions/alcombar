@@ -52,7 +52,7 @@ import { useRoverHome } from '../features/rovers/types';
 import { TutorialHost } from '../tutorials/TutorialHost';
 import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
-import { TotemAvatarButton } from './TotemAvatar';
+import { TotemAvatar, totemHasArt } from './TotemAvatar';
 import { ThemeToggle } from './ThemeToggle';
 import { ReportProblemButton } from './ReportProblem';
 import { OpenOnPhoneButton } from './OpenOnPhone';
@@ -296,17 +296,21 @@ export function Layout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div className="who-row">
-            <TotemAvatarButton animal={me?.user.adult?.avatar} size={38} name={me?.user.name} totem={me?.user.adult?.totem} />
+          {/* Tu foto y tu nombre llevan a Mi perfil */}
+          <NavLink to="/perfil" className="who-row who-link" aria-label="Mi perfil" title="Ir a Mi perfil">
+            {totemHasArt(me?.user.adult?.avatar) ? (
+              <TotemAvatar animal={me?.user.adult?.avatar} size={38} />
+            ) : (
+              <span className="who-noavatar" aria-hidden>
+                <CircleUserRound />
+              </span>
+            )}
             <div style={{ minWidth: 0 }}>
               <div className="who">{me?.user.name}</div>
               <div className="roles">{me?.roles.map((r) => (r.unit ? `${r.name} (${r.unit.code})` : r.name)).join(' · ')}</div>
             </div>
-          </div>
+          </NavLink>
           <div className="footer-actions">
-            <NavLink to="/perfil" className="btn btn-ghost btn-sm">
-              <CircleUserRound /> Mi perfil
-            </NavLink>
             <button className="btn btn-ghost btn-sm" onClick={() => void logout()}>
               <LogOut /> Salir
             </button>
