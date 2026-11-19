@@ -13,6 +13,7 @@ import {
   memberDocumentSchema,
   todayIso,
   type AdultStatus,
+  can,
 } from '../shared';
 import { Adult, AdultAssignment, AdultCourse, AdultDocument, AdultExperience, AdultHabilitation, Course, DocumentType, Member, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
@@ -93,6 +94,34 @@ const assignmentInclude = [
   { model: SupportTeam, as: 'supportTeam', attributes: ['id', 'name'] },
 ];
 
+/**
+ * Acceso a la app de cada adulto (para quien administra usuarios): si tiene cuenta, si ya eligió contraseña,
+ * cuándo entró por última vez y con qué roles. La contraseña nunca sale de acá.
+ */
+async function accessByAdult(adultIds: string[], withRoles = false) {
+  const users = adultIds.length
+    ? await User.findAll({
+        where: { adultId: adultIds },
+        attributes: ['id', 'adultId', 'email', 'active', 'lastLoginAt', 'passwordHash'],
+        include: withRoles
+          ? [{ model: UserRole, as: 'userRoles', include: [{ model: Role, as: 'role', attributes: ['name'] }, { model: Unit, as: 'unit', attributes: ['code'] }] }]
+          : [],
+      })
+    : [];
+  return new Map(
+    users.map((u) => [
+      u.adultId as string,
+      {
+        userId: u.id,
+        email: u.email,
+        state: !u.active ? ('desactivado' as const) : !u.passwordHash ? ('sin_clave' as const) : ('activo' as const),
+        lastLoginAt: u.lastLoginAt,
+        ...(withRoles ? { roles: (u.userRoles ?? []).map((ur) => `${ur.role?.name ?? ''}${ur.unit ? ` (${ur.unit.code})` : ''}`) } : {}),
+      },
+    ]),
+  );
+}
+
 adultsRouter.get(
   '/',
   authorize('adults', 'view'),
@@ -120,11 +149,13 @@ adultsRouter.get(
       list.length ? AdultDocument.findAll({ where: { adultId: list.map((a) => a.id) } }) : Promise.resolve([] as AdultDocument[]),
     ]);
     const today = todayIso();
+    // Quien administra usuarios ve, además, cómo está el acceso de cada uno
+    const access = can(req.auth, 'users', 'view') ? await accessByAdult(list.map((a) => a.id)) : null;
     res.json(
       list.map((a) => {
         const s = { ok: 0, expiring: 0, expired: 0, missing: 0, total: types.length };
         for (const t of types) s[documentStatus(docs.find((d) => d.adultId === a.id && d.documentTypeId === t.id), t.hasExpiry, today, t.required)]++;
-        return { ...a.toJSON(), docs: s };
+        return { ...a.toJSON(), docs: s, ...(access ? { access: access.get(a.id) ?? null } : {}) };
       }),
     );
   }),
@@ -213,7 +244,8 @@ adultsRouter.get(
       attributes: ['id', 'joinedAt', 'promiseDate', 'departedAt'],
       include: [{ model: Unit, as: 'unit', attributes: ['id', 'code', 'name', 'branch'] }],
     });
-    res.json({ ...adult.toJSON(), advisees, documents, memberRecord });
+    const access = can(req.auth, 'users', 'view') ? ((await accessByAdult([adult.id], true)).get(adult.id) ?? null) : undefined;
+    res.json({ ...adult.toJSON(), advisees, documents, memberRecord, ...(access !== undefined ? { access } : {}) });
   }),
 );
 

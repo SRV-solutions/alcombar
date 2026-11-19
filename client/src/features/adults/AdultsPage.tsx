@@ -34,6 +34,9 @@ export function AdultsPage() {
   const [status, setStatus] = useState('');
   const [unitId, setUnitId] = useState('');
   const [branch, setBranch] = useState('');
+  // Acceso a la app: lo ve y lo filtra quien administra usuarios
+  const [access, setAccess] = useState('');
+  const seesAccess = can('users', 'view');
   const [downloading, setDownloading] = useState(false);
 
   const adults = useQuery({
@@ -58,6 +61,7 @@ export function AdultsPage() {
   const list = (adults.data ?? []).filter((a) => {
     const cur = (a.assignments ?? []).filter((x) => x.year === year);
     if (branch && !cur.some((x) => (x.unit?.branch ?? x.branch) === branch)) return false;
+    if (access && (a.access?.state ?? 'sin_usuario') !== access) return false;
     return matchesPerson(q, [a.lastName, a.firstName, a.totem, a.dni, ...cur.map((x) => `${x.position} ${x.unit?.code ?? ''} ${x.supportTeam?.name ?? ''}`)], a.dni);
   });
 
@@ -85,11 +89,12 @@ export function AdultsPage() {
         value={q}
         onChange={setQ}
         placeholder="Buscar por nombre, apellido, tótem, cargo o DNI"
-        active={[status, unitId, branch].filter(Boolean).length}
+        active={[status, unitId, branch, access].filter(Boolean).length}
         onClear={() => {
           setStatus('');
           setUnitId('');
           setBranch('');
+          setAccess('');
         }}
       >
         <Select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Estado">
@@ -116,13 +121,22 @@ export function AdultsPage() {
             </option>
           ))}
         </Select>
+        {seesAccess ? (
+          <Select value={access} onChange={(e) => setAccess(e.target.value)} aria-label="Acceso a la app">
+            <option value="">Con o sin acceso</option>
+            <option value="activo">Usan la app</option>
+            <option value="sin_clave">Invitados, sin entrar</option>
+            <option value="sin_usuario">Sin usuario</option>
+            <option value="desactivado">Usuario desactivado</option>
+          </Select>
+        ) : null}
       </FilterBar>
       {adults.isLoading ? (
         <Loading />
       ) : adults.error ? (
         <ErrorBox error={adults.error} />
       ) : !list.length ? (
-        <Empty>{q || status || unitId || branch ? 'No hay adultos que coincidan con la búsqueda.' : 'Todavía no hay adultos cargados.'}</Empty>
+        <Empty>{q || status || unitId || branch || access ? 'No hay adultos que coincidan con la búsqueda.' : 'Todavía no hay adultos cargados.'}</Empty>
       ) : (
         <section className="card">
           <div className="table-wrap">
@@ -134,7 +148,7 @@ export function AdultsPage() {
                   <th>Formación</th>
                   <th>Documentación</th>
                   <th>Estado</th>
-                  <th title="Tiene usuario en la app">Usuario</th>
+                  <th title="Si tiene usuario en la app y si ya entró">Acceso</th>
                 </tr>
               </thead>
               <tbody>
@@ -172,8 +186,16 @@ export function AdultsPage() {
                     <td>
                       <AdultStatusBadge status={a.status} />
                     </td>
-                    <td>
-                      {a.user ? (
+                    <td className="nowrap">
+                      {seesAccess ? (
+                        a.access ? (
+                          <Badge tone={a.access.state === 'activo' ? 'ok' : a.access.state === 'sin_clave' ? 'warn' : 'neutral'}>
+                            {a.access.state === 'activo' ? 'Usa la app' : a.access.state === 'sin_clave' ? 'Sin entrar' : 'Desactivado'}
+                          </Badge>
+                        ) : (
+                          <span className="muted">Sin usuario</span>
+                        )
+                      ) : a.user ? (
                         <span title={a.user.active ? 'Usuario activo' : 'Usuario desactivado'} style={{ color: a.user.active ? 'var(--ok)' : 'var(--gris)' }}>
                           <UserCheck size={18} />
                         </span>

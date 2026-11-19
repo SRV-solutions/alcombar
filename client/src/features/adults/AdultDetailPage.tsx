@@ -225,7 +225,7 @@ export function AdultDetailPage() {
           <span className="row" style={{ gap: 8 }}>
             {a.totem ? <span>«{a.totem}»</span> : null}
             <AdultStatusBadge status={a.status} />
-            {a.user ? <Badge tone={a.user.active ? 'info' : 'neutral'}>{a.user.active ? 'Usa la app' : 'Usuario desactivado'}</Badge> : null}
+            {a.user && a.access === undefined ? <Badge tone={a.user.active ? 'info' : 'neutral'}>{a.user.active ? 'Tiene usuario' : 'Usuario desactivado'}</Badge> : null}
           </span>
         }
         actions={
@@ -295,6 +295,49 @@ export function AdultDetailPage() {
               ) : null}
             </dl>
           </Card>
+{a.access !== undefined ? (
+            <Card
+              title="Acceso a la app"
+              actions={
+                a.access ? (
+                  <Badge tone={a.access.state === 'activo' ? 'ok' : a.access.state === 'sin_clave' ? 'warn' : 'neutral'}>
+                    {a.access.state === 'activo' ? 'Usa la app' : a.access.state === 'sin_clave' ? 'Invitado, sin entrar' : 'Desactivado'}
+                  </Badge>
+                ) : (
+                  <Badge>Sin usuario</Badge>
+                )
+              }
+            >
+              {a.access ? (
+                <>
+                  <dl className="dl">
+                    <dt>Entra con</dt>
+                    <dd>{a.access.email ?? dash}</dd>
+                    <dt>Roles</dt>
+                    <dd>{a.access.roles?.length ? a.access.roles.join(' · ') : <span className="muted">Sin roles: entra pero no ve casi nada</span>}</dd>
+                    <dt>Último ingreso</dt>
+                    <dd>{a.access.lastLoginAt ? new Date(a.access.lastLoginAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : 'Nunca entró'}</dd>
+                  </dl>
+                  {can('users', 'edit') ? (
+                    <div className="form-actions">
+                      <LinkButton to={`/admin/usuarios?editar=${a.access.userId}`} variant="secondary" size="sm">
+                        <Pencil /> Roles, mail y enlace de ingreso
+                      </LinkButton>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p style={{ marginTop: 0 }}>No tiene usuario: no puede entrar a la app.</p>
+                  {can('users', 'create') ? (
+                    <LinkButton to={`/admin/usuarios?nuevo=${a.id}`} size="sm">
+                      Darle acceso
+                    </LinkButton>
+                  ) : null}
+                </>
+              )}
+            </Card>
+          ) : null}
           <Card title="Asesoramiento personal">
             <dl className="dl">
               <dt>Su APF</dt>

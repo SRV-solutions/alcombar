@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Link2, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { userCreateSchema, userUpdateSchema } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -28,6 +28,23 @@ export function UsersPage() {
   const toast = useToast();
   const users = useQuery({ queryKey: ['users'], queryFn: () => api.get<UserInfo[]>('/users') });
   const [editing, setEditing] = useState<UserInfo | 'new' | null>(null);
+  // Desde la ficha de un adulto: ?editar=<usuario> abre su usuario; ?nuevo=<adulto> abre el alta con el adulto elegido
+  const [params, setParams] = useSearchParams();
+  const wantEdit = params.get('editar');
+  const presetAdultId = params.get('nuevo');
+  useEffect(() => {
+    if (!users.data || editing) return;
+    if (wantEdit) {
+      const u = users.data.find((x) => x.id === wantEdit);
+      if (u && !u.memberId) setEditing(u);
+      setParams({}, { replace: true });
+    } else if (presetAdultId) {
+      const existing = users.data.find((x) => x.adultId === presetAdultId);
+      setEditing(existing ?? 'new');
+      if (existing) setParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users.data, wantEdit, presetAdultId]);
   const [link, setLink] = useState<LinkInfo | null>(null);
   const [q, setQ] = useState('');
   const [showInactive, setShowInactive] = useState(false);
@@ -54,7 +71,11 @@ export function UsersPage() {
     <>
       <PageHeader
         title="Usuarios"
-        sub="Solo adultos del Grupo. No hay registro público: cada cuenta se crea acá y la persona recibe un enlace para elegir su contraseña."
+        sub={
+          <>
+            Quién puede entrar a la app y con qué permisos. Cada cuenta es de un adulto del Grupo (sus datos están en <Link to="/adultos">Adultos</Link>) y recibe un enlace para elegir su contraseña; los rovers entran con su DNI.
+          </>
+        }
         actions={
           can('users', 'create') ? (
             <Button onClick={() => setEditing('new')}>
@@ -175,7 +196,11 @@ export function UsersPage() {
       {editing ? (
         <UserFormModal
           user={editing === 'new' ? null : editing}
-          onClose={() => setEditing(null)}
+          presetAdultId={editing === 'new' ? presetAdultId : null}
+          onClose={() => {
+            setEditing(null);
+            if (presetAdultId) setParams({}, { replace: true });
+          }}
           onCreated={(l) => {
             setEditing(null);
             setLink(l);
@@ -240,7 +265,7 @@ interface FormValues {
   roles: { roleId: string; unitId: string | null }[];
 }
 
-function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; onClose: () => void; onCreated: (l: LinkInfo) => void }) {
+function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: UserInfo | null; presetAdultId?: string | null; onClose: () => void; onCreated: (l: LinkInfo) => void }) {
   const isNew = !user;
   const { me, can } = useAuth();
   const toast = useToast();
@@ -270,7 +295,7 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
           active: user.active,
           roles: user.userRoles.map((ur) => ({ roleId: ur.roleId, unitId: ur.unitId ?? '' })),
         }
-      : { email: '', name: '', adultId: '', active: true, roles: [{ roleId: '', unitId: '' }] },
+      : { email: '', name: '', adultId: presetAdultId ?? '', active: true, roles: [{ roleId: '', unitId: '' }] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'roles' });
   const roleRows = watch('roles');
@@ -278,7 +303,21 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
   // de roles (si no, el desplegable queda en "Elegí un rol…" aunque el usuario ya tenga ese rol)
   const catalogsReady = !!roles.data && !!units.data;
   useEffect(() => {
-    if (adults.data) setValue('adultId', getValues('adultId'));
+    if (!adults.data) return;
+    setValue('adultId', getValues('adultId'));
+    // Alta desde la ficha de un adulto: trae su nombre y su mail
+    if (isNew && presetAdultId) {
+      const a = adults.data.find((x) => x.id === presetAdultId) as { firstName: string; lastName: string; email?: string | null } | undefined;
+      if (a) {
+        const n = `${a.firstName} ${a.lastName}`;
+        if (!getValues('name')) {
+          setValue('name', n);
+          autoName.current = n;
+        }
+        if (!getValues('email') && a.email) setValue('email', a.email);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adults.data, getValues, setValue]);
   const roleById = (id: string) => roles.data?.find((r) => r.id === id);
   const isSelf = user?.id === me?.user.id;

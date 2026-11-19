@@ -138,6 +138,13 @@ export interface AdultHabilitation {
   status: string;
   notes: string | null;
 }
+export interface AdultAccess {
+  userId: string;
+  email: string | null;
+  state: 'activo' | 'sin_clave' | 'desactivado';
+  lastLoginAt: string | null;
+  roles?: string[];
+}
 export interface Adult extends AdultRef {
   dni: string | null;
   birthDate: string | null;
@@ -153,6 +160,8 @@ export interface Adult extends AdultRef {
   assignments: Assignment[];
   courses: AdultCourse[];
   user: { id: string; email?: string; active: boolean } | null;
+  /** Acceso a la app (solo lo recibe quien administra usuarios). */
+  access?: AdultAccess | null;
 }
 export interface AdultDetail extends Adult {
   experiences: AdultExperience[];
