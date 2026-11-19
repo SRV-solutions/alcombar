@@ -8,6 +8,7 @@ export * from './documents';
 export * from './authorizations';
 export * from './program';
 export * from './treasury';
+export * from './rovers';
 export * from './operations';
 export * from './support';
 export * from './cargos';

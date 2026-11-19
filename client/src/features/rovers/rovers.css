@@ -1,0 +1,72 @@
+/* Comunidad Rover: Plan Personal, proyectos y mingas, Asamblea */
+
+/* ---- Plan Personal ---- */
+.goals .goal { padding: 14px 0; }
+.goal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.goal-title { font-weight: 650; }
+.goal-meta, .goal-comp { font-size: 0.85rem; }
+.goal-comp { margin-top: 2px; }
+.goal-actions { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+.goal-actions li { padding: 0; border: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.goal-actions .checkbox { align-items: flex-start; padding: 6px 0; min-height: 32px; flex: 1; }
+.goal-actions .checkbox input { margin-top: 3px; flex-shrink: 0; width: 18px; height: 18px; }
+.goal-actions .checkbox.done span { text-decoration: line-through; color: var(--muted); }
+.goal-actions.edit { margin: 0 0 8px; }
+.goal-text { margin: 8px 0 0; white-space: pre-wrap; font-size: 0.93rem; }
+.plan-nums { display: flex; gap: 28px; }
+.plan-nums div { display: flex; flex-direction: column; }
+.plan-nums strong { font-size: 1.7rem; line-height: 1.1; color: var(--link); }
+
+/* ---- Proyectos y mingas ---- */
+.proj-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: inherit; text-decoration: none; min-height: 44px; }
+.proj-row:hover strong { text-decoration: underline; }
+.proj-main { display: flex; flex-direction: column; min-width: 0; }
+.proj-main .muted { font-size: 0.85rem; }
+.proj-row .badge { flex-shrink: 0; white-space: nowrap; }
+.dl.ficha { grid-template-columns: 1fr; gap: 2px; }
+.dl.ficha dt { font-size: 0.82rem; margin-top: 10px; }
+.dl.ficha div:first-child dt { margin-top: 0; }
+.invite-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 4px; }
+
+/* ---- Asamblea ---- */
+.assembly-live { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.assembly-live.as-link { text-decoration: none; }
+.assembly-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.assembly-item .muted { font-size: 0.85rem; }
+.postulable { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: grid; gap: 8px; }
+.presents li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.presents .checkbox { padding: 9px 0; flex: 1; min-height: 44px; }
+.presents .checkbox input { width: 20px; height: 20px; }
+.presents .checkbox.readonly { cursor: default; }
+.presents .muted { font-size: 0.8rem; white-space: nowrap; }
+.voting-title { font-size: 1.15rem; font-weight: 700; }
+.voting-what { white-space: pre-wrap; margin: 10px 0 0; }
+.vote-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.vote-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 76px; padding: 10px 6px; border-radius: 12px; border: 2px solid var(--border-strong); background: var(--surface); color: var(--text); font: inherit; font-weight: 650; font-size: 0.9rem; cursor: pointer; }
+.vote-btn svg { width: 22px; height: 22px; }
+.vote-btn:disabled { opacity: 0.6; cursor: default; }
+.vote-btn.vote-si.chosen { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); }
+.vote-btn.vote-no.chosen { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+.vote-btn.vote-abstencion.chosen { border-color: var(--neutral-text); background: var(--neutral-soft); }
+.tally { margin-top: 16px; }
+.tally-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--neutral-soft); }
+.tally-bar .yes { background: var(--ok); }
+.tally-bar .no { background: var(--danger); }
+.tally-bar .abs { background: var(--neutral-text); opacity: 0.5; }
+.tally-nums { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; font-size: 0.9rem; }
+.voters { margin-top: 10px; }
+.voters li { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+.voters .muted { font-size: 0.85rem; }
+.past-items { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.past-items li { padding: 0; border: none; }
+.past-notes { white-space: pre-wrap; margin: 8px 0 0; font-size: 0.93rem; }
+
+/* ---- Comunidad (educadores) ---- */
+.community li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; }
+.community .who { min-width: 0; }
+.community .muted { font-size: 0.85rem; }
+.community .badge { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .assembly-item { align-items: flex-start; flex-direction: column; }
+}

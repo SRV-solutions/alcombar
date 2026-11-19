@@ -32,6 +32,7 @@ import { AuthorizationsPage } from './features/authorizations/AuthorizationsPage
 import { AuthorizationDocPage } from './features/authorizations/AuthorizationDocPage';
 import { SignPage } from './features/authorizations/SignPage';
 import { RegistryPage } from './features/members/RegistryPage';
+import { RoverRoutes } from './features/rovers/CommunityPage';
 import { UnitsPage } from './features/group/UnitsPage';
 import { UnitDetailPage } from './features/group/UnitDetailPage';
 import { SupportTeamsPage } from './features/group/SupportTeamsPage';
@@ -104,6 +105,9 @@ export function App() {
         <Route path="inventario/*" element={<Guard perm={['inventory', 'view']}><InventoryRoutes /></Guard>} />
         <Route path="calendario/*" element={<Guard perm={['calendar', 'view']}><CalendarRoutes /></Guard>} />
         <Route path="actas/*" element={<Guard perm={['documents', 'view']}><LibraryRoutes /></Guard>} />
+
+        {/* Comunidad Rover: el propio módulo decide qué ve cada uno (rover, educador o colaborador) */}
+        <Route path="rover/*" element={<RoverRoutes />} />
 
         <Route path="grupo/unidades" element={<Guard perm={['group', 'view']}><UnitsPage /></Guard>} />
         <Route path="grupo/unidades/:id" element={<Guard perm={['group', 'view']}><UnitDetailPage /></Guard>} />

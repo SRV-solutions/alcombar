@@ -29,6 +29,7 @@ import { referentsRouter } from './modules/referents.routes';
 import { saturdaysRouter } from './modules/saturdays.routes';
 import { authorizationsRouter } from './modules/authorizations.routes';
 import { adultAttendanceRouter } from './modules/adultAttendance.routes';
+import { roversRouter } from './modules/rovers.routes';
 
 export function createApp() {
   const app = express();
@@ -70,6 +71,7 @@ export function createApp() {
   api.use('/referents', referentsRouter);
   api.use('/authorizations', authorizationsRouter);
   api.use('/adult-attendance', adultAttendanceRouter);
+  api.use('/rovers', roversRouter);
   app.use('/api/v1', api);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta inexistente' }));

@@ -35,9 +35,12 @@ import {
   UserRoundCheck,
   Users,
   UsersRound,
+  FolderKanban,
+  Gavel,
 } from 'lucide-react';
 import type { Action, ModuleKey } from '@shared';
 import { useAuth } from '../lib/auth';
+import { useRoverHome } from '../features/rovers/types';
 import { TutorialHost } from '../tutorials/TutorialHost';
 import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
@@ -60,13 +63,22 @@ interface NavItem {
   /** Solo para superadmins. */
   superadmin?: boolean;
   /** Contador al lado del nombre (ej: reportes abiertos). */
-  badgeKey?: 'support' | 'registry';
+  badgeKey?: 'support' | 'registry' | 'assembly';
   /** Se muestra solo si el servidor dice que esta persona lo puede ver. */
-  visibleKey?: 'registry';
+  visibleKey?: 'registry' | 'roverSelf' | 'roverEdu' | 'roverAny' | 'roverCommunity';
 }
 
 const SECTIONS: { title?: string; items: NavItem[] }[] = [
   { items: [{ to: '/', label: 'Inicio', icon: <Home />, end: true }] },
+  {
+    title: 'Comunidad Rover',
+    items: [
+      { to: '/rover/plan', label: 'Mi Plan Personal', icon: <RouteIcon />, visibleKey: 'roverSelf' },
+      { to: '/rover', label: 'La Comunidad', icon: <UsersRound />, visibleKey: 'roverEdu', end: true },
+      { to: '/rover/proyectos', label: 'Proyectos y mingas', icon: <FolderKanban />, visibleKey: 'roverAny' },
+      { to: '/rover/asamblea', label: 'Asamblea', icon: <Gavel />, visibleKey: 'roverCommunity', badgeKey: 'assembly' },
+    ],
+  },
   {
     title: 'Protagonistas',
     items: [
@@ -148,8 +160,17 @@ export function Layout() {
     enabled: !!me,
     refetchInterval: 5 * 60_000,
   });
-  const badges: Record<string, number> = { support: supportCount.data?.open ?? 0, registry: registry.data?.pending ?? 0 };
-  const visible: Record<string, boolean> = { registry: !!registry.data?.canSee };
+  // Comunidad Rover: qué le toca a esta cuenta (rover, educador de la Comunidad o colaborador de un proyecto)
+  const rover = useRoverHome().data;
+  const inCommunity = !!rover?.units.length;
+  const badges: Record<string, number> = { support: supportCount.data?.open ?? 0, registry: registry.data?.pending ?? 0, assembly: rover?.assembly ? 1 : 0 };
+  const visible: Record<string, boolean> = {
+    registry: !!registry.data?.canSee,
+    roverSelf: !!rover?.rover,
+    roverEdu: inCommunity && !rover?.rover && !!rover?.educator,
+    roverAny: inCommunity || !!rover?.collaborator,
+    roverCommunity: inCommunity,
+  };
   const [open, setOpen] = useState(false);
   const location = useLocation();
   // Uso de la app: se anota qué pantalla abrió (sin datos de lo que hace adentro). Si falla, no molesta.
