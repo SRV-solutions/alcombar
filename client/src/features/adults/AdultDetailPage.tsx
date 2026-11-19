@@ -13,6 +13,7 @@ import { adultName, useCourses } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
 import type { AdultCourse, AdultDetail, Assignment, MemberDoc, UserInfo } from '../../lib/types';
 import { AccessDialog } from '../admin/UsersPage';
+import { TotemAvatar } from '../../components/TotemAvatar';
 import { DocumentDialog } from '../members/MemberDialogs';
 import {
   Badge,
@@ -224,7 +225,12 @@ export function AdultDetailPage() {
     <>
       <PageHeader
         crumbs={[{ to: '/adultos', label: 'Adultos' }]}
-        title={`${a.firstName} ${a.lastName}`}
+        title={
+          <span className="person-title">
+            <TotemAvatar animal={a.avatar} size={44} />
+            {a.firstName} {a.lastName}
+          </span>
+        }
         sub={
           <span className="row" style={{ gap: 8 }}>
             {a.totem ? <span>«{a.totem}»</span> : null}

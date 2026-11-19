@@ -718,6 +718,19 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
   {
+    id: 'representantes-juveniles',
+    title: 'Representantes juveniles en el Consejo',
+    description: 'Marcar a quienes eligieron sus pares: dos por Comunidad Rover y uno por Comunidad Caminante.',
+    keywords: ['representante', 'representantes juveniles', 'consejo de grupo', 'caminantes', 'rovers'],
+    audience: (c) => c.can('members', 'edit') || c.can('progression', 'edit'),
+    steps: [
+      { route: '/protagonistas', target: nav('/protagonistas'), pose: 'point', title: 'Desde la ficha', text: 'Los rovers eligen entre ellos a dos representantes en el Consejo de Grupo; cada Comunidad Caminante, a uno. Quién es lo marca el equipo de educadores de la unidad, en la ficha del protagonista.' },
+      { pose: 'think', title: 'El botón «Representante juvenil»', text: 'Está arriba, en la ficha de un caminante o un rover activo. Si la Comunidad ya tiene sus representantes, primero hay que quitar a uno.' },
+      { pose: 'point', title: 'La etiqueta', text: 'Queda a la vista en su ficha, en el padrón y en La Comunidad. No cambia permisos: es para saber quién es.' },
+      { pose: 'cheer', title: 'El temario del Consejo', text: 'Cuando la Jefatura manda el temario, a los representantes rovers que usan la app les llega el aviso. A los caminantes no se les manda nada: avisales vos.' },
+    ],
+  },
+  {
     id: 'esquemas-y-catalogos',
     title: 'Esquemas y catálogos',
     description: 'Cargar las competencias, áreas, etapas y especialidades de cada rama.',
@@ -1192,6 +1205,7 @@ export const TUTORIALS: Tutorial[] = [
     steps: [
       { route: '/perfil', target: { selector: '.sidebar a[href="/perfil"]' }, pose: 'point', title: 'Mi perfil', text: 'Tus datos y tus roles en el Grupo.' },
       { target: { selector: '.theme-segmented' }, pose: 'point', title: 'Apariencia', text: 'Claro, oscuro o como tenga configurado tu celular o tu compu.' },
+      { target: { selector: '.avatar-grid' }, pose: 'point', title: 'Tu foto de perfil', text: 'Si tenés tótem, elegí el dibujo de tu animal: se ve al lado de tu nombre en el menú y en la lista de adultos. Por ahora no se suben fotos.' },
       { target: { selector: '#tutoriales' }, pose: 'think', title: 'Tus tutoriales', text: 'Todos los tutoriales para tu rol, con cuáles hiciste. Los podés repasar cuando quieras.' },
       { target: { selector: 'form', text: 'Contraseña actual' }, pose: 'point', title: 'Cambiar contraseña', text: 'Mínimo 10 caracteres. Al cambiarla se cierran tus sesiones en otros dispositivos.' },
       { pose: 'cheer', title: '¡Siempre listos!', text: 'Cualquier duda, buscá en el buscador o en Ayuda.' },
@@ -1410,7 +1424,7 @@ export const TUTORIALS: Tutorial[] = [
         target: button('temario'),
         pose: 'point',
         title: 'Enviar temario',
-        text: 'Con "Enviar temario" el orden del día les llega a todos los del Consejo en la campanita y por mail. Si lo cambiás, lo podés reenviar.',
+        text: 'Con "Enviar temario" el orden del día les llega a todos los del Consejo en la campanita y por mail, y también a los representantes juveniles rovers que usan la app. Si lo cambiás, lo podés reenviar.',
       },
       { pose: 'cheer', title: '¡Todos al Consejo!', text: 'Después, en la misma acta, se anotan las decisiones y se aprueba.' },
     ],

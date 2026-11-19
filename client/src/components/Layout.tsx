@@ -52,6 +52,7 @@ import { useRoverHome } from '../features/rovers/types';
 import { TutorialHost } from '../tutorials/TutorialHost';
 import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
+import { TotemAvatar } from './TotemAvatar';
 import { ThemeToggle } from './ThemeToggle';
 import { ReportProblemButton } from './ReportProblem';
 import { OpenOnPhoneButton } from './OpenOnPhone';
@@ -291,8 +292,13 @@ export function Layout() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <div className="who">{me?.user.name}</div>
-          <div className="roles">{me?.roles.map((r) => (r.unit ? `${r.name} (${r.unit.code})` : r.name)).join(' · ')}</div>
+          <div className="who-row">
+            <TotemAvatar animal={me?.user.adult?.avatar} size={38} />
+            <div style={{ minWidth: 0 }}>
+              <div className="who">{me?.user.name}</div>
+              <div className="roles">{me?.roles.map((r) => (r.unit ? `${r.name} (${r.unit.code})` : r.name)).join(' · ')}</div>
+            </div>
+          </div>
           <div className="footer-actions">
             <NavLink to="/perfil" className="btn btn-ghost btn-sm">
               <CircleUserRound /> Mi perfil

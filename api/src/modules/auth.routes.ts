@@ -10,6 +10,7 @@ import {
   loginSchema,
   profileSchema,
   setPasswordSchema,
+  TOTEM_ANIMAL_KEYS,
 } from '../shared';
 import { config } from '../config';
 import { Adult, Member, PasswordToken, Unit, User } from '../models';
@@ -104,7 +105,7 @@ authRouter.get(
   authenticate,
   ah(async (req, res) => {
     const user = req.user!;
-    const adult = user.adultId ? await Adult.findByPk(user.adultId, { attributes: ['id', 'firstName', 'lastName', 'totem'] }) : null;
+    const adult = user.adultId ? await Adult.findByPk(user.adultId, { attributes: ['id', 'firstName', 'lastName', 'totem', 'avatar'] }) : null;
     const unitIds = [...new Set(req.auth!.roles.map((r) => r.unitId).filter(Boolean))] as string[];
     const units = unitIds.length ? await Unit.findAll({ where: { id: unitIds }, attributes: ['id', 'name', 'code'] }) : [];
     const member = user.memberId
@@ -142,6 +143,19 @@ authRouter.get(
       ? await Adult.findByPk(u.adultId, { attributes: ['id', 'firstName', 'lastName', 'totem', 'dni', 'birthDate', 'phone', 'address', 'email'] })
       : null;
     res.json({ name: u.name, email: u.email, hasPassword: Boolean(u.passwordHash), adult, memberAccount: Boolean(u.memberId), pendingEmail: u.pendingEmail ?? null });
+  }),
+);
+
+/** Foto de perfil: quien tiene tótem elige el dibujo de su animal (o ninguno). */
+authRouter.put(
+  '/me/avatar',
+  authenticate,
+  ah(async (req, res) => {
+    const { avatar } = parse(z.object({ avatar: z.enum(TOTEM_ANIMAL_KEYS).nullable() }), req.body);
+    const adult = req.user!.adultId ? await Adult.findByPk(req.user!.adultId) : null;
+    if (!adult?.totem?.trim()) throw badRequest('La foto de perfil es el animal de tu tótem: todavía no tenés tótem cargado');
+    await adult.update({ avatar });
+    res.json({ ok: true, avatar: adult.avatar });
   }),
 );
 

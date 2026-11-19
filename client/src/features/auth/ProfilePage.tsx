@@ -13,6 +13,7 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { OpenOnPhoneDialog } from '../../components/OpenOnPhone';
 import { TutorialsCard } from '../../tutorials/TutorialsCard';
 import { MyDataCard } from './MyDataCard';
+import { TotemAvatarCard } from './TotemAvatarCard';
 import { EmailVerifyCard } from './EmailVerifyCard';
 
 const schema = changePasswordSchema
@@ -76,6 +77,12 @@ export function ProfilePage() {
           <ThemeToggle />
         </Card>
       </div>
+
+      {me.user.adult?.totem?.trim() ? (
+        <div className="mt">
+          <TotemAvatarCard />
+        </div>
+      ) : null}
 
       <div className="mt">
         <TutorialsCard />

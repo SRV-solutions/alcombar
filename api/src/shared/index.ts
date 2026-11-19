@@ -9,6 +9,7 @@ export * from './authorizations';
 export * from './program';
 export * from './treasury';
 export * from './rovers';
+export * from './totems';
 export * from './operations';
 export * from './support';
 export * from './cargos';

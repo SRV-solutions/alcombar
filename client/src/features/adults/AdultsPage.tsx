@@ -12,6 +12,7 @@ import { useToast } from '../../lib/toast';
 import type { Adult, Assignment, UserInfo } from '../../lib/types';
 import { Badge, Button, Card, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
 import { AccessDialog } from '../admin/UsersPage';
+import { TotemAvatar } from '../../components/TotemAvatar';
 import { DocsSummaryBadge } from '../members/MembersPage';
 
 export const ADULT_STATUS_TONES: Record<string, Tone> = { alta: 'ok', prueba: 'warn', baja: 'neutral' };
@@ -181,10 +182,15 @@ export function AdultsPage() {
                 {list.map((a) => (
                   <tr key={a.id} className="clickable" onClick={() => navigate(`/adultos/${a.id}`)}>
                     <td>
-                      <div style={{ fontWeight: 600 }}>
-                        {a.lastName}, {a.firstName}
+                      <div className="person-cell">
+                        <TotemAvatar animal={a.avatar} size={34} />
+                        <div>
+                          <div style={{ fontWeight: 600 }}>
+                            {a.lastName}, {a.firstName}
+                          </div>
+                          {a.totem ? <div className="muted">«{a.totem}»</div> : null}
+                        </div>
                       </div>
-                      {a.totem ? <div className="muted">«{a.totem}»</div> : null}
                     </td>
                     <td>
                       {a.assignments.length ? (
