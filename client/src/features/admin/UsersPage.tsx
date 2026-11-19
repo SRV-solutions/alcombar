@@ -121,9 +121,16 @@ export function UsersPage() {
                       {!u.active ? (
                         <Badge>Desactivado</Badge>
                       ) : !u.hasPassword ? (
-                        <Badge tone="warn">
-                          Sin contraseña
-                        </Badge>
+                        <>
+                          <Badge tone="warn">Sin contraseña</Badge>
+                          <div className="muted user-email">
+                            {u.invite?.state === 'vigente'
+                              ? `Enlace enviado, vence el ${new Date(u.invite.expiresAt!).toLocaleDateString('es-AR', { day: 'numeric', month: 'numeric' })}`
+                              : u.invite?.state === 'vencida'
+                                ? 'El enlace venció'
+                                : 'Nunca se le envió el enlace'}
+                          </div>
+                        </>
                       ) : (
                         <Badge tone="ok">Activo</Badge>
                       )}

@@ -42,7 +42,9 @@ export async function createQrLogin(user: User) {
 export async function sendInvite(user: User, url: string) {
   const intro = `Hola ${user.name}:`;
   const body = 'Te crearon un usuario en ALCOMBAR Gestión, la plataforma del Grupo Scout 155 Divina Providencia.';
-  const action = `Para entrar, elegí tu contraseña con este enlace (vence en ${config.inviteTokenHours} horas y sirve una sola vez).`;
+  const h = config.inviteTokenHours;
+  const lasts = h >= 48 ? `${Math.round(h / 24)} días` : `${h} horas`;
+  const action = `Para entrar, elegí tu contraseña con este enlace (vence en ${lasts} y sirve una sola vez).`;
   return sendMail(
     user.email,
     'Tu acceso a ALCOMBAR Gestión',

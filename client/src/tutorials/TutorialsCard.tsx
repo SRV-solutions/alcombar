@@ -58,8 +58,8 @@ export function TutorialsCard() {
           })}
         </ul>
         {data.done.length > 0 || data.skipped.length > 0 ? (
-          <Button variant="ghost" size="sm" className="mt" onClick={resetAll}>
-            <RotateCcw /> Empezar de cero (Luisito vuelve a presentarse al entrar)
+          <Button variant="ghost" size="sm" className="mt" onClick={resetAll} title="Luisito vuelve a presentarse al entrar">
+            <RotateCcw /> Empezar de cero
           </Button>
         ) : null}
         <p className="muted" style={{ margin: '10px 0 0' }}>

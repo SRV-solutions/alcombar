@@ -76,7 +76,7 @@
 
 /* Referentes de rama */
 /* Las cinco ramas entran en una fila en una pantalla de escritorio; en pantallas más chicas bajan de a una */
-.referents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 16px; align-items: stretch; }
+.referents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: stretch; }
 /* Todas a la misma altura y el alta siempre abajo. El selector lleva las dos clases a propósito: tiene que ganarle a
    «.card + .card» (el margen de las tarjetas apiladas) sin depender de qué hoja de estilos se cargue primero. */
 .referents-grid > .card.referent-branch { margin: 0; display: flex; flex-direction: column; }

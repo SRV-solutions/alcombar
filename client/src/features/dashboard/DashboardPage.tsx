@@ -54,7 +54,7 @@ export function DashboardPage() {
         }
       />
 
-      {pendingMembers || pendingAdults ? (
+      {(pendingMembers && canAll('members', 'edit')) || (pendingAdults && can('adults', 'edit')) ? (
         <div className="alert alert-warn mb">
           <div className="row between">
             <div>

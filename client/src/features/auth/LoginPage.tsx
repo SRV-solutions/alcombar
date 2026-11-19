@@ -64,10 +64,10 @@ export function LoginPage() {
           Ingresar
         </Button>
         <div style={{ textAlign: 'center', fontSize: '0.9rem' }}>
-          <Link to="/olvide-clave">¿Olvidaste tu contraseña?</Link>
+          <Link to="/olvide-clave">¿Primera vez, o te olvidaste la contraseña?</Link>
         </div>
         <p className="muted" style={{ textAlign: 'center', margin: 0 }}>
-          No hay registro público: las cuentas las crea un superadmin del Grupo.
+          Si el Grupo ya te dio de alta, pedí tu enlace con tu email y elegí tu contraseña. No hay registro público.
         </p>
       </form>
     </AuthShell>

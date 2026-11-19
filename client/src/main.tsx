@@ -1,3 +1,6 @@
+// La hoja base se importa ANTES que la app: así los estilos de cada pantalla (que se importan dentro de App) quedan
+// después en el CSS final y le ganan a la base cuando empatan. Al revés, una regla general pisaba a la específica.
+import './styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -8,7 +11,6 @@ import { ToastProvider } from './lib/toast';
 import { ThemeProvider } from './lib/theme';
 import { App } from './App';
 import { installClientErrorCapture } from './lib/clientErrors';
-import './styles.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

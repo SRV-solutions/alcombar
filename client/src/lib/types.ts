@@ -256,6 +256,8 @@ export interface UserInfo {
   active: boolean;
   lastLoginAt: string | null;
   hasPassword: boolean;
+  /** Solo si todavía no eligió contraseña: si alguna vez se le generó un enlace y si sigue vigente. */
+  invite?: { state: 'nunca' | 'vigente' | 'vencida'; expiresAt: string | null } | null;
   adult: AdultRef | null;
   userRoles: { id: string; roleId: string; unitId: string | null; role: { id: string; key: string | null; name: string; scope: string }; unit: { id: string; name: string; code: string } | null }[];
 }

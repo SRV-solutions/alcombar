@@ -23,7 +23,8 @@ export const config = {
   })(),
   accessTokenMinutes: 15,
   refreshTokenDays: 30,
-  inviteTokenHours: 72,
+  // Una semana: los educadores son voluntarios y no siempre abren el mail en el día
+  inviteTokenHours: 168,
   resetTokenMinutes: 60,
   maxFailedLogins: 5,
   lockMinutes: 15,

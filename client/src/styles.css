@@ -204,7 +204,8 @@ code { background: var(--accent-soft); color: var(--text); padding: 1px 5px; bor
 .card-body { padding: 18px 20px; }
 .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .card + .card, .stack > * + * { margin-top: 16px; }
-.grid > .card + .card, .grid > * + * { margin-top: 0; }
+/* Dentro de una grilla el espacio lo pone el gap: sin esto, la segunda tarjeta queda 16 px más abajo que la primera */
+.grid > .card + .card, .grid > * + *, .split > .card + .card, .split > * + * { margin-top: 0; }
 .grid { display: grid; gap: 16px; }
 .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -354,7 +355,16 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
   .att-table .att-btn { grid-area: btn; }
   .att-table .att-sg { display: none; }
   .att-table .segmented { display: flex; width: 100%; }
-  .att-table .segmented button { flex: 1; padding: 9px 4px; }
+  /* 44 px de alto: se toca con el pulgar sin errarle */
+  .att-table .segmented button { flex: 1; padding: 12px 4px; min-height: 44px; }
+}
+/* Asistencia: el contador y Guardar quedan siempre a la vista, pegados abajo */
+.att-savebar { position: sticky; bottom: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.18); }
+.att-savebar .att-count { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--muted); }
+.att-savebar .att-count strong { color: var(--text); font-size: 1.1rem; }
+@media (max-width: 640px) {
+  .att-savebar { margin: 12px -16px 0; border-radius: 0; border-left: none; border-right: none; border-bottom: none; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+  .att-savebar .btn { min-height: 44px; }
 }
 /* Encabezado de grupo (asistencia de educadores: por unidad o equipo) */
 .att-table .att-group th { background: var(--surface-2); text-transform: none; letter-spacing: 0; font-size: 0.85rem; color: var(--text); }

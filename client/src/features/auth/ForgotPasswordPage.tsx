@@ -23,10 +23,10 @@ export function ForgotPasswordPage() {
   });
 
   return (
-    <AuthShell subtitle="Recuperar contraseña">
+    <AuthShell subtitle="Pedir mi enlace de ingreso">
       {sent ? (
         <div className="stack">
-          <div className="alert alert-ok">Si el email está registrado, te enviamos un enlace para restablecer la contraseña. Vence en 60 minutos.</div>
+          <div className="alert alert-ok">Si el email está registrado, te enviamos un enlace para elegir tu contraseña. Vence en 60 minutos.</div>
           <p className="muted">
             Revisá también la carpeta de spam. Si no te llega, pedile el enlace a un superadmin (lo genera desde Usuarios).
           </p>

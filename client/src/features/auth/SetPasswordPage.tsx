@@ -37,8 +37,7 @@ export function SetPasswordPage() {
         <div className="stack">
           <div className="alert alert-error">El enlace venció o ya se usó.</div>
           <p>
-            Si ya tenías contraseña, podés <Link to="/olvide-clave">pedir un enlace nuevo</Link>. Si es tu primer ingreso, pedile a un superadmin que te
-            genere otra invitación.
+            <Link to="/olvide-clave">Pedí un enlace nuevo</Link> con tu email: te llega en el momento, también si es tu primer ingreso.
           </p>
         </div>
       </AuthShell>

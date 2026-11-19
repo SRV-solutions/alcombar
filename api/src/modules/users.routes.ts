@@ -51,7 +51,18 @@ usersRouter.get(
   authorize('users', 'view'),
   ah(async (_req, res) => {
     const users = await User.findAll({ include, order: [['name', 'ASC']] });
-    res.json(users);
+    // Para los que todavía no eligieron contraseña: si alguna vez se les generó un enlace y si sigue vigente
+    const pending = users.filter((u) => !u.passwordHash).map((u) => u.id);
+    const tokens = pending.length ? await PasswordToken.findAll({ where: { userId: pending, purpose: ['invite', 'reset'] }, attributes: ['userId', 'usedAt', 'expiresAt'] }) : [];
+    const now = Date.now();
+    res.json(
+      users.map((u) => {
+        const mine = tokens.filter((t) => t.userId === u.id);
+        const live = mine.filter((t) => !t.usedAt && t.expiresAt.getTime() > now).sort((a, b) => b.expiresAt.getTime() - a.expiresAt.getTime())[0];
+        const invite = u.passwordHash ? null : { state: live ? 'vigente' : mine.length ? 'vencida' : 'nunca', expiresAt: live?.expiresAt ?? null };
+        return { ...(u.toJSON() as object), invite };
+      }),
+    );
   }),
 );
 

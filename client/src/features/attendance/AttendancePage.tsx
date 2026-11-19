@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CalendarCheck, CheckCheck } from 'lucide-react';
@@ -68,6 +68,14 @@ export function AttendancePage() {
     }
   }, [sheet.data]);
 
+  // Si cierra o recarga con marcas sin guardar, el navegador pregunta antes
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   const unit = units.data?.find((u) => u.id === unitId);
   const sgLabel = unit ? BRANCH_INFO[unit.branch as Branch]?.smallGroup.one : 'Pequeño grupo';
   const members = useMemo(
@@ -77,6 +85,7 @@ export function AttendancePage() {
       ),
     [sheet.data],
   );
+  const hasGroups = members.some((m) => m.smallGroup);
   const canEdit = !!sheet.data?.canEdit && date <= todayIso();
   const marked = Object.values(marks).filter(Boolean).length;
   const present = Object.values(marks).filter((s) => s === 'presente' || s === 'tarde').length;
@@ -132,16 +141,6 @@ export function AttendancePage() {
           actions={
             canEdit ? (
               <>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => {
-                    setMarks(Object.fromEntries(members.map((m) => [m.id, marks[m.id] ?? 'presente'])));
-                    setDirty(true);
-                  }}
-                >
-                  <CheckCheck /> Resto presentes
-                </Button>
                 {hasSaved ? (
                   <ConfirmButton
                     size="sm"
@@ -185,8 +184,17 @@ export function AttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {members.map((m) => (
-                  <tr key={m.id}>
+                {members.map((m, i) => (
+                  <Fragment key={m.id}>
+                    {hasGroups && (i === 0 || (members[i - 1].smallGroup?.id ?? '') !== (m.smallGroup?.id ?? '')) ? (
+                      <tr className="att-group">
+                        <th colSpan={4}>
+                          {m.smallGroup?.name ?? `Sin ${(sgLabel ?? 'pequeño grupo').toLowerCase()}`}{' '}
+                          <span className="muted">· {members.filter((x) => (x.smallGroup?.id ?? '') === (m.smallGroup?.id ?? '')).length}</span>
+                        </th>
+                      </tr>
+                    ) : null}
+                  <tr>
                     <td className="nowrap att-name">
                       <Link to={`/protagonistas/${m.id}`}>
                         {m.lastName}, {m.firstName}
@@ -214,20 +222,11 @@ export function AttendancePage() {
                     </td>
                     <td className="num att-pct muted">{pct(m.id) !== null ? `${pct(m.id)}%` : '—'}</td>
                   </tr>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
           )}
-          {members.length && canEdit ? (
-            <div className="card-body row between" style={{ borderTop: '1px solid var(--borde)' }}>
-              <span className="muted">
-                {present} presentes · {marked} de {members.length} marcados
-              </span>
-              <Button onClick={save} loading={saving} disabled={!dirty || !marked}>
-                Guardar asistencia
-              </Button>
-            </div>
-          ) : null}
           {!canEdit && sheet.data && date <= todayIso() ? (
             <div className="card-body muted">Solo lectura: la asistencia la toman los educadores de la unidad.</div>
           ) : null}
@@ -261,6 +260,32 @@ export function AttendancePage() {
           )}
         </Card>
       </div>
+
+      {members.length && canEdit ? (
+        <div className="att-savebar">
+          <span className="att-count">
+            <strong>{present}</strong> presentes · {marked} de {members.length} marcados
+            {dirty ? <Badge tone="warn">Sin guardar</Badge> : null}
+          </span>
+          <div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+            {marked < members.length ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setMarks(Object.fromEntries(members.map((m) => [m.id, marks[m.id] ?? 'presente'])));
+                  setDirty(true);
+                }}
+                title="Marca como presentes a los que todavía no tienen nada marcado"
+              >
+                <CheckCheck /> Resto presentes
+              </Button>
+            ) : null}
+            <Button onClick={save} loading={saving} disabled={!dirty || !marked}>
+              Guardar
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
