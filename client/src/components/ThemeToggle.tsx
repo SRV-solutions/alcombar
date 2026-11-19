@@ -2,7 +2,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme, type ThemePreference } from '../lib/theme';
 
 /**
- * compact: un solo botón luna/sol (barra lateral).
+ * compact: un solo botón con el ícono de luna o sol, en la barra de arriba junto a Ayuda y los avisos.
  * Completo: tres opciones Claro / Oscuro / Sistema (Mi perfil).
  */
 export function ThemeToggle({ compact }: { compact?: boolean }) {
@@ -11,13 +11,12 @@ export function ThemeToggle({ compact }: { compact?: boolean }) {
     return (
       <button
         type="button"
-        className="btn btn-ghost btn-sm theme-toggle"
+        className="btn btn-ghost btn-icon theme-toggle"
         onClick={toggle}
         aria-label={theme === 'dark' ? 'Pasar a modo claro' : 'Pasar a modo oscuro'}
-        title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+        title={theme === 'dark' ? 'Pasar a modo claro' : 'Pasar a modo oscuro'}
       >
         {theme === 'dark' ? <Sun /> : <Moon />}
-        {theme === 'dark' ? 'Claro' : 'Oscuro'}
       </button>
     );
   }

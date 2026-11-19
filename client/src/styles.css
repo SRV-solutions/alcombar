@@ -241,8 +241,9 @@ code { background: var(--accent-soft); color: var(--text); padding: 1px 5px; bor
 .sidebar .btn-ghost:hover { background: transparent; color: var(--sidebar-strong); }
 
 /* Botón de tema (luna/sol) */
-.theme-toggle svg { width: 16px; height: 16px; }
-.sidebar .theme-toggle:hover { color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; }
+.topbar .theme-toggle { color: var(--sidebar-text); }
+.topbar .theme-toggle:hover { color: var(--accent); }
 
 /* ---------- Forms ---------- */
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }

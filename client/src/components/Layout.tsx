@@ -307,7 +307,6 @@ export function Layout() {
             <NavLink to="/perfil" className="btn btn-ghost btn-sm">
               <CircleUserRound /> Mi perfil
             </NavLink>
-            <ThemeToggle compact />
             <button className="btn btn-ghost btn-sm" onClick={() => void logout()}>
               <LogOut /> Salir
             </button>
@@ -325,6 +324,7 @@ export function Layout() {
           <Logo className="brand-logo" />
           <span className="brand-name">ALCOMBAR</span>
           <GlobalSearch compact />
+          <ThemeToggle compact />
           <NotificationBell compact />
         </header>
         <div className="appbar">
@@ -332,6 +332,7 @@ export function Layout() {
           <Link to="/ayuda" className="btn btn-ghost btn-sm appbar-help">
             <CircleHelp /> Ayuda
           </Link>
+          <ThemeToggle compact />
           <NotificationBell />
         </div>
         <main className="content" ref={contentRef}>

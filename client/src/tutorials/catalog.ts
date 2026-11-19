@@ -63,10 +63,10 @@ export const TUTORIALS: Tutorial[] = [
         text: 'Escribí lo que querés hacer, como "asistencia", "ficha médica" o "patrulla", o el nombre de un chico, y te llevo directo. También se abre con Ctrl+K.',
       },
       {
-        target: { selector: '.sidebar .theme-toggle' },
+        target: { selector: '.theme-toggle' },
         pose: 'point',
         title: 'Modo oscuro',
-        text: 'Con este botón pasás de tema claro a oscuro, ideal para los fogones a la noche 🔥.',
+        text: 'Arriba, junto a los avisos: la luna pasa la app a modo oscuro, ideal para los fogones a la noche 🔥, y el sol la vuelve a claro.',
       },
       {
         target: { selector: '.sidebar a[href="/perfil"]' },
