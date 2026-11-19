@@ -37,6 +37,7 @@ import { UnitsPage } from './features/group/UnitsPage';
 import { UnitDetailPage } from './features/group/UnitDetailPage';
 import { SupportTeamsPage } from './features/group/SupportTeamsPage';
 import { OrgChartPage } from './features/group/OrgChartPage';
+import { AboutPage } from './features/group/AboutPage';
 import { AdultsPage } from './features/adults/AdultsPage';
 import { AdultDetailPage } from './features/adults/AdultDetailPage';
 import { AdultFormPage } from './features/adults/AdultFormPage';
@@ -112,6 +113,7 @@ export function App() {
         <Route path="grupo/unidades" element={<Guard perm={['group', 'view']}><UnitsPage /></Guard>} />
         <Route path="grupo/unidades/:id" element={<Guard perm={['group', 'view']}><UnitDetailPage /></Guard>} />
         <Route path="grupo/equipos" element={<Guard perm={['group', 'view']}><SupportTeamsPage /></Guard>} />
+        <Route path="grupo/sobre" element={<AboutPage />} />
         <Route path="grupo/organigrama" element={<Guard perm={['group', 'view']}><OrgChartPage /></Guard>} />
 
         <Route path="adultos" element={<Guard perm={['adults', 'view']}><AdultsPage /></Guard>} />

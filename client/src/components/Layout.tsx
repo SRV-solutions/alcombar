@@ -37,6 +37,7 @@ import {
   UsersRound,
   FolderKanban,
   Gavel,
+  BookOpen,
 } from 'lucide-react';
 import type { Action, ModuleKey } from '@shared';
 import { useAuth } from '../lib/auth';
@@ -113,6 +114,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   {
     title: 'Grupo',
     items: [
+      { to: '/grupo/sobre', label: 'Sobre el Grupo', icon: <BookOpen /> },
       { to: '/grupo/unidades', label: 'Unidades', icon: <Tent />, perm: ['group', 'view'] },
       { to: '/adultos', label: 'Adultos', icon: <UsersRound />, perm: ['adults', 'view'] },
       { to: '/asistencia-educadores', label: 'Asistencia de educadores', icon: <CalendarCheck />, perm: ['adult_attendance', 'view'] },

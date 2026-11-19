@@ -128,5 +128,9 @@ export const assemblyItemSchema = z.object({ projectId: z.string().uuid() });
 export const assemblyVoteSchema = z.object({ vote: z.enum(VOTES), memberId: optId });
 export const assemblyCloseSchema = z.object({ notes: optText(6000) });
 
+// ---- Sobre el Grupo ----
+export const groupPageSchema = z.object({ title: z.string().trim().min(1, 'Ponele un título').max(160), body: optText(40000) });
+export const groupPageOrderSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(200) });
+
 /** Se aprueba con más de la mitad de los presentes a favor (las abstenciones y los que no votan no suman). */
 export const votePasses = (yes: number, present: number) => present > 0 && yes * 2 > present;

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Compass, FolderKanban, Gavel, Network, Route as RouteIcon, Tent } from 'lucide-react';
+import { BookOpen, Compass, FolderKanban, Gavel, Network, Route as RouteIcon, Tent } from 'lucide-react';
 import { PROJECT_KIND_LABELS, PROJECT_STATUS_LABELS, type ProjectKind, type ProjectStatus } from '@shared';
 import { useAuth } from '../../lib/auth';
 import { Badge, Card, LinkButton, PageHeader } from '../../components/ui';
@@ -16,6 +16,7 @@ export function RoverHome() {
   const needsEmail = !me.user.email || me.user.emailVerified === false || !!me.user.pendingEmail;
   const r = home.data?.rover;
   const links = [
+    { to: '/grupo/sobre', icon: <BookOpen />, title: 'Sobre el Grupo', text: 'Nuestra historia, los jefes y jefas, la tribu.' },
     can('group', 'view') ? { to: '/grupo/organigrama', icon: <Network />, title: 'Organigrama', text: 'Quiénes son los educadores y los equipos del Grupo.' } : null,
     can('calendar', 'view') ? { to: '/calendario', icon: <Compass />, title: 'Calendario', text: 'Lo que viene: actividades, campamentos y salidas.' } : null,
     can('group', 'view') ? { to: '/grupo/unidades', icon: <Tent />, title: 'Unidades', text: 'Las ramas y unidades del Grupo.' } : null,

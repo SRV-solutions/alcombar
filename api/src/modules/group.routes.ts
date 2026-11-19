@@ -2,9 +2,12 @@ import { Router, type Request } from 'express';
 import { QueryTypes } from 'sequelize';
 import {
   BRANCH_INFO,
+  can,
   courseSchema,
   documentTypeSchema,
   GROUP_CONTEXT,
+  groupPageOrderSchema,
+  groupPageSchema,
   isTeamLeaderPosition,
   kidsPerAdultOf,
   requiredAdults,
@@ -15,10 +18,14 @@ import {
 } from '../shared';
 import { sequelize } from '../db';
 import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Member, MemberDocument, SmallGroup, SupportTeam, Unit } from '../models';
+import { GroupPage } from '../models/about';
+import { User } from '../models';
+import { writeAudit } from '../lib/audit';
 import { ah, badRequest, conflict, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
 
 export const groupRouter = Router();
+const canEditGroup = (req: Request) => can(req.auth, 'group', 'edit');
 
 const currentYear = () => new Date().getFullYear();
 const branchOrder = (b: string) => BRANCH_INFO[b as Branch]?.order ?? 99;
@@ -465,6 +472,66 @@ groupRouter.delete(
       );
     }
     await c.destroy();
+    res.json({ ok: true });
+  }),
+);
+
+// ---------------- Sobre el Grupo ----------------
+// Lo lee cualquiera que entra a la app (también los rovers); lo edita quien administra el Grupo.
+const pageJson = (p: GroupPage) => ({ id: p.id, title: p.title, body: p.body, updatedAt: p.updatedAt, updatedBy: p.updatedBy?.name ?? null });
+
+groupRouter.get(
+  '/pages',
+  ah(async (req, res) => {
+    const pages = await GroupPage.findAll({ include: [{ model: User, as: 'updatedBy', attributes: ['id', 'name'] }], order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']] });
+    res.json({ canEdit: req.auth!.isSuperadmin || canEditGroup(req), pages: pages.map(pageJson) });
+  }),
+);
+
+groupRouter.post(
+  '/pages',
+  authorize('group', 'edit'),
+  ah(async (req, res) => {
+    const data = parse(groupPageSchema, req.body);
+    const last = ((await GroupPage.max('sortOrder')) as number | null) ?? 0;
+    const page = await GroupPage.create({ ...data, sortOrder: last + 1, updatedByUserId: req.user!.id });
+    await writeAudit({ action: 'create', entity: 'GroupPage', entityId: page.id, summary: `Sobre el Grupo: nueva sección «${page.title}»` });
+    res.status(201).json({ id: page.id });
+  }),
+);
+
+groupRouter.put(
+  '/pages/order',
+  authorize('group', 'edit'),
+  ah(async (req, res) => {
+    const { ids } = parse(groupPageOrderSchema, req.body);
+    await sequelize.transaction(async (transaction) => {
+      for (let i = 0; i < ids.length; i++) await GroupPage.update({ sortOrder: i + 1 }, { where: { id: ids[i] }, transaction, silent: true });
+    });
+    res.json({ ok: true });
+  }),
+);
+
+groupRouter.put(
+  '/pages/:id',
+  authorize('group', 'edit'),
+  ah(async (req, res) => {
+    const page = await GroupPage.findByPk(req.params.id);
+    if (!page) throw notFound();
+    await page.update({ ...parse(groupPageSchema, req.body), updatedByUserId: req.user!.id });
+    await writeAudit({ action: 'update', entity: 'GroupPage', entityId: page.id, summary: `Sobre el Grupo: se editó «${page.title}»` });
+    res.json({ ok: true });
+  }),
+);
+
+groupRouter.delete(
+  '/pages/:id',
+  authorize('group', 'edit'),
+  ah(async (req, res) => {
+    const page = await GroupPage.findByPk(req.params.id);
+    if (!page) throw notFound();
+    await page.destroy();
+    await writeAudit({ action: 'delete', entity: 'GroupPage', entityId: page.id, summary: `Sobre el Grupo: se borró «${page.title}»` });
     res.json({ ok: true });
   }),
 );

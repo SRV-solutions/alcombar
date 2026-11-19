@@ -1,0 +1,21 @@
+/* Sobre el Grupo: texto para leer, con un índice que acompaña en pantallas anchas */
+.about { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+.about-index { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.about-index a { padding: 8px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: 0.93rem; }
+.about-index a:hover { background: var(--surface-hover); }
+.about-pages { display: grid; gap: 16px; min-width: 0; }
+.about > .about-pages:only-child { grid-column: 1 / -1; }
+.about-page { scroll-margin-top: 76px; margin: 0; }
+.about-page .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.about-body { max-width: 72ch; line-height: 1.65; overflow-wrap: anywhere; }
+.about-body p { margin: 0 0 14px; }
+.about-body p:last-child { margin-bottom: 0; }
+.about-body h3 { margin: 22px 0 8px; font-size: 1.05rem; }
+.about-body h3:first-child { margin-top: 0; }
+.about-body ul { margin: 0 0 14px; padding-left: 20px; display: grid; gap: 4px; }
+.about-meta { font-size: 0.82rem; margin-top: 18px !important; }
+@media (max-width: 860px) {
+  .about { grid-template-columns: 1fr; }
+  .about-index { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+  .about-index a { border: 1px solid var(--border); padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; }
+}
