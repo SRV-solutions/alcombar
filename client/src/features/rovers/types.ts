@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { RoverGoalAction } from '@shared';
+import type { PlanReviewAnswers, ProjectActivity, RoverGoalAction } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import type { Tone } from '../../components/ui';
@@ -44,11 +44,17 @@ export interface Goal {
   achievedAt: string | null;
   reflection: string | null;
 }
+export interface PlanReview {
+  id: string;
+  date: string;
+  answers: PlanReviewAnswers;
+}
 export interface PlanData {
   member: { id: string; name: string };
   canEdit: boolean;
   vision: string | null;
   goals: Goal[];
+  reviews: PlanReview[];
   areas: { id: string; name: string }[];
   competencies: { id: string; areaId: string | null; number: number | null; name: string }[];
 }
@@ -66,6 +72,7 @@ export interface ProjectSummary {
   owner: { id: string; name: string } | null;
   mine: boolean;
   people: number;
+  parentProjectId: string | null;
 }
 export interface ProjectDetail extends Omit<ProjectSummary, 'people'> {
   what: string | null;
@@ -77,6 +84,22 @@ export interface ProjectDetail extends Omit<ProjectSummary, 'people'> {
   funding: string | null;
   needs: string | null;
   celebration: string | null;
+  supportTeam: string | null;
+  expectedResult: string | null;
+  roversEstimate: number | null;
+  allies: string | null;
+  roles: string | null;
+  activities: ProjectActivity[];
+  tools: string | null;
+  outreach: string | null;
+  media: string | null;
+  slogan: string | null;
+  learnings: string | null;
+  impact: string | null;
+  nextSteps: string | null;
+  recordLink: string | null;
+  parent: { id: string; title: string } | null;
+  mingas: { id: string; title: string; status: string; startDate: string | null }[];
   finalReport: string | null;
   canEdit: boolean;
   canInvite: boolean;
@@ -118,12 +141,15 @@ export interface AssemblyData {
   me: { memberId: string; present: boolean } | null;
   rovers: { id: string; name: string; hasAccount: boolean }[];
   postulable: { id: string; title: string; kind: string }[];
-  assembly: { id: string; openedAt: string; present: string[]; items: AssemblyItem[] } | null;
+  assembly: { id: string; openedAt: string; purpose: string | null; agenda: string | null; chair: { id: string; name: string } | null; present: string[]; items: AssemblyItem[] } | null;
   past: {
     id: string;
     openedAt: string;
     closedAt: string | null;
     notes: string | null;
+    purpose: string | null;
+    agenda: string | null;
+    chair: string | null;
     present: number;
     items: { id: string; projectId: string; title: string; kind: string; status: string; yes: number; no: number; abstain: number; present: number }[];
   }[];

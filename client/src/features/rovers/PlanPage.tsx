@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { GOAL_STATUSES, GOAL_STATUS_LABELS, type GoalStatus, type RoverGoalAction } from '@shared';
+import { GOAL_STATUSES, GOAL_STATUS_LABELS, PLAN_REVIEW_QUESTIONS, todayIso, type GoalStatus, type PlanReviewAnswers, type RoverGoalAction } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select, Textarea } from '../../components/ui';
-import { fmtDay, type Goal, type PlanData } from './types';
+import { fmtDay, type Goal, type PlanData, type PlanReview } from './types';
 import './rovers.css';
 
 const GOAL_TONE = { en_curso: 'info', lograda: 'ok', dejada: 'neutral' } as const;
@@ -26,6 +26,7 @@ export function PlanPage() {
   const [vision, setVision] = useState('');
   const [editVision, setEditVision] = useState(false);
   const [goal, setGoal] = useState<Goal | 'new' | null>(null);
+  const [review, setReview] = useState<PlanReview | 'new' | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (q.data) setVision(q.data.vision ?? '');
@@ -184,6 +185,59 @@ export function PlanPage() {
         </div>
       ) : null}
 
+      {own || plan.reviews.length ? (
+        <div className="mt">
+          <Card
+            title={`Altos en el camino${plan.reviews.length ? ` (${plan.reviews.length})` : ''}`}
+            actions={
+              own ? (
+                <Button size="sm" variant="secondary" onClick={() => setReview('new')}>
+                  <Plus /> Hacer un alto
+                </Button>
+              ) : null
+            }
+          >
+            {plan.reviews.length ? (
+              <ul className="list-plain">
+                {plan.reviews.map((r) => (
+                  <li key={r.id} className="review">
+                    <div className="review-head">
+                      <strong>{fmtDay(r.date)}</strong>
+                      {own ? (
+                        <Button variant="ghost" size="sm" onClick={() => setReview(r)} aria-label="Editar la evaluación">
+                          <Pencil />
+                        </Button>
+                      ) : null}
+                    </div>
+                    <dl>
+                      {PLAN_REVIEW_QUESTIONS.filter((x) => r.answers[x.key]).map((x) => (
+                        <div key={x.key}>
+                          <dt>{x.label}</dt>
+                          <dd>{r.answers[x.key]}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>Cada tanto —al cierre de un ciclo, por ejemplo— conviene parar a mirar cómo venís con tus metas, conversarlo con tu Comunidad y tus educadores, y ajustar el Plan.</Empty>
+            )}
+          </Card>
+        </div>
+      ) : null}
+
+      {review ? (
+        <ReviewDialog
+          memberId={memberId}
+          review={review === 'new' ? null : review}
+          onClose={() => setReview(null)}
+          onSaved={() => {
+            setReview(null);
+            refresh();
+          }}
+        />
+      ) : null}
       {goal ? (
         <GoalDialog
           memberId={memberId}
@@ -197,6 +251,74 @@ export function PlanPage() {
         />
       ) : null}
     </>
+  );
+}
+
+/** «Hacer un alto en el camino»: la evaluación del Plan Personal, con las preguntas de la herramienta de la Rama. */
+function ReviewDialog({ memberId, review, onClose, onSaved }: { memberId: string; review: PlanReview | null; onClose: () => void; onSaved: () => void }) {
+  const toast = useToast();
+  const [date, setDate] = useState(review?.date ?? todayIso());
+  const [answers, setAnswers] = useState<PlanReviewAnswers>(review?.answers ?? {});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const save = async () => {
+    if (!Object.values(answers).some((x) => x?.trim())) return setError('Respondé al menos una pregunta');
+    setBusy(true);
+    setError(null);
+    try {
+      if (review) await api.put(`/rovers/reviews/${review.id}`, { date, answers });
+      else await api.post(`/rovers/plans/${memberId}/reviews`, { date, answers });
+      onSaved();
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal
+      wide
+      title={review ? 'Editar el alto en el camino' : 'Hacer un alto en el camino'}
+      onClose={onClose}
+      footer={
+        <>
+          {review ? (
+            <ConfirmButton
+              variant="ghost"
+              title="Borrar la evaluación"
+              message="Se borra esta evaluación con sus respuestas. No se puede deshacer."
+              confirmLabel="Borrar"
+              onConfirm={async () => {
+                await api.del(`/rovers/reviews/${review.id}`);
+                onSaved();
+              }}
+            >
+              <Trash2 /> Borrar
+            </ConfirmButton>
+          ) : null}
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={() => void save()} loading={busy}>
+            Guardar
+          </Button>
+        </>
+      }
+    >
+      <p className="muted" style={{ marginTop: 0 }}>
+        Mirá cómo te fue con tus metas y tus acciones. Después compartilo con tu Comunidad y tus educadores, y corregí tu Plan con lo que salga.
+      </p>
+      <div className="form-grid">
+        <Field label="Fecha" error={error ?? undefined}>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </Field>
+        {PLAN_REVIEW_QUESTIONS.map((x) => (
+          <Field key={x.key} label={x.label} full>
+            <Textarea rows={2} value={answers[x.key] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [x.key]: e.target.value }))} />
+          </Field>
+        ))}
+      </div>
+    </Modal>
   );
 }
 

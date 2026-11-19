@@ -28,6 +28,27 @@
 .dl.ficha div:first-child dt { margin-top: 0; }
 .invite-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 16px 0 4px; }
 
+.form-section { grid-column: 1 / -1; margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.form-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.minga-what { margin: 0 0 4px; }
+.acts { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
+.acts li { padding: 12px; border: 1px solid var(--border); border-radius: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.acts li .act-main { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; }
+.acts li .act-main input { flex: 1; }
+.acts li .act-wide { grid-column: 1 / -1; }
+.ficha-section { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 20px 0 6px; padding-top: 14px; border-top: 1px solid var(--border); }
+.ficha-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.act-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.act-list li { padding: 0; border: none; }
+.act-list .muted { font-size: 0.87rem; }
+.review { padding: 14px 0; }
+.review-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.review dl { margin: 8px 0 0; display: grid; gap: 8px; }
+.review dt { font-size: 0.82rem; color: var(--muted); }
+.review dd { margin: 0; white-space: pre-wrap; }
+.assembly-info { margin-top: 12px; }
+.assembly-info .agenda { white-space: pre-wrap; margin: 8px 0 0; }
+
 /* ---- Asamblea ---- */
 .assembly-live { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .assembly-live.as-link { text-decoration: none; }
@@ -69,4 +90,5 @@
 
 @media (max-width: 600px) {
   .assembly-item { align-items: flex-start; flex-direction: column; }
+  .acts li { grid-template-columns: 1fr; }
 }

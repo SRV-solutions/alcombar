@@ -2,7 +2,7 @@
 import { DataTypes, Model, type CreationOptional, type ForeignKey, type InferAttributes, type InferCreationAttributes, type NonAttribute } from 'sequelize';
 import { Adult, Member, sequelize, Unit, User } from './index';
 import { BranchArea, Competency } from './program';
-import type { RoverGoalAction } from '../shared';
+import type { PlanReviewAnswers, ProjectActivity, RoverGoalAction } from '../shared';
 
 const { UUID, UUIDV4, STRING, TEXT, DATE, DATEONLY, INTEGER, JSONB } = DataTypes;
 const id = { type: UUID, defaultValue: UUIDV4, primaryKey: true };
@@ -17,6 +17,20 @@ export class RoverPlan extends Model<InferAttributes<RoverPlan>, InferCreationAt
   declare updatedAt: CreationOptional<Date>;
 }
 RoverPlan.init({ id, vision: TEXT, createdAt: DATE, updatedAt: DATE }, opts('rover_plans', 'RoverPlan'));
+
+/** «Alto en el camino»: una evaluación del Plan Personal, con sus respuestas. */
+export class RoverPlanReview extends Model<InferAttributes<RoverPlanReview>, InferCreationAttributes<RoverPlanReview>> {
+  declare id: CreationOptional<string>;
+  declare memberId: ForeignKey<Member['id']>;
+  declare reviewDate: string;
+  declare answers: CreationOptional<PlanReviewAnswers>;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+}
+RoverPlanReview.init(
+  { id, reviewDate: { type: DATEONLY, allowNull: false }, answers: { type: JSONB, allowNull: false, defaultValue: {} }, createdAt: DATE, updatedAt: DATE },
+  opts('rover_plan_reviews', 'RoverPlanReview'),
+);
 
 export class RoverGoal extends Model<InferAttributes<RoverGoal>, InferCreationAttributes<RoverGoal>> {
   declare id: CreationOptional<string>;
@@ -72,6 +86,22 @@ export class RoverProject extends Model<InferAttributes<RoverProject>, InferCrea
   declare funding: string | null;
   declare needs: string | null;
   declare celebration: string | null;
+  declare supportTeam: CreationOptional<string | null>;
+  declare expectedResult: CreationOptional<string | null>;
+  declare roversEstimate: CreationOptional<number | null>;
+  declare allies: CreationOptional<string | null>;
+  declare roles: CreationOptional<string | null>;
+  declare activities: CreationOptional<ProjectActivity[]>;
+  declare tools: CreationOptional<string | null>;
+  declare outreach: CreationOptional<string | null>;
+  declare media: CreationOptional<string | null>;
+  declare slogan: CreationOptional<string | null>;
+  declare learnings: CreationOptional<string | null>;
+  declare impact: CreationOptional<string | null>;
+  declare nextSteps: CreationOptional<string | null>;
+  declare recordLink: CreationOptional<string | null>;
+  /** Proyecto del que esta minga es parte. */
+  declare parentProjectId: CreationOptional<ForeignKey<RoverProject['id']> | null>;
   declare status: CreationOptional<string>;
   declare finalReport: CreationOptional<string | null>;
   declare decidedAt: CreationOptional<Date | null>;
@@ -79,6 +109,8 @@ export class RoverProject extends Model<InferAttributes<RoverProject>, InferCrea
   declare updatedAt: CreationOptional<Date>;
   declare owner?: NonAttribute<Member>;
   declare people?: NonAttribute<RoverProjectPerson[]>;
+  declare parent?: NonAttribute<RoverProject | null>;
+  declare mingas?: NonAttribute<RoverProject[]>;
 }
 RoverProject.init(
   {
@@ -98,6 +130,20 @@ RoverProject.init(
     funding: TEXT,
     needs: TEXT,
     celebration: TEXT,
+    supportTeam: TEXT,
+    expectedResult: TEXT,
+    roversEstimate: INTEGER,
+    allies: TEXT,
+    roles: TEXT,
+    activities: { type: JSONB, allowNull: false, defaultValue: [] },
+    tools: TEXT,
+    outreach: TEXT,
+    media: TEXT,
+    slogan: TEXT,
+    learnings: TEXT,
+    impact: TEXT,
+    nextSteps: TEXT,
+    recordLink: TEXT,
     status: { type: STRING(12), allowNull: false, defaultValue: 'borrador' },
     finalReport: TEXT,
     decidedAt: DATE,
@@ -129,9 +175,14 @@ export class RoverAssembly extends Model<InferAttributes<RoverAssembly>, InferCr
   /** Ids de los rovers presentes. */
   declare present: CreationOptional<string[]>;
   declare notes: CreationOptional<string | null>;
+  /** Para qué se convocó, el orden del día y el rover que la preside. */
+  declare purpose: CreationOptional<string | null>;
+  declare agenda: CreationOptional<string | null>;
+  declare chairMemberId: CreationOptional<ForeignKey<Member['id']> | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare items?: NonAttribute<RoverAssemblyItem[]>;
+  declare chair?: NonAttribute<Member | null>;
 }
 RoverAssembly.init(
   {
@@ -141,6 +192,8 @@ RoverAssembly.init(
     closedAt: DATE,
     present: { type: JSONB, allowNull: false, defaultValue: [] },
     notes: TEXT,
+    purpose: STRING(14),
+    agenda: TEXT,
     createdAt: DATE,
     updatedAt: DATE,
   },
@@ -192,6 +245,10 @@ RoverVote.init({ id, vote: { type: STRING(10), allowNull: false }, createdAt: DA
 
 RoverPlan.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
 RoverGoal.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+RoverPlanReview.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+RoverProject.belongsTo(RoverProject, { as: 'parent', foreignKey: 'parentProjectId' });
+RoverProject.hasMany(RoverProject, { as: 'mingas', foreignKey: 'parentProjectId' });
+RoverAssembly.belongsTo(Member, { as: 'chair', foreignKey: 'chairMemberId' });
 RoverGoal.belongsTo(BranchArea, { as: 'area', foreignKey: 'areaId' });
 RoverGoal.belongsTo(Competency, { as: 'competency', foreignKey: 'competencyId' });
 RoverProject.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });

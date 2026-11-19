@@ -2,6 +2,7 @@ import { Router, type Request } from 'express';
 import { Op } from 'sequelize';
 import {
   assemblyCloseSchema,
+  assemblyInfoSchema,
   assemblyItemSchema,
   assemblyOpenSchema,
   assemblyPresentSchema,
@@ -9,6 +10,7 @@ import {
   can,
   projectIsEditable,
   roverGoalSchema,
+  roverPlanReviewSchema,
   roverPlanSchema,
   roverProjectPersonSchema,
   roverProjectProgressSchema,
@@ -19,7 +21,7 @@ import {
 import { sequelize } from '../db';
 import { Adult, AdultAssignment, Member, Unit, User } from '../models';
 import { BranchArea, Competency } from '../models/program';
-import { RoverAssembly, RoverAssemblyItem, RoverGoal, RoverPlan, RoverProject, RoverProjectPerson, RoverVote } from '../models/rovers';
+import { RoverAssembly, RoverAssemblyItem, RoverGoal, RoverPlan, RoverPlanReview, RoverProject, RoverProjectPerson, RoverVote } from '../models/rovers';
 import { writeAudit } from '../lib/audit';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 
@@ -160,15 +162,18 @@ const goalJson = (g: RoverGoal) => ({
   updatedAt: g.updatedAt,
 });
 
+const reviewJson = (r: RoverPlanReview) => ({ id: r.id, date: r.reviewDate, answers: r.answers ?? {}, updatedAt: r.updatedAt });
+
 roversRouter.get(
   '/plans/:memberId',
   ah(async (req, res) => {
     const { member, own } = await planAccess(req, req.params.memberId);
-    const [plan, goals, areas, competencies] = await Promise.all([
+    const [plan, goals, areas, competencies, reviews] = await Promise.all([
       RoverPlan.findOne({ where: { memberId: member.id } }),
       RoverGoal.findAll({ where: { memberId: member.id }, order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']] }),
       BranchArea.findAll({ where: { branch: 'rovers' }, attributes: ['id', 'name'], order: [['sortOrder', 'ASC']] }),
       Competency.findAll({ where: { branch: 'rovers', active: true }, attributes: ['id', 'areaId', 'number', 'name'], order: [['number', 'ASC']] }),
+      RoverPlanReview.findAll({ where: { memberId: member.id }, order: [['reviewDate', 'DESC'], ['createdAt', 'DESC']] }),
     ]);
     res.json({
       member: { id: member.id, name: personName(member) },
@@ -176,6 +181,7 @@ roversRouter.get(
       vision: plan?.vision ?? null,
       updatedAt: plan?.updatedAt ?? null,
       goals: goals.map(goalJson),
+      reviews: reviews.map(reviewJson),
       areas,
       competencies,
     });
@@ -248,6 +254,40 @@ roversRouter.delete(
   }),
 );
 
+/** «Alto en el camino»: la evaluación periódica del Plan. La escribe el rover; sus educadores la leen. */
+roversRouter.post(
+  '/plans/:memberId/reviews',
+  ah(async (req, res) => {
+    const member = await ownPlan(req, req.params.memberId);
+    const data = parse(roverPlanReviewSchema, req.body);
+    const review = await RoverPlanReview.create({ memberId: member.id, reviewDate: data.date, answers: data.answers });
+    res.status(201).json(reviewJson(review));
+  }),
+);
+
+roversRouter.put(
+  '/reviews/:id',
+  ah(async (req, res) => {
+    const review = await RoverPlanReview.findByPk(req.params.id);
+    if (!review) throw notFound();
+    await ownPlan(req, review.memberId);
+    const data = parse(roverPlanReviewSchema, req.body);
+    await review.update({ reviewDate: data.date, answers: data.answers });
+    res.json(reviewJson(review));
+  }),
+);
+
+roversRouter.delete(
+  '/reviews/:id',
+  ah(async (req, res) => {
+    const review = await RoverPlanReview.findByPk(req.params.id);
+    if (!review) throw notFound();
+    await ownPlan(req, review.memberId);
+    await review.destroy();
+    res.json({ ok: true });
+  }),
+);
+
 // ---------------- Proyectos y mingas ----------------
 const projectInclude = [
   { model: Member, as: 'owner', attributes: ['id', 'firstName', 'lastName'] },
@@ -286,8 +326,18 @@ const projectSummary = (p: RoverProject, self: Member | null) => ({
   owner: p.owner ? { id: p.owner.id, name: personName(p.owner) } : null,
   mine: Boolean(self && p.ownerMemberId === self.id),
   people: (p.people ?? []).length,
+  parentProjectId: p.parentProjectId,
   updatedAt: p.updatedAt,
 });
+
+/** Los datos de la ficha. Una minga puede ser parte de un proyecto de su Comunidad que su autor ya ve. */
+async function projectData(req: Request, self: Member, body: unknown, currentId?: string) {
+  const data = parse(roverProjectSchema, body);
+  if (data.kind !== 'minga' || !data.parentProjectId) return { ...data, parentProjectId: null };
+  const parent = data.parentProjectId === currentId ? null : await RoverProject.findOne({ where: { id: data.parentProjectId, unitId: self.unitId!, kind: 'proyecto' }, include: projectInclude });
+  if (!parent || !seesProject(req, self, parent)) throw badRequest('Revisá los datos', { parentProjectId: 'Ese proyecto no es de tu Comunidad' });
+  return data;
+}
 
 roversRouter.get(
   '/projects',
@@ -314,7 +364,7 @@ roversRouter.post(
   ah(async (req, res) => {
     const self = await selfRover(req);
     if (!self) throw forbidden('Los proyectos y mingas los proponen los rovers');
-    const data = parse(roverProjectSchema, req.body);
+    const data = await projectData(req, self, req.body);
     const p = await RoverProject.create({ ...data, unitId: self.unitId!, ownerMemberId: self.id });
     res.status(201).json({ id: p.id });
   }),
@@ -338,6 +388,11 @@ roversRouter.get(
       order: [['decidedAt', 'DESC']],
     });
     const openAssembly = await RoverAssembly.findOne({ where: { unitId: p.unitId, status: 'abierta' }, attributes: ['id'] });
+    // El proyecto del que es parte y las mingas que tiene adentro: solo los que esta cuenta puede abrir
+    const [parent, mingas] = await Promise.all([
+      p.parentProjectId ? RoverProject.findByPk(p.parentProjectId, { include: projectInclude }) : null,
+      p.kind === 'proyecto' ? RoverProject.findAll({ where: { parentProjectId: p.id }, include: projectInclude, order: [['startDate', 'ASC'], ['createdAt', 'ASC']] }) : [],
+    ]);
     res.json({
       ...projectSummary(p, self),
       what: p.what,
@@ -349,6 +404,22 @@ roversRouter.get(
       funding: p.funding,
       needs: p.needs,
       celebration: p.celebration,
+      supportTeam: p.supportTeam,
+      expectedResult: p.expectedResult,
+      roversEstimate: p.roversEstimate,
+      allies: p.allies,
+      roles: p.roles,
+      activities: p.activities ?? [],
+      tools: p.tools,
+      outreach: p.outreach,
+      media: p.media,
+      slogan: p.slogan,
+      learnings: p.learnings,
+      impact: p.impact,
+      nextSteps: p.nextSteps,
+      recordLink: p.recordLink,
+      parent: parent && seesProject(req, self, parent) ? { id: parent.id, title: parent.title } : null,
+      mingas: mingas.filter((m) => seesProject(req, self, m)).map((m) => ({ id: m.id, title: m.title, status: m.status, startDate: m.startDate })),
       finalReport: p.finalReport,
       decidedAt: p.decidedAt,
       canEdit: owner && projectIsEditable(p.status),
@@ -367,10 +438,10 @@ roversRouter.get(
 roversRouter.put(
   '/projects/:id',
   ah(async (req, res) => {
-    const { p, owner } = await loadProject(req, req.params.id);
-    if (!owner) throw forbidden('La ficha la edita quien la propuso');
+    const { p, owner, self } = await loadProject(req, req.params.id);
+    if (!owner || !self) throw forbidden('La ficha la edita quien la propuso');
     if (!projectIsEditable(p.status)) throw badRequest('La ficha ya pasó por la Asamblea: no se puede cambiar');
-    await p.update(parse(roverProjectSchema, req.body));
+    await p.update(await projectData(req, self, req.body, p.id));
     res.json({ ok: true });
   }),
 );
@@ -394,7 +465,7 @@ roversRouter.post(
     if (!owner) throw forbidden();
     if (!['aprobado', 'en_curso', 'terminado'].includes(p.status)) throw badRequest('Primero lo tiene que aprobar la Asamblea');
     const data = parse(roverProjectProgressSchema, req.body);
-    await p.update({ status: data.status, finalReport: data.finalReport });
+    await p.update({ status: data.status, finalReport: data.finalReport, learnings: data.learnings, impact: data.impact, nextSteps: data.nextSteps, recordLink: data.recordLink });
     res.json({ ok: true });
   }),
 );
@@ -437,6 +508,13 @@ const itemInclude = [
   { model: RoverProject, as: 'project', attributes: ['id', 'title', 'kind', 'field', 'ownerMemberId', 'what'], include: [{ model: Member, as: 'owner', attributes: ['id', 'firstName', 'lastName'] }] },
   { model: RoverVote, as: 'votes', include: [{ model: Member, as: 'member', attributes: ['id', 'firstName', 'lastName'] }] },
 ];
+const chairInclude = { model: Member, as: 'chair', attributes: ['id', 'firstName', 'lastName'] };
+/** Preside un rover de la Comunidad (la Guía propone que se elija y vaya rotando). */
+async function checkChair(unitId: string, chairMemberId: string | null) {
+  if (chairMemberId && !(await Member.findOne({ where: { id: chairMemberId, unitId, status: 'activo' }, attributes: ['id'] }))) {
+    throw badRequest('Revisá los datos', { chairMemberId: 'Preside un rover de la Comunidad' });
+  }
+}
 const tally = (votes: RoverVote[], present: string[]) => {
   const valid = votes.filter((v) => present.includes(v.memberId));
   return { yes: valid.filter((v) => v.vote === 'si').length, no: valid.filter((v) => v.vote === 'no').length, abstain: valid.filter((v) => v.vote === 'abstencion').length };
@@ -449,11 +527,11 @@ roversRouter.get(
     const { unit, units } = await resolveUnit(req, self);
     const manage = isEducator(req, unit.id);
     const [assembly, rovers, past] = await Promise.all([
-      RoverAssembly.findOne({ where: { unitId: unit.id, status: 'abierta' }, include: [{ model: RoverAssemblyItem, as: 'items', include: itemInclude }] }),
+      RoverAssembly.findOne({ where: { unitId: unit.id, status: 'abierta' }, include: [{ model: RoverAssemblyItem, as: 'items', include: itemInclude }, chairInclude] }),
       activeRovers(unit.id),
       RoverAssembly.findAll({
         where: { unitId: unit.id, status: 'cerrada' },
-        include: [{ model: RoverAssemblyItem, as: 'items', include: [{ model: RoverProject, as: 'project', attributes: ['id', 'title', 'kind'] }] }],
+        include: [{ model: RoverAssemblyItem, as: 'items', include: [{ model: RoverProject, as: 'project', attributes: ['id', 'title', 'kind'] }] }, chairInclude],
         order: [['openedAt', 'DESC']],
         limit: 12,
       }),
@@ -475,6 +553,9 @@ roversRouter.get(
         ? {
             id: assembly.id,
             openedAt: assembly.openedAt,
+            purpose: assembly.purpose,
+            agenda: assembly.agenda,
+            chair: assembly.chair ? { id: assembly.chair.id, name: personName(assembly.chair) } : null,
             present: assembly.present.filter((id) => rovers.some((r) => r.id === id)),
             items: (assembly.items ?? [])
               .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
@@ -502,6 +583,9 @@ roversRouter.get(
         openedAt: a.openedAt,
         closedAt: a.closedAt,
         notes: a.notes,
+        purpose: a.purpose,
+        agenda: a.agenda,
+        chair: a.chair ? personName(a.chair) : null,
         present: a.present.length,
         items: (a.items ?? []).map((i) => ({ id: i.id, projectId: i.projectId, title: i.project?.title ?? '', kind: i.project?.kind ?? 'proyecto', status: i.status, yes: i.yes, no: i.no, abstain: i.abstain, present: i.presentCount })),
       })),
@@ -529,14 +613,28 @@ async function assemblyItem(req: Request, itemId: string) {
 roversRouter.post(
   '/assembly',
   ah(async (req, res) => {
-    const { unitId } = parse(assemblyOpenSchema, req.body);
+    const { unitId, purpose, agenda, chairMemberId } = parse(assemblyOpenSchema, req.body);
     const unit = await Unit.findOne({ where: { id: unitId, branch: 'rovers', active: true } });
     if (!unit) throw notFound();
     if (!isEducator(req, unit.id)) throw forbidden('La Asamblea la abre el equipo de educadores de la Comunidad');
     if (await RoverAssembly.findOne({ where: { unitId, status: 'abierta' } })) throw badRequest('Ya hay una Asamblea abierta');
-    const a = await RoverAssembly.create({ unitId, openedAt: new Date(), openedByUserId: req.user!.id, present: [] });
+    await checkChair(unitId, chairMemberId);
+    const a = await RoverAssembly.create({ unitId, openedAt: new Date(), openedByUserId: req.user!.id, present: [], purpose, agenda, chairMemberId });
     await writeAudit({ action: 'create', entity: 'RoverAssembly', entityId: a.id, summary: `Asamblea de ${unit.name} abierta` });
     res.status(201).json({ id: a.id });
+  }),
+);
+
+/** Objetivo, orden del día y quién preside: se pueden completar o corregir con la Asamblea en marcha. */
+roversRouter.put(
+  '/assembly/:id',
+  ah(async (req, res) => {
+    const { assembly, manage } = await openAssembly(req, req.params.id);
+    if (!manage) throw forbidden();
+    const data = parse(assemblyInfoSchema, req.body);
+    await checkChair(assembly.unitId, data.chairMemberId);
+    await assembly.update(data);
+    res.json({ ok: true });
   }),
 );
 

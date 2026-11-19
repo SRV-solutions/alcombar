@@ -1,17 +1,23 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Gavel, Hand, Minus, ThumbsDown, ThumbsUp, Undo2 } from 'lucide-react';
-import { PROJECT_KIND_LABELS, VOTE_LABELS, type ProjectKind, type Vote } from '@shared';
+import { Check, Gavel, Hand, Minus, Pencil, ThumbsDown, ThumbsUp, Undo2 } from 'lucide-react';
+import { ASSEMBLY_PURPOSES, ASSEMBLY_PURPOSE_LABELS, PROJECT_KIND_LABELS, VOTE_LABELS, type AssemblyPurpose, type ProjectKind, type Vote } from '@shared';
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
-import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Textarea } from '../../components/ui';
+import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Field, Loading, Modal, PageHeader, Select, Textarea } from '../../components/ui';
 import { fmtDay, type AssemblyData, type AssemblyItem } from './types';
 import './rovers.css';
 
 const kindLabel = (k: string) => PROJECT_KIND_LABELS[k as ProjectKind] ?? k;
 const VOTE_ICON = { si: <ThumbsUp />, no: <ThumbsDown />, abstencion: <Minus /> } as const;
 const VOTES: Vote[] = ['si', 'no', 'abstencion'];
+const purposeLabel = (p: string | null) => (p ? (ASSEMBLY_PURPOSE_LABELS[p as AssemblyPurpose] ?? p) : null);
+interface Info {
+  purpose: string;
+  agenda: string;
+  chairMemberId: string;
+}
 
 /**
  * Asamblea de Comunidad. El educador activa el modo Asamblea; los rovers dan el presente, postulan sus mingas y proyectos
@@ -22,6 +28,7 @@ export function AssemblyPage() {
   const toast = useToast();
   const [busy, setBusy] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [info, setInfo] = useState<'open' | 'edit' | null>(null);
   const q = useQuery({
     queryKey: ['rover-assembly'],
     queryFn: () => api.get<AssemblyData>('/rovers/assembly'),
@@ -52,7 +59,7 @@ export function AssemblyPage() {
   const header = (
     <PageHeader
       title="Asamblea de Comunidad"
-      sub={`${d.unit.name}. Acá se presentan y se votan las mingas y los proyectos: se aprueban con más de la mitad de los presentes a favor.`}
+      sub={`${d.unit.name}. Donde la Comunidad decide: acá se presentan y se votan las mingas y los proyectos, que se aprueban con más de la mitad de los presentes a favor.`}
     />
   );
 
@@ -66,13 +73,25 @@ export function AssemblyPage() {
           </Empty>
           {d.canManage ? (
             <div className="form-actions" style={{ justifyContent: 'center' }}>
-              <Button loading={busy === 'open'} onClick={() => void act('open', () => api.post('/rovers/assembly', { unitId: d.unit.id }))}>
+              <Button loading={busy === 'open'} onClick={() => setInfo('open')}>
                 <Gavel /> Activar el modo Asamblea
               </Button>
             </div>
           ) : null}
         </Card>
         <Past data={d} />
+        {info === 'open' ? (
+          <InfoDialog
+            mode="open"
+            rovers={d.rovers}
+            initial={{ purpose: '', agenda: '', chairMemberId: '' }}
+            onClose={() => setInfo(null)}
+            onConfirm={async (v) => {
+              await act('open', () => api.post('/rovers/assembly', { unitId: d.unit.id, ...v }));
+              setInfo(null);
+            }}
+          />
+        ) : null}
       </>
     );
   }
@@ -95,6 +114,39 @@ export function AssemblyPage() {
           </Button>
         ) : null}
       </div>
+
+      {a.purpose || a.agenda || a.chair || d.canManage ? (
+        <div className="assembly-info">
+          <Card
+            title="De qué se trata"
+            actions={
+              d.canManage ? (
+                <Button variant="ghost" size="sm" onClick={() => setInfo('edit')}>
+                  <Pencil /> Editar
+                </Button>
+              ) : null
+            }
+          >
+            {a.purpose || a.agenda || a.chair ? (
+              <>
+                <div className="row" style={{ gap: 8 }}>
+                  {a.purpose ? <Badge tone="info">{purposeLabel(a.purpose)}</Badge> : null}
+                  {a.chair ? (
+                    <span>
+                      Preside <strong>{a.chair.name}</strong>
+                    </span>
+                  ) : null}
+                </div>
+                {a.agenda ? <p className="agenda">{a.agenda}</p> : null}
+              </>
+            ) : (
+              <p className="muted" style={{ margin: 0 }}>
+                Todavía no cargaste para qué se reúnen, el orden del día ni quién preside.
+              </p>
+            )}
+          </Card>
+        </div>
+      ) : null}
 
       {d.me && !d.me.present ? (
         <div className="mt">
@@ -204,6 +256,18 @@ export function AssemblyPage() {
       </div>
 
       <Past data={d} />
+      {info === 'edit' ? (
+        <InfoDialog
+          mode="edit"
+          rovers={d.rovers}
+          initial={{ purpose: a.purpose ?? '', agenda: a.agenda ?? '', chairMemberId: a.chair?.id ?? '' }}
+          onClose={() => setInfo(null)}
+          onConfirm={async (v) => {
+            await act('info', () => api.put(`/rovers/assembly/${a.id}`, v));
+            setInfo(null);
+          }}
+        />
+      ) : null}
       {closing ? (
         <CloseDialog
           pending={a.items.filter((i) => i.status === 'pendiente' || i.status === 'votando').length}
@@ -338,6 +402,69 @@ function VotingCard({
   );
 }
 
+/** Para qué se reúne la Asamblea, qué se trata y quién la preside (herramienta «Cómo organizar una Asamblea» de la Rama). */
+function InfoDialog({ mode, rovers, initial, onClose, onConfirm }: { mode: 'open' | 'edit'; rovers: AssemblyData['rovers']; initial: Info; onClose: () => void; onConfirm: (v: Info) => Promise<void> }) {
+  const [v, setV] = useState<Info>(initial);
+  const [busy, setBusy] = useState(false);
+  return (
+    <Modal
+      title={mode === 'open' ? 'Activar el modo Asamblea' : 'De qué se trata la Asamblea'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            loading={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onConfirm(v);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {mode === 'open' ? 'Abrir la Asamblea' : 'Guardar'}
+          </Button>
+        </>
+      }
+    >
+      <div className="form-grid">
+        <Field label="¿Para qué nos reunimos?" full hint="Conviene un solo objetivo por Asamblea.">
+          <Select value={v.purpose} onChange={(e) => setV({ ...v, purpose: e.target.value })}>
+            <option value="">Sin definir</option>
+            {ASSEMBLY_PURPOSES.map((p) => (
+              <option key={p} value={p}>
+                {ASSEMBLY_PURPOSE_LABELS[p]}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Orden del día" full hint="Los temas que se van a tratar y qué se espera resolver.">
+          <Textarea rows={4} value={v.agenda} onChange={(e) => setV({ ...v, agenda: e.target.value })} />
+        </Field>
+        <Field label="¿Quién preside?" full hint="Un rover de la Comunidad; pueden ir rotando.">
+          <Select value={v.chairMemberId} onChange={(e) => setV({ ...v, chairMemberId: e.target.value })}>
+            <option value="">Sin definir</option>
+            {rovers.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </div>
+      {mode === 'open' ? (
+        <p className="muted" style={{ marginBottom: 0 }}>
+          Los tres datos son opcionales y los podés completar con la Asamblea en marcha. Al abrirla, los rovers ya pueden dar el presente y postular.
+        </p>
+      ) : null}
+    </Modal>
+  );
+}
+
 function CloseDialog({ pending, onClose, onConfirm }: { pending: number; onClose: () => void; onConfirm: (notes: string) => Promise<void> }) {
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
@@ -388,8 +515,9 @@ function Past({ data }: { data: AssemblyData }) {
             <li key={p.id}>
               <div className="row between">
                 <strong>{fmtDay(p.openedAt)}</strong>
-                <span className="muted">{p.present} presentes</span>
+                <span className="muted">{[purposeLabel(p.purpose), p.chair ? `presidió ${p.chair}` : null, `${p.present} presentes`].filter(Boolean).join(' · ')}</span>
               </div>
+              {p.agenda ? <p className="past-notes muted">{p.agenda}</p> : null}
               {p.items.length ? (
                 <ul className="past-items">
                   {p.items.map((i) => (
