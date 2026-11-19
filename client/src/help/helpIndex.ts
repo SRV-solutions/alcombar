@@ -481,7 +481,7 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'sobre-el-grupo',
     title: 'Sobre el Grupo',
-    description: 'La historia del Grupo, sus jefes y jefas, la tribu. Texto que escribe quien administra el Grupo y lee cualquiera que entra a la app.',
+    description: 'La historia del Grupo, sus jefes y jefas, la tribu. Lo escribe quien administra el Grupo, lo lee cualquiera que entra a la app, y todos pueden sumar un aporte en cada sección.',
     path: '/grupo/sobre',
     section: 'Grupo',
     keywords: ['historia', 'historia del grupo', 'jefes de grupo', 'tribu', 'tótems', 'quiénes somos', 'sobre el grupo'],
@@ -499,7 +499,7 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'foto-de-perfil',
     title: 'Foto de perfil (el animal de tu tótem)',
-    description: 'Quien tiene tótem elige en Mi perfil el dibujo de su animal. Se ve en el menú, en la lista de adultos y en su ficha.',
+    description: 'Quien tiene tótem elige en Mi perfil el dibujo de su animal. Se ve en el menú, en la lista de adultos y en su ficha; tocándola se abre grande, con el animal completo.',
     path: '/perfil',
     section: 'Mi cuenta',
     keywords: ['foto', 'foto de perfil', 'avatar', 'tótem', 'totem', 'animal'],

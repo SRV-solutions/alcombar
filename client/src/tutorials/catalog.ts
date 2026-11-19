@@ -255,6 +255,7 @@ export const TUTORIALS: Tutorial[] = [
     keywords: ['asistencia', 'presentes', 'quién vino', 'faltas', 'sábado', 'lista'],
     audience: (c) => c.can('attendance', 'edit'),
     steps: [
+      { route: '/', target: { selector: '.my-units' }, pose: 'point', title: 'Tu unidad, en el inicio', text: 'Si sos educador de una unidad, al entrar ves su tarjeta: «Pasar lista» a un toque, el programa del próximo encuentro, a quién le falta documentación y los cumpleaños de la semana.' },
       { route: '/asistencia', target: nav('/asistencia'), pose: 'point', title: 'Asistencia', text: 'Desde acá tomás la asistencia de tu unidad.' },
       { target: { selector: 'select[aria-label="Unidad"]' }, pose: 'point', title: 'La unidad', text: 'Elegí la unidad. Si estás en una sola, ya aparece elegida.' },
       { target: { selector: 'input[type=date]' }, pose: 'point', title: 'La fecha', text: 'Por defecto es el último sábado. Podés elegir otro día, pero no uno futuro.' },
@@ -1073,6 +1074,7 @@ export const TUTORIALS: Tutorial[] = [
       { route: '/grupo/sobre', target: nav('/grupo/sobre'), pose: 'point', title: 'Sobre el Grupo', text: 'Nuestra historia y lo que nos hace quienes somos, para que lo conozca cualquiera que llega al Grupo.' },
       { target: { selector: '.about-index' }, pose: 'point', title: 'Las secciones', text: 'El índice te lleva a cada una: la historia, los jefes y jefas de Grupo, la tribu.' },
       { target: button('Nueva sección'), pose: 'think', title: 'Escribirlo', text: 'Si administrás el Grupo, con «Nueva sección» y «Editar» cargás el texto. Dejá una línea en blanco entre párrafos; «## » arma un subtítulo y «- » una lista. Una sección vacía solo la ve quien puede editarla.' },
+      { target: button('Sumar un aporte'), pose: 'point', title: 'Sumá lo que sabés', text: 'Cualquiera puede dejar un aporte en una sección: un dato, una anécdota, una corrección. Queda con tu nombre, y lo podés borrar vos o quien administra el Grupo.' },
       { pose: 'cheer', title: '¡Siempre listos!', text: 'Por ahora es solo texto: las fotos vienen más adelante.' },
     ],
   },
@@ -1205,7 +1207,7 @@ export const TUTORIALS: Tutorial[] = [
     steps: [
       { route: '/perfil', target: { selector: '.sidebar a[href="/perfil"]' }, pose: 'point', title: 'Mi perfil', text: 'Tus datos y tus roles en el Grupo.' },
       { target: { selector: '.theme-segmented' }, pose: 'point', title: 'Apariencia', text: 'Claro, oscuro o como tenga configurado tu celular o tu compu.' },
-      { target: { selector: '.avatar-grid' }, pose: 'point', title: 'Tu foto de perfil', text: 'Si tenés tótem, elegí el dibujo de tu animal: se ve al lado de tu nombre en el menú y en la lista de adultos. Por ahora no se suben fotos.' },
+      { target: { selector: '.avatar-grid' }, pose: 'point', title: 'Tu foto de perfil', text: 'Si tenés tótem, elegí el dibujo de tu animal: se ve al lado de tu nombre en el menú y en la lista de adultos. Tocando tu foto se abre grande, con el animal completo. Por ahora no se suben fotos.' },
       { target: { selector: '#tutoriales' }, pose: 'think', title: 'Tus tutoriales', text: 'Todos los tutoriales para tu rol, con cuáles hiciste. Los podés repasar cuando quieras.' },
       { target: { selector: 'form', text: 'Contraseña actual' }, pose: 'point', title: 'Cambiar contraseña', text: 'Mínimo 10 caracteres. Al cambiarla se cierran tus sesiones en otros dispositivos.' },
       { pose: 'cheer', title: '¡Siempre listos!', text: 'Cualquier duda, buscá en el buscador o en Ayuda.' },
