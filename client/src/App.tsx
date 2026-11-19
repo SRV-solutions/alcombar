@@ -57,6 +57,12 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Los accesos se manejan desde Adultos. La pantalla de Usuarios queda solo para quien administra usuarios sin ver adultos. */
+function UsersOrAdults() {
+  const { can } = useAuth();
+  return can('adults', 'view') ? <Navigate to="/adultos" replace /> : <UsersPage />;
+}
+
 function Guard({ perm, anyOf, children }: { perm?: [ModuleKey, Action]; anyOf?: [ModuleKey, Action][]; children: ReactNode }) {
   const { can } = useAuth();
   const perms = anyOf ?? (perm ? [perm] : []);
@@ -121,7 +127,7 @@ export function App() {
         <Route path="adultos/:id" element={<Guard perm={['adults', 'view']}><AdultDetailPage /></Guard>} />
         <Route path="adultos/:id/editar" element={<Guard perm={['adults', 'edit']}><AdultFormPage /></Guard>} />
 
-        <Route path="admin/usuarios" element={<Guard perm={['users', 'view']}><UsersPage /></Guard>} />
+        <Route path="admin/usuarios" element={<Guard perm={['users', 'view']}><UsersOrAdults /></Guard>} />
         <Route path="admin/roles" element={<Guard perm={['roles', 'view']}><RolesPage /></Guard>} />
         <Route path="admin/auditoria" element={<Guard perm={['audit', 'view']}><AuditPage /></Guard>} />
         <Route path="admin/catalogos" element={<Guard anyOf={[['group', 'edit'], ['training', 'create'], ['training', 'edit']]}><CatalogsPage /></Guard>} />

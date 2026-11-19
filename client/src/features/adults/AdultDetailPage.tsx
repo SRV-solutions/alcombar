@@ -4,14 +4,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { adultCourseSchema, ageAt, BRANCHES, BRANCH_INFO, COURSE_KIND_LABELS, documentLabel, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
 import { adultName, useCourses } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
-import type { AdultCourse, AdultDetail, Assignment, MemberDoc } from '../../lib/types';
+import type { AdultCourse, AdultDetail, Assignment, MemberDoc, UserInfo } from '../../lib/types';
+import { AccessDialog } from '../admin/UsersPage';
 import { DocumentDialog } from '../members/MemberDialogs';
 import {
   Badge,
@@ -163,6 +164,9 @@ export function AdultDetailPage() {
   const [doc, setDoc] = useState<MemberDoc | null>(null);
 
   const adult = useQuery({ queryKey: ['adult', id], queryFn: () => api.get<AdultDetail>(`/adults/${id}`) });
+  // Su cuenta de la app, para editarla acá mismo (roles, mail, enlace para entrar)
+  const [accessOpen, setAccessOpen] = useState(false);
+  const users = useQuery({ queryKey: ['users'], queryFn: () => api.get<UserInfo[]>('/users'), enabled: can('users', 'edit') && !!adult.data?.access });
 
   if (adult.isLoading) return <Loading />;
   if (adult.error) return <ErrorBox error={adult.error} />;
@@ -320,9 +324,9 @@ export function AdultDetailPage() {
                   </dl>
                   {can('users', 'edit') ? (
                     <div className="form-actions">
-                      <LinkButton to={`/admin/usuarios?editar=${a.access.userId}`} variant="secondary" size="sm">
-                        <Pencil /> Roles, mail y enlace de ingreso
-                      </LinkButton>
+                      <Button variant="secondary" size="sm" disabled={!users.data} onClick={() => setAccessOpen(true)}>
+                        <KeyRound /> Roles, mail y enlace para entrar
+                      </Button>
                     </div>
                   ) : null}
                 </>
@@ -330,9 +334,9 @@ export function AdultDetailPage() {
                 <>
                   <p style={{ marginTop: 0 }}>No tiene usuario: no puede entrar a la app.</p>
                   {can('users', 'create') ? (
-                    <LinkButton to={`/admin/usuarios?nuevo=${a.id}`} size="sm">
-                      Darle acceso
-                    </LinkButton>
+                    <Button size="sm" onClick={() => setAccessOpen(true)}>
+                      <KeyRound /> Darle acceso
+                    </Button>
                   ) : null}
                 </>
               )}
@@ -574,6 +578,9 @@ export function AdultDetailPage() {
         <ExperiencesCard adultId={a.id} items={a.experiences ?? []} />
       </div>
 
+      {accessOpen ? (
+        <AccessDialog user={a.access ? (users.data?.find((u) => u.id === a.access!.userId) ?? null) : null} presetAdultId={a.access ? null : a.id} fixedAdult onClose={() => setAccessOpen(false)} />
+      ) : null}
       {assignment ? <AssignmentModal adultId={a.id} item={assignment === 'new' ? undefined : assignment} onClose={() => setAssignment(null)} /> : null}
       {doc ? <DocumentDialog adultId={a.id} memberName={adultName(a)} doc={doc} onClose={() => setDoc(null)} onSaved={() => void refresh()} /> : null}
       {course ? <CourseModal adultId={a.id} item={course === 'new' ? undefined : course} onClose={() => setCourse(null)} /> : null}

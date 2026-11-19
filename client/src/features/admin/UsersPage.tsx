@@ -13,7 +13,7 @@ import { useToast } from '../../lib/toast';
 import type { UserInfo } from '../../lib/types';
 import { Badge, Button, Card, Checkbox, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Select } from '../../components/ui';
 
-interface LinkInfo {
+export interface LinkInfo {
   url: string;
   purpose: 'invite' | 'reset';
   emailSent: boolean;
@@ -212,6 +212,16 @@ export function UsersPage() {
   );
 }
 
+/**
+ * El acceso a la app de una persona, en un solo lugar: alta o edición (mail, roles, activo) y el enlace para entrar.
+ * Lo usan la lista y la ficha de Adultos; al cerrar ya quedó todo actualizado.
+ */
+export function AccessDialog({ user, presetAdultId, fixedAdult, onClose }: { user: UserInfo | null; presetAdultId?: string | null; fixedAdult?: boolean; onClose: () => void }) {
+  const [link, setLink] = useState<LinkInfo | null>(null);
+  if (link) return <LinkModal link={link} onClose={onClose} />;
+  return <UserFormModal user={user} presetAdultId={presetAdultId} fixedAdult={fixedAdult} onClose={onClose} onCreated={setLink} />;
+}
+
 // ---------------- Modal con el enlace ----------------
 function LinkModal({ link, onClose }: { link: LinkInfo; onClose: () => void }) {
   const toast = useToast();
@@ -265,7 +275,20 @@ interface FormValues {
   roles: { roleId: string; unitId: string | null }[];
 }
 
-function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: UserInfo | null; presetAdultId?: string | null; onClose: () => void; onCreated: (l: LinkInfo) => void }) {
+function UserFormModal({
+  user,
+  presetAdultId,
+  fixedAdult,
+  onClose,
+  onCreated,
+}: {
+  user: UserInfo | null;
+  presetAdultId?: string | null;
+  /** Abierto desde la ficha de un adulto: la persona ya está elegida. */
+  fixedAdult?: boolean;
+  onClose: () => void;
+  onCreated: (l: LinkInfo) => void;
+}) {
   const isNew = !user;
   const { me, can } = useAuth();
   const toast = useToast();
@@ -321,6 +344,22 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
   }, [adults.data, getValues, setValue]);
   const roleById = (id: string) => roles.data?.find((r) => r.id === id);
   const isSelf = user?.id === me?.user.id;
+  // El acceso se ve en Usuarios y también en la lista y la ficha de Adultos
+  const refreshAll = () => Promise.all([qc.invalidateQueries({ queryKey: ['users'] }), qc.invalidateQueries({ queryKey: ['adults'] }), qc.invalidateQueries({ queryKey: ['adult'] })]);
+  const [linking, setLinking] = useState(false);
+  const genLink = async () => {
+    if (!user) return;
+    setLinking(true);
+    try {
+      const r = await api.post<{ url: string; purpose: 'invite' | 'reset'; emailSent: boolean }>(`/users/${user.id}/link`);
+      await refreshAll();
+      onCreated({ ...r, userName: user.name, userEmail: user.email });
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setLinking(false);
+    }
+  };
 
   const onSubmit = handleSubmit(async (values) => {
     // Un rol de alcance Unidad necesita la unidad
@@ -349,8 +388,8 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
           adultId: values.adultId || null,
           roles: rolesPayload,
         });
-        await qc.invalidateQueries({ queryKey: ['users'] });
-        toast.ok('Usuario creado');
+        await refreshAll();
+        toast.ok(fixedAdult ? 'Acceso creado' : 'Usuario creado');
         onCreated({ url: r.inviteUrl, purpose: 'invite', emailSent: r.emailSent, userName: r.user.name, userEmail: r.user.email });
       } else {
         const r = await api.put<UserInfo & { invite: { url: string; emailSent: boolean } | null }>(`/users/${user.id}`, {
@@ -360,8 +399,8 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
           active: values.active,
           roles: rolesPayload,
         });
-        await qc.invalidateQueries({ queryKey: ['users'] });
-        toast.ok(r.email !== user.email ? 'Email corregido' : 'Usuario actualizado');
+        await refreshAll();
+        toast.ok(r.email !== user.email ? 'Email corregido' : fixedAdult ? 'Acceso actualizado' : 'Usuario actualizado');
         // Si todavía no había elegido contraseña, la invitación salió de nuevo a la dirección correcta
         if (r.invite) onCreated({ url: r.invite.url, purpose: 'invite', emailSent: r.invite.emailSent, userName: r.name, userEmail: r.email });
         else onClose();
@@ -386,7 +425,7 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
   return (
     <Modal
       wide
-      title={isNew ? 'Nuevo usuario' : `Editar usuario: ${user.name}`}
+      title={fixedAdult ? (isNew ? 'Dar acceso a la app' : `Acceso a la app: ${user.name}`) : isNew ? 'Nuevo usuario' : `Editar usuario: ${user.name}`}
       onClose={onClose}
       footer={
         <>
@@ -411,6 +450,7 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
           >
             <Input type="email" autoComplete="off" invalid={!!errors.email} {...register('email')} />
           </Field>
+          <div style={{ display: fixedAdult ? 'none' : 'contents' }}>
           <Field
             label="Adulto vinculado"
             error={errors.adultId?.message}
@@ -430,6 +470,7 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
               })}
             </Select>
           </Field>
+          </div>
           <Field label="Nombre para mostrar" required error={errors.name?.message}>
             <Input invalid={!!errors.name} {...register('name')} />
           </Field>
@@ -523,6 +564,19 @@ function UserFormModal({ user, presetAdultId, onClose, onCreated }: { user: User
             <Plus /> Agregar rol
           </Button>
         </div>
+        {fixedAdult && user?.active ? (
+          <div className="access-link">
+            <div>
+              <strong>Enlace para entrar</strong>
+              <div className="muted">
+                {user.hasPassword ? 'Si se olvidó la contraseña, con un enlace nuevo elige otra.' : 'Todavía no eligió su contraseña: generale un enlace de invitación nuevo.'} Le llega por mail y lo podés copiar para mandárselo por WhatsApp.
+              </div>
+            </div>
+            <Button variant="secondary" size="sm" loading={linking} onClick={() => void genLink()}>
+              <Link2 /> Generar enlace
+            </Button>
+          </div>
+        ) : null}
       </form>
     </Modal>
   );

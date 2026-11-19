@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Download, Plus, UserCheck } from 'lucide-react';
+import { Download, KeyRound, Plus, UserCheck } from 'lucide-react';
 import { ADULT_STATUSES, ADULT_STATUS_LABELS, ageAt, BRANCH_INFO, BRANCHES, trainingSummary, type AdultStatus, type Branch } from '@shared';
 import { api, qs } from '../../lib/api';
 import { matchesPerson } from '../../lib/search';
@@ -9,8 +9,9 @@ import { FilterBar } from '../../components/FilterBar';
 import { useAuth } from '../../lib/auth';
 import { useUnits } from '../../lib/queries';
 import { useToast } from '../../lib/toast';
-import type { Adult, Assignment } from '../../lib/types';
-import { Badge, Button, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
+import type { Adult, Assignment, UserInfo } from '../../lib/types';
+import { Badge, Button, Card, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select, type Tone } from '../../components/ui';
+import { AccessDialog } from '../admin/UsersPage';
 import { DocsSummaryBadge } from '../members/MembersPage';
 
 export const ADULT_STATUS_TONES: Record<string, Tone> = { alta: 'ok', prueba: 'warn', baja: 'neutral' };
@@ -23,6 +24,15 @@ export function assignmentLabel(a: Assignment) {
   const pendingBranch = !a.unit && a.branch ? BRANCH_INFO[a.branch as Branch]?.label ?? a.branch : null;
   const where = a.unit ? a.unit.code : a.supportTeam ? a.supportTeam.name : pendingBranch ? `${pendingBranch} (unidad por asignar)` : 'Grupo';
   return `${a.position} · ${where}`;
+}
+
+const roleNames = (u: UserInfo) => u.userRoles.map((ur) => `${ur.role.name}${ur.unit ? ` (${ur.unit.code})` : ''}`);
+/** Un solo estado del acceso: desactivado, invitado que todavía no entró, o en uso. */
+export function AccessBadge({ user, long }: { user: { active: boolean; hasPassword: boolean } | null; long?: boolean }) {
+  if (!user) return long ? <Badge>Sin usuario</Badge> : <span className="muted">Sin usuario</span>;
+  if (!user.active) return <Badge>Desactivado</Badge>;
+  if (!user.hasPassword) return <Badge tone="warn">{long ? 'Invitado, sin entrar' : 'Sin entrar'}</Badge>;
+  return <Badge tone="ok">Usa la app</Badge>;
 }
 
 export function AdultsPage() {
@@ -38,6 +48,12 @@ export function AdultsPage() {
   const [access, setAccess] = useState('');
   const seesAccess = can('users', 'view');
   const [downloading, setDownloading] = useState(false);
+  // Las cuentas de la app: acá se dan, se editan y se desactivan, sin pasar por otra pantalla
+  const users = useQuery({ queryKey: ['users'], queryFn: () => api.get<UserInfo[]>('/users'), enabled: seesAccess });
+  const [dialog, setDialog] = useState<{ user: UserInfo | null; adultId: string | null; fixed: boolean } | null>(null);
+  const userOf = (adultId: string) => users.data?.find((u) => u.adultId === adultId) ?? null;
+  const canGive = can('users', 'create');
+  const canManage = can('users', 'edit');
 
   const adults = useQuery({
     queryKey: ['adults', { status, unitId }],
@@ -65,11 +81,21 @@ export function AdultsPage() {
     return matchesPerson(q, [a.lastName, a.firstName, a.totem, a.dni, ...cur.map((x) => `${x.position} ${x.unit?.code ?? ''} ${x.supportTeam?.name ?? ''}`)], a.dni);
   });
 
+  // Cuentas que no son de un adulto del Grupo: sueltas, o de rovers (esas se manejan desde su ficha)
+  const filtering = Boolean(status || unitId || branch || access);
+  const loose = filtering ? [] : (users.data ?? []).filter((u) => !u.adultId && !u.memberId && matchesPerson(q, [u.name, u.email], null));
+  const roverAccounts = filtering ? [] : (users.data ?? []).filter((u) => u.memberId && matchesPerson(q, [u.name], null));
+  const withAccess = seesAccess && adults.data ? list.filter((a) => a.access && a.access.state !== 'desactivado').length : null;
+
   return (
     <>
       <PageHeader
         title="Adultos"
-        sub={adults.data ? `${list.length} adulto${list.length === 1 ? '' : 's'}` : undefined}
+        sub={
+          adults.data
+            ? `${list.length} adulto${list.length === 1 ? '' : 's'}${withAccess != null ? ` · ${withAccess} con acceso a la app` : ''}`
+            : undefined
+        }
         actions={
           <>
             {can('adults', 'export') ? (
@@ -148,7 +174,7 @@ export function AdultsPage() {
                   <th>Formación</th>
                   <th>Documentación</th>
                   <th>Estado</th>
-                  <th title="Si tiene usuario en la app y si ya entró">Acceso</th>
+                  <th title="Si puede entrar a la app, con qué roles y si ya entró">Acceso a la app</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,15 +212,45 @@ export function AdultsPage() {
                     <td>
                       <AdultStatusBadge status={a.status} />
                     </td>
-                    <td className="nowrap">
+                    <td className="access-cell">
                       {seesAccess ? (
-                        a.access ? (
-                          <Badge tone={a.access.state === 'activo' ? 'ok' : a.access.state === 'sin_clave' ? 'warn' : 'neutral'}>
-                            {a.access.state === 'activo' ? 'Usa la app' : a.access.state === 'sin_clave' ? 'Sin entrar' : 'Desactivado'}
-                          </Badge>
-                        ) : (
-                          <span className="muted">Sin usuario</span>
-                        )
+                        (() => {
+                          const u = userOf(a.id);
+                          const names = u ? roleNames(u) : [];
+                          const action = u ? canManage : canGive && a.status !== 'baja';
+                          return (
+                            <div className="access-row">
+                              <div>
+                                {a.access ? (
+                                  <Badge tone={a.access.state === 'activo' ? 'ok' : a.access.state === 'sin_clave' ? 'warn' : 'neutral'}>
+                                    {a.access.state === 'activo' ? 'Usa la app' : a.access.state === 'sin_clave' ? 'Sin entrar' : 'Desactivado'}
+                                  </Badge>
+                                ) : (
+                                  <span className="muted">Sin usuario</span>
+                                )}
+                                {names.length ? (
+                                  <div className="muted access-roles" title={names.join(' · ')}>
+                                    {names.slice(0, 2).join(' · ')}
+                                    {names.length > 2 ? ` +${names.length - 2}` : ''}
+                                  </div>
+                                ) : null}
+                              </div>
+                              {action && users.data ? (
+                                <Button
+                                  variant={u ? 'ghost' : 'secondary'}
+                                  size="sm"
+                                  aria-label={u ? `Acceso de ${a.firstName} ${a.lastName}` : `Dar acceso a ${a.firstName} ${a.lastName}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDialog({ user: u, adultId: a.id, fixed: true });
+                                  }}
+                                >
+                                  <KeyRound /> {u ? 'Acceso' : 'Dar acceso'}
+                                </Button>
+                              ) : null}
+                            </div>
+                          );
+                        })()
                       ) : a.user ? (
                         <span title={a.user.active ? 'Usuario activo' : 'Usuario desactivado'} style={{ color: a.user.active ? 'var(--ok)' : 'var(--gris)' }}>
                           <UserCheck size={18} />
@@ -210,6 +266,61 @@ export function AdultsPage() {
           </div>
         </section>
       )}
+
+      {roverAccounts.length ? (
+        <div className="mt">
+          <Card title={`Rovers con acceso (${roverAccounts.length})`}>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Entran con su DNI. Su acceso se da, se renueva y se quita desde la ficha de cada uno.
+            </p>
+            <ul className="list-plain">
+              {roverAccounts.map((u) => (
+                <li key={u.id} className="row between">
+                  <Link to={`/protagonistas/${u.memberId}`}>{u.name}</Link>
+                  <AccessBadge user={u} />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      ) : null}
+      {loose.length ? (
+        <div className="mt">
+          <Card title={`Cuentas sin ficha de adulto (${loose.length})`}>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Pueden entrar a la app pero no figuran entre los adultos del Grupo. Si la persona es del Grupo, vinculala con su ficha desde «Acceso».
+            </p>
+            <ul className="list-plain">
+              {loose.map((u) => (
+                <li key={u.id} className="access-row">
+                  <div>
+                    <strong>{u.name}</strong>
+                    <div className="muted access-roles">{[u.email, ...roleNames(u)].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  <span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+                    <AccessBadge user={u} />
+                    {canManage ? (
+                      <Button variant="ghost" size="sm" onClick={() => setDialog({ user: u, adultId: null, fixed: false })}>
+                        <KeyRound /> Acceso
+                      </Button>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      ) : null}
+      {seesAccess && canGive && adults.data ? (
+        <p className="muted" style={{ fontSize: '0.87rem' }}>
+          ¿Alguien que no es adulto del Grupo necesita entrar?{' '}
+          <button type="button" className="link-btn" onClick={() => setDialog({ user: null, adultId: null, fixed: false })}>
+            Crear una cuenta sin ficha
+          </button>
+          .
+        </p>
+      ) : null}
+      {dialog ? <AccessDialog user={dialog.user} presetAdultId={dialog.user ? null : dialog.adultId} fixedAdult={dialog.fixed} onClose={() => setDialog(null)} /> : null}
     </>
   );
 }
