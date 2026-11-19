@@ -2,7 +2,21 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Award, CheckSquare, Flag, NotebookPen, Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { COMPETENCIES_PER_STAGE, COMPETENCY_STATUSES, COMPETENCY_STATUS_LABELS, formatDate, isComingSoon, PROGRESSION_TOOL, type CompetencyStatus } from '@shared';
+import {
+  COMPETENCIES_PER_STAGE,
+  COMPETENCY_STATUSES,
+  COMPETENCY_STATUS_LABELS,
+  formatDate,
+  isComingSoon,
+  PROGRESSION_TOOL,
+  TOOL_PAYMENTS,
+  TOOL_PAYMENT_LABELS,
+  TOOL_STATUSES,
+  TOOL_STATUS_LABELS,
+  type CompetencyStatus,
+  type ToolPayment,
+  type ToolStatus,
+} from '@shared';
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
 import { Badge, Button, Card, ConfirmButton, Empty, ErrorBox, Input, Loading, Modal, Select, type Tone } from '../../components/ui';
@@ -240,6 +254,39 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
         refresh();
       },
     });
+  const toolDialog = () =>
+    setDialog({
+      title: tool ?? 'Material de progresión',
+      fields: [
+        {
+          key: 'toolStatus',
+          label: 'Entrega',
+          type: 'select',
+          options: [{ value: '', label: 'Sin registrar' }, ...TOOL_STATUSES.map((s) => ({ value: s, label: TOOL_STATUS_LABELS[s] }))],
+        },
+        { key: 'toolDeliveredAt', label: 'Fecha de entrega', type: 'date' },
+        { key: 'toolLost', label: 'La había perdido y se le entregó otra', type: 'checkbox' },
+        {
+          key: 'toolPayment',
+          label: 'Pago',
+          type: 'select',
+          options: [{ value: '', label: 'Sin registrar' }, ...TOOL_PAYMENTS.map((s) => ({ value: s, label: TOOL_PAYMENT_LABELS[s] }))],
+        },
+        { key: 'toolNotes', label: 'Notas', type: 'textarea' },
+      ],
+      initial: {
+        toolStatus: d.moments.toolStatus ?? '',
+        toolDeliveredAt: d.moments.toolDeliveredAt ?? '',
+        toolLost: d.moments.toolLost ?? false,
+        toolPayment: d.moments.toolPayment ?? '',
+        toolNotes: d.moments.toolNotes ?? '',
+      },
+      onSave: async (v) => {
+        await api.put(`/progression/members/${memberId}/tool`, v);
+        toast.ok('Guardado');
+        refresh();
+      },
+    });
   const compDialog = (c: MemberCompetencyRow) =>
     setDialog({
       title: c.competency ? `${c.competency.number ? `${c.competency.number}. ` : ''}${c.competency.name}` : 'Competencia',
@@ -427,6 +474,34 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
           <div className="value">{d.member.promiseDate ? formatDate(d.member.promiseDate) : <span className="muted">Sin fecha</span>}</div>
           {d.moments.transition ? <Badge tone="warn">En transición</Badge> : null}
         </div>
+        {tool ? (
+          <div className={`std ${d.moments.toolStatus && d.moments.toolStatus !== 'pendiente' ? 'done' : ''}`}>
+            <div className="label">
+              {tool}
+              {canEdit ? (
+                <button type="button" className="link-btn" style={{ marginLeft: 8 }} onClick={toolDialog}>
+                  Editar
+                </button>
+              ) : null}
+            </div>
+            <div className="value">
+              {d.moments.toolStatus ? (
+                <>
+                  {TOOL_STATUS_LABELS[d.moments.toolStatus as ToolStatus] ?? d.moments.toolStatus}
+                  {d.moments.toolLost ? <small> (la había perdido)</small> : null}
+                </>
+              ) : (
+                <span className="muted">Sin registrar</span>
+              )}
+            </div>
+            {d.moments.toolPayment === 'pendiente' ? (
+              <Badge tone="warn">{TOOL_PAYMENT_LABELS.pendiente}</Badge>
+            ) : d.moments.toolPayment && d.moments.toolPayment !== 'no_aplica' ? (
+              <div className="muted">{TOOL_PAYMENT_LABELS[d.moments.toolPayment as ToolPayment] ?? d.moments.toolPayment}</div>
+            ) : null}
+            {d.moments.toolNotes ? <div className="muted">{d.moments.toolNotes}</div> : null}
+          </div>
+        ) : null}
       </div>
 
       <div className="prog-sections">

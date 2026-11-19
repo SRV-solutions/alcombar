@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Award, BookOpen, Users } from 'lucide-react';
-import { BRANCH_INFO, COMPETENCIES_PER_STAGE, formatDate, isComingSoon, type Branch } from '@shared';
+import {
+  BRANCH_INFO,
+  COMPETENCIES_PER_STAGE,
+  formatDate,
+  isComingSoon,
+  PROGRESSION_TOOL,
+  TOOL_PAYMENT_LABELS,
+  TOOL_STATUS_LABELS,
+  type Branch,
+  type ToolPayment,
+  type ToolStatus,
+} from '@shared';
 import { api, qs } from '../../lib/api';
 import { Badge, Card, Empty, ErrorBox, LinkButton, Loading, PageHeader, Select } from '../../components/ui';
 import { UnitSelect, useProgramUnit } from '../program/common';
@@ -128,6 +139,7 @@ export function BoardPage() {
                     <th>Protagonista</th>
                     <th>Etapa</th>
                     <th>Insignia</th>
+                    {PROGRESSION_TOOL[b.unit.branch] ? <th>{PROGRESSION_TOOL[b.unit.branch]}</th> : null}
                     <th className="num">Competencias</th>
                     <th>Por área</th>
                     <th>Última revisión</th>
@@ -165,6 +177,27 @@ export function BoardPage() {
                           <span className="muted">—</span>
                         )}
                       </td>
+                      {PROGRESSION_TOOL[b.unit.branch] ? (
+                        <td>
+                          {m.tool.status ? (
+                            <>
+                              <Badge tone={m.tool.status === 'pendiente' ? 'warn' : 'ok'}>
+                                {TOOL_STATUS_LABELS[m.tool.status as ToolStatus] ?? m.tool.status}
+                                {m.tool.lost ? ' (perdida)' : ''}
+                              </Badge>
+                              {m.tool.payment === 'pendiente' ? (
+                                <div>
+                                  <Badge tone="warn">{TOOL_PAYMENT_LABELS.pendiente}</Badge>
+                                </div>
+                              ) : m.tool.payment && m.tool.payment !== 'no_aplica' ? (
+                                <div className="muted">{TOOL_PAYMENT_LABELS[m.tool.payment as ToolPayment] ?? m.tool.payment}</div>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="muted">—</span>
+                          )}
+                        </td>
+                      ) : null}
                       <td className="num">
                         {m.competencies.achieved}/{m.competencies.total}
                         {m.competencies.total && (m.competencies.total < COMPETENCIES_PER_STAGE.min || m.competencies.total > COMPETENCIES_PER_STAGE.max) ? (

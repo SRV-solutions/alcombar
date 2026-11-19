@@ -146,6 +146,8 @@ export const smallGroupSchema = z.object({
   name: reqStr(80),
   kind: z.enum(SMALL_GROUP_KINDS),
   active: z.boolean().default(true),
+  /** Educador/a que lo acompaña. Si no viene, no se toca. */
+  companionAdultId: z.union([z.literal(''), z.string().uuid(), z.null()]).optional(),
 });
 export const supportTeamSchema = z.object({
   name: reqStr(120),

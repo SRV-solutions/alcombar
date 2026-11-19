@@ -305,12 +305,30 @@ export class MemberProgress extends Model<InferAttributes<MemberProgress>, Infer
   declare transition: CreationOptional<boolean>;
   declare transitionNotes: string | null;
   declare notes: string | null;
+  /** Entrega del material de progresión de la rama (Cartas de Exploración…). */
+  declare toolStatus: CreationOptional<string | null>;
+  declare toolLost: CreationOptional<boolean>;
+  declare toolDeliveredAt: CreationOptional<string | null>;
+  declare toolPayment: CreationOptional<string | null>;
+  declare toolNotes: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
 }
 MemberProgress.init(
-  { id, ambientacionSince: DATEONLY, transition: { type: BOOLEAN, allowNull: false, defaultValue: false }, transitionNotes: TEXT, notes: TEXT, ...stamps },
+  {
+    id,
+    ambientacionSince: DATEONLY,
+    transition: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    transitionNotes: TEXT,
+    notes: TEXT,
+    toolStatus: STRING(20),
+    toolLost: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    toolDeliveredAt: DATEONLY,
+    toolPayment: STRING(20),
+    toolNotes: TEXT,
+    ...stamps,
+  },
   { sequelize, tableName: 'member_progress', modelName: 'MemberProgress' },
 );
 

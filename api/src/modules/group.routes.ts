@@ -28,7 +28,9 @@ groupRouter.get(
   '/units',
   ah(async (_req, res) => {
     // Lista básica de unidades: la usan todos los formularios, cualquier usuario autenticado la puede ver.
-    const units = await Unit.findAll({ include: [{ model: SmallGroup, as: 'smallGroups' }] });
+    const units = await Unit.findAll({
+      include: [{ model: SmallGroup, as: 'smallGroups', include: [{ model: Adult, as: 'companion', attributes: ['id', 'firstName', 'lastName', 'totem'] }] }],
+    });
     const counts = await sequelize.query<{ unit_id: string; members: number }>(
       `SELECT unit_id, COUNT(*)::int AS members FROM members WHERE deleted_at IS NULL AND status = 'activo' GROUP BY unit_id`,
       { type: QueryTypes.SELECT },
@@ -96,13 +98,17 @@ groupRouter.delete(
 
 // ---------------- Pequeños grupos ----------------
 const sgUnit = async (req: Request) => (await SmallGroup.findByPk(req.params.id))?.unitId;
+async function checkCompanion(adultId: string | null | undefined) {
+  if (adultId && !(await Adult.findByPk(adultId))) throw badRequest('Revisá los datos', { companionAdultId: 'Ese adulto no existe' });
+}
 
 groupRouter.post(
   '/small-groups',
   ah(async (req, res) => {
     const data = parse(smallGroupSchema, req.body);
     assertCan(req, 'small_groups', 'create', data.unitId);
-    res.status(201).json(await SmallGroup.create(data));
+    await checkCompanion(data.companionAdultId);
+    res.status(201).json(await SmallGroup.create({ ...data, companionAdultId: data.companionAdultId || null }));
   }),
 );
 
@@ -114,7 +120,13 @@ groupRouter.put(
     const sg = await SmallGroup.findByPk(req.params.id);
     if (!sg) throw notFound();
     if (data.unitId !== sg.unitId) throw badRequest('Un pequeño grupo no puede cambiar de unidad');
-    await sg.update({ name: data.name, kind: data.kind, active: data.active });
+    await checkCompanion(data.companionAdultId);
+    await sg.update({
+      name: data.name,
+      kind: data.kind,
+      active: data.active,
+      ...(data.companionAdultId !== undefined ? { companionAdultId: data.companionAdultId || null } : {}),
+    });
     res.json(sg);
   }),
 );

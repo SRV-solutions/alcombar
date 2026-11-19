@@ -45,6 +45,8 @@ export interface BoardMember {
   smallGroup: { id: string; name: string } | null;
   promiseDate: string | null;
   transition: boolean;
+  /** Entrega del material de progresión (Cartas de Exploración…). */
+  tool: { status: string | null; lost: boolean; payment: string | null };
   currentStage: { id: string; stageId: string; name: string; startedAt: string | null; insigniaAt: string | null } | null;
   competencies: { total: number; achieved: number; byArea: Record<string, { chosen: number; achieved: number }> };
   lastReview: string | null;
@@ -120,7 +122,17 @@ export interface MemberProgressData {
     branch: string | null;
   };
   canEdit: boolean;
-  moments: { ambientacionSince: string | null; transition: boolean; transitionNotes: string | null; notes: string | null };
+  moments: {
+    ambientacionSince: string | null;
+    transition: boolean;
+    transitionNotes: string | null;
+    notes: string | null;
+    toolStatus: string | null;
+    toolLost: boolean;
+    toolDeliveredAt: string | null;
+    toolPayment: string | null;
+    toolNotes: string | null;
+  };
   scheme: Scheme | null;
   stages: MemberStageRow[];
   competencies: MemberCompetencyRow[];

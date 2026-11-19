@@ -12,6 +12,7 @@ import {
   memberRoleSchema,
   memberSpecialtySchema,
   memberStageSchema,
+  memberToolSchema,
   progressionNoteSchema,
   schemeSchema,
   SCOUT_STANDARDS,
@@ -288,6 +289,7 @@ progressionRouter.get(
           smallGroup: m.smallGroup,
           promiseDate: m.promiseDate,
           transition: mo?.transition ?? false,
+          tool: { status: mo?.toolStatus ?? null, lost: mo?.toolLost ?? false, payment: mo?.toolPayment ?? null },
           currentStage: current ? { id: current.id, stageId: current.stageId, name: current.stage?.name ?? '', startedAt: current.startedAt, insigniaAt: current.insigniaAt } : null,
           competencies: { total: mc.length, achieved: mc.filter((c) => c.status === 'lograda').length, byArea },
           lastReview: rev ? rev.date ?? rev.createdAt.toISOString().slice(0, 10) : null,
@@ -367,7 +369,17 @@ progressionRouter.get(
         branch,
       },
       canEdit: can(req.auth, 'progression', 'edit', member.unitId),
-      moments: moments ?? { ambientacionSince: null, transition: false, transitionNotes: null, notes: null },
+      moments: moments ?? {
+        ambientacionSince: null,
+        transition: false,
+        transitionNotes: null,
+        notes: null,
+        toolStatus: null,
+        toolLost: false,
+        toolDeliveredAt: null,
+        toolPayment: null,
+        toolNotes: null,
+      },
       scheme,
       stages,
       competencies: comps,
@@ -389,6 +401,27 @@ progressionRouter.put(
     const existing = await MemberProgress.findOne({ where: { memberId } });
     if (existing) await existing.update(d);
     else await MemberProgress.create({ ...d, memberId });
+    res.json({ ok: true });
+  }),
+);
+
+// Entrega del material de progresión (Cartas de Exploración, Rastros…): si ya lo tenía, si se entregó y cómo lo pagó
+progressionRouter.put(
+  '/members/:memberId/tool',
+  authorize('progression', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const d = parse(memberToolSchema, req.body);
+    const memberId = req.params.memberId;
+    const values = {
+      toolStatus: d.toolStatus,
+      toolLost: d.toolStatus === 'entregada' ? d.toolLost : false,
+      toolDeliveredAt: d.toolStatus === 'entregada' ? d.toolDeliveredAt : null,
+      toolPayment: d.toolStatus ? d.toolPayment : null,
+      toolNotes: d.toolNotes,
+    };
+    const existing = await MemberProgress.findOne({ where: { memberId } });
+    if (existing) await existing.update(values);
+    else await MemberProgress.create({ memberId, ambientacionSince: null, transitionNotes: null, notes: null, ...values });
     res.json({ ok: true });
   }),
 );

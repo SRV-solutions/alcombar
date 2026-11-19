@@ -226,6 +226,26 @@ export const memberMomentsSchema = z.object({
   transitionNotes: optStr(2000),
   notes: optStr(4000),
 });
+/** Entrega del material de progresión de la rama (Cartas de Exploración, Rastros, Diario de Marcha…). */
+export const TOOL_STATUSES = ['tenia', 'entregada', 'pendiente'] as const;
+export type ToolStatus = (typeof TOOL_STATUSES)[number];
+export const TOOL_STATUS_LABELS: Record<ToolStatus, string> = { tenia: 'Ya tenía', entregada: 'Se entregó', pendiente: 'Falta entregar' };
+export const TOOL_PAYMENTS = ['no_aplica', 'efectivo', 'mercado_pago', 'pendiente'] as const;
+export type ToolPayment = (typeof TOOL_PAYMENTS)[number];
+export const TOOL_PAYMENT_LABELS: Record<ToolPayment, string> = {
+  no_aplica: 'No corresponde',
+  efectivo: 'Pagó en efectivo',
+  mercado_pago: 'Pagó por Mercado Pago',
+  pendiente: 'Falta pagar',
+};
+export const memberToolSchema = z.object({
+  toolStatus: z.union([z.enum(TOOL_STATUSES), z.literal(''), z.null()]).optional().transform((v) => v || null),
+  /** Lo había perdido y se le entregó otro. */
+  toolLost: z.boolean().default(false),
+  toolDeliveredAt: optDate,
+  toolPayment: z.union([z.enum(TOOL_PAYMENTS), z.literal(''), z.null()]).optional().transform((v) => v || null),
+  toolNotes: optStr(500),
+});
 export const memberStageSchema = z.object({
   stageId: z.string().uuid('Elegí la etapa'),
   startedAt: optDate,

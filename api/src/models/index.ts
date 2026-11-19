@@ -52,10 +52,13 @@ export class SmallGroup extends Model<InferAttributes<SmallGroup>, InferCreation
   declare name: string;
   declare kind: string;
   declare active: CreationOptional<boolean>;
+  /** Educador/a que acompaña al pequeño grupo. */
+  declare companionAdultId: CreationOptional<ForeignKey<Adult['id']> | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare deletedAt: CreationOptional<Date | null>;
   declare unit?: NonAttribute<Unit>;
+  declare companion?: NonAttribute<Adult | null>;
 }
 SmallGroup.init(
   {
@@ -773,6 +776,7 @@ AdultAttendance.init(
 // ======================= RELACIONES =======================
 Unit.hasMany(SmallGroup, { as: 'smallGroups', foreignKey: 'unitId' });
 SmallGroup.belongsTo(Unit, { as: 'unit', foreignKey: 'unitId' });
+SmallGroup.belongsTo(Adult, { as: 'companion', foreignKey: 'companionAdultId' });
 
 SupportTeam.belongsTo(Adult, { as: 'leader', foreignKey: 'leaderAdultId' });
 

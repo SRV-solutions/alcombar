@@ -22,6 +22,9 @@ export interface SmallGroup {
   name: string;
   kind: string;
   active: boolean;
+  /** Educador/a que lo acompaña. */
+  companionAdultId?: string | null;
+  companion?: { id: string; firstName: string; lastName: string; totem: string | null } | null;
 }
 export interface Unit extends UnitRef {
   /** Protagonistas por adulto (1 adulto cada N). */

@@ -39,7 +39,7 @@ const KIND_LABELS: Record<string, string> = {
   patrulla: 'Patrulla',
 };
 
-function SmallGroupModal({ unit, group, onClose }: { unit: Unit; group?: SmallGroup; onClose: () => void }) {
+function SmallGroupModal({ unit, group, adults, onClose }: { unit: Unit; group?: SmallGroup; adults: Adult[]; onClose: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const {
@@ -55,12 +55,14 @@ function SmallGroupModal({ unit, group, onClose }: { unit: Unit; group?: SmallGr
           name: group.name,
           kind: group.kind as SmallGroupForm['kind'],
           active: group.active,
+          companionAdultId: group.companionAdultId ?? '',
         }
       : {
           unitId: unit.id,
           name: '',
           kind: defaultSmallGroupKind(unit.branch as Branch),
           active: true,
+          companionAdultId: '',
         },
   });
 
@@ -110,6 +112,23 @@ function SmallGroupModal({ unit, group, onClose }: { unit: Unit; group?: SmallGr
         <div className="field" style={{ justifyContent: 'flex-end' }}>
           <Checkbox {...register('active')} label="Activo" />
         </div>
+        {unit.branch === 'scouts' ? (
+          <Field label="Educador/a que la acompaña" error={errors.companionAdultId?.message} full hint="Quien hace el seguimiento de la patrulla y de la progresión de sus integrantes">
+            <Select {...register('companionAdultId')}>
+              <option value="">— Sin definir —</option>
+              {group?.companion && !adults.some((a) => a.id === group.companion!.id) ? (
+                <option value={group.companion.id}>
+                  {group.companion.lastName}, {group.companion.firstName}
+                </option>
+              ) : null}
+              {adults.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.lastName}, {a.firstName}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
       </form>
     </Modal>
   );
@@ -297,6 +316,11 @@ export function UnitDetailPage() {
                         ) : (
                           sg.name
                         )}
+                        {sg.companion ? (
+                          <div className="muted" style={{ fontSize: '0.85em' }}>
+                            Acompaña: {sg.companion.firstName} {sg.companion.lastName}
+                          </div>
+                        ) : null}
                       </td>
                       <td>{KIND_LABELS[sg.kind] ?? sg.kind}</td>
                       {canMembers ? <td className="num">{countIn(sg.id)}</td> : null}
@@ -565,7 +589,7 @@ export function UnitDetailPage() {
       </div>
 
       {editUnit ? <UnitFormModal unit={unit} onClose={() => setEditUnit(false)} /> : null}
-      {sgModal ? <SmallGroupModal unit={unit} group={sgModal === 'new' ? undefined : sgModal} onClose={() => setSgModal(null)} /> : null}
+      {sgModal ? <SmallGroupModal unit={unit} group={sgModal === 'new' ? undefined : sgModal} adults={adults.data ?? []} onClose={() => setSgModal(null)} /> : null}
     </>
   );
 }
