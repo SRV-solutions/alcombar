@@ -2,11 +2,81 @@ import { Router } from 'express';
 import { Op, QueryTypes } from 'sequelize';
 import { can, documentStatus, kidsPerAdultOf, requiredAdults, todayIso, unitsWith } from '../shared';
 import { sequelize } from '../db';
-import { AuditLog, DocumentType, Member, MemberDocument, Unit, User } from '../models';
+import { Attendance, AuditLog, DocumentType, Member, MemberDocument, Unit, User } from '../models';
+import { MeetingItem, MeetingProgram } from '../models/program';
 import { ah, forbidden } from '../lib/errors';
 import { authorize } from '../middlewares/auth';
 
 export const dashboardRouter = Router();
+
+/**
+ * «Mi unidad»: lo que un educador necesita el sábado, con el celular en la mano. Una tarjeta por cada unidad en la que
+ * tiene un rol: si ya se pasó lista hoy, el próximo programa, a quién le falta documentación y los cumpleaños de la semana.
+ */
+dashboardRouter.get(
+  '/mine',
+  ah(async (req, res) => {
+    if (req.user!.memberId) return res.json({ units: [] });
+    const ids = [...new Set(req.auth!.roles.map((r) => r.unitId).filter(Boolean))] as string[];
+    if (!ids.length) return res.json({ units: [] });
+    const units = await Unit.findAll({ where: { id: ids, active: true }, attributes: ['id', 'name', 'code', 'branch'], order: [['name', 'ASC']] });
+    const today = todayIso();
+    const in7 = new Date(Date.now() + 7 * 86_400_000);
+    const types = await DocumentType.findAll({ where: { active: true, appliesTo: 'member', required: true } });
+    const out = [];
+    for (const u of units.slice(0, 4)) {
+      const members = await Member.findAll({ where: { unitId: u.id, status: 'activo' }, attributes: ['id', 'firstName', 'lastName', 'birthDate'] });
+      const [lastDate, takenToday, program] = await Promise.all([
+        can(req.auth, 'attendance', 'view', u.id) ? (Attendance.max('date', { where: { unitId: u.id } }) as Promise<string | null>) : null,
+        can(req.auth, 'attendance', 'view', u.id) ? Attendance.count({ where: { unitId: u.id, date: today } }) : 0,
+        can(req.auth, 'activities', 'view', u.id)
+          ? MeetingProgram.findOne({ where: { unitId: u.id, date: { [Op.gte]: today } }, include: [{ model: MeetingItem, as: 'items', attributes: ['id', 'title', 'time', 'sortOrder'] }], order: [['date', 'ASC']] })
+          : null,
+      ]);
+      // A cuántos chicos les falta o se les venció algún documento obligatorio
+      let docsPending: number | null = null;
+      if (can(req.auth, 'member_documents', 'view', u.id) && members.length && types.length) {
+        const docs = await MemberDocument.findAll({ where: { memberId: members.map((m) => m.id) } });
+        docsPending = members.filter((m) =>
+          types.some((t) => {
+            const s = documentStatus(docs.find((d) => d.memberId === m.id && d.documentTypeId === t.id), t.hasExpiry, today, t.required);
+            return s === 'missing' || s === 'expired';
+          }),
+        ).length;
+      }
+      // Cumpleaños de los próximos 7 días
+      const birthdays = can(req.auth, 'members', 'view', u.id)
+        ? members
+            .filter((m) => m.birthDate)
+            .map((m) => {
+              const [, mm, dd] = m.birthDate!.split('-').map(Number);
+              const now = new Date();
+              let next = new Date(now.getFullYear(), mm - 1, dd);
+              if (next.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) next = new Date(now.getFullYear() + 1, mm - 1, dd);
+              return { name: `${m.firstName} ${m.lastName}`, next };
+            })
+            .filter((b) => b.next.getTime() <= in7.getTime())
+            .sort((a, b) => a.next.getTime() - b.next.getTime())
+            .map((b) => ({ name: b.name, day: b.next.getDate(), month: b.next.getMonth() + 1, today: b.next.toDateString() === new Date().toDateString() }))
+        : [];
+      const items = [...(program?.items ?? [])].sort((a, b) => a.sortOrder - b.sortOrder);
+      out.push({
+        id: u.id,
+        name: u.name,
+        code: u.code,
+        branch: u.branch,
+        members: members.length,
+        canTakeAttendance: can(req.auth, 'attendance', 'edit', u.id),
+        attendance: { last: lastDate ?? null, takenToday: takenToday > 0 },
+        program: program ? { date: program.date, items: items.length, first: items.slice(0, 3).map((i) => [i.time, i.title].filter(Boolean).join(' · ')).filter(Boolean) } : null,
+        canSeeProgram: can(req.auth, 'activities', 'view', u.id),
+        docsPending,
+        birthdays,
+      });
+    }
+    res.json({ units: out });
+  }),
+);
 
 dashboardRouter.get(
   '/',

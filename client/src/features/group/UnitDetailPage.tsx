@@ -295,7 +295,7 @@ export function UnitDetailPage() {
             <Empty>Esta unidad todavía no tiene {sgLabel.many.toLowerCase()}.</Empty>
           ) : (
             <div className="table-wrap">
-              <table className="table">
+              <table className="table stack-sm">
                 <thead>
                   <tr>
                     <th>Nombre</th>
@@ -443,7 +443,7 @@ export function UnitDetailPage() {
                     <Empty>Nadie coincide con el filtro.</Empty>
                   ) : (
                     <div className="table-wrap">
-                      <table className="table">
+                      <table className="table stack-sm">
                         <thead>
                           <tr>
                             {canMove ? (
@@ -546,7 +546,7 @@ export function UnitDetailPage() {
                   <Empty>Nadie coincide con la búsqueda.</Empty>
                 ) : (
                   <div className="table-wrap">
-                    <table className="table">
+                    <table className="table stack-sm">
                       <thead>
                         <tr>
                           <th>Adulto</th>

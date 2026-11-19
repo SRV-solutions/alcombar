@@ -232,7 +232,7 @@ export function MembersPage() {
             ) : null}
           </Empty>
         ) : (
-          <table className="table">
+          <table className="table stack-sm">
             <thead>
               <tr>
                 {pendingView && canAssign ? (

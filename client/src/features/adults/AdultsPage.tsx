@@ -167,7 +167,7 @@ export function AdultsPage() {
       ) : (
         <section className="card">
           <div className="table-wrap">
-            <table className="table">
+            <table className="table stack-sm">
               <thead>
                 <tr>
                   <th>Adulto</th>

@@ -1,0 +1,11 @@
+/* «Mi unidad»: el inicio del educador */
+.my-units { display: grid; gap: 16px; margin-bottom: 16px; }
+@media (min-width: 900px) { .my-units { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); } }
+.my-unit-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.my-unit-main .btn { min-height: 48px; padding-inline: 20px; font-size: 1rem; }
+.my-unit-rows li { padding: 0; }
+.my-unit-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; min-height: 48px; color: inherit; text-decoration: none; }
+a.my-unit-row:hover strong { text-decoration: underline; }
+.my-unit-row > svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; color: var(--link); }
+.my-unit-row > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.my-unit-row .muted { font-size: 0.87rem; }

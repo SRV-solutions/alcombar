@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { MyUnitCards } from './MyUnitCards';
 import { Link } from 'react-router-dom';
 import { Cake, Tent, Upload } from 'lucide-react';
 import { BRANCH_INFO, type Branch } from '@shared';
@@ -61,6 +62,7 @@ function GroupDashboard() {
         }
       />
 
+      <MyUnitCards />
       {(pendingMembers && canAll('members', 'edit')) || (pendingAdults && can('adults', 'edit')) ? (
         <div className="alert alert-warn mb">
           <div className="row between">
@@ -118,7 +120,7 @@ function GroupDashboard() {
 
       <div className="split">
         <Card title="Unidades" bodyClass="table-wrap">
-          <table className="table">
+          <table className="table stack-sm">
             <thead>
               <tr>
                 <th>Unidad</th>

@@ -42,6 +42,7 @@ import { AdultsPage } from './features/adults/AdultsPage';
 import { AdultDetailPage } from './features/adults/AdultDetailPage';
 import { AdultFormPage } from './features/adults/AdultFormPage';
 import { UsersPage } from './features/admin/UsersPage';
+import { TotemPreview } from './components/TotemPreview';
 import { CouncilAgendaPage } from './features/library/CouncilAgendaPage';
 import { RolesPage } from './features/admin/RolesPage';
 import { AuditPage } from './features/admin/AuditPage';
@@ -75,6 +76,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* Lámina de los animales de la Tribu: solo existe en desarrollo */}
+      {import.meta.env.DEV ? <Route path="/dev/totems" element={<TotemPreview />} /> : null}
       <Route path="/definir-clave" element={<SetPasswordPage />} />
       <Route path="/qr" element={<QrLoginPage />} />
       <Route path="/olvide-clave" element={<ForgotPasswordPage />} />

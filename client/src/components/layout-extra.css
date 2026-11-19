@@ -74,3 +74,31 @@
 .avatar-check { position: absolute; right: -4px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%; background: var(--link); color: var(--surface); display: grid; place-items: center; border: 2px solid var(--surface); }
 .avatar-name { display: flex; flex-direction: column; gap: 2px; }
 .avatar-name small { color: var(--link); font-weight: 600; }
+
+/* ---------- Foto de perfil: al tocarla se ve el animal completo ---------- */
+.totem-btn { padding: 0; border: 0; background: none; border-radius: 50%; cursor: zoom-in; display: block; flex-shrink: 0; line-height: 0; transition: transform 0.15s ease; }
+.totem-btn:hover { transform: scale(1.06); }
+.totem-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.totem-view { display: grid; gap: 12px; justify-items: center; }
+.totem-view .totem-full { max-width: 420px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25); }
+.totem-view-caption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.totem-view-caption strong { font-size: 1.1rem; }
+.avatar-empty { width: 84px; height: 84px; }
+@media (prefers-reduced-motion: reduce) { .totem-btn { transition: none; } .totem-btn:hover { transform: none; } }
+
+/* ---------- Tablas que en el celular se apilan (clase stack-sm) ---------- */
+@media (max-width: 640px) {
+  .table.stack-sm, .table.stack-sm tbody { display: block; width: 100%; }
+  .table.stack-sm thead { display: none; }
+  /* Cada fila es una tarjeta: el nombre arriba y el resto en dos columnas, cada dato con su etiqueta */
+  .table.stack-sm tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .table.stack-sm tr:last-child { border-bottom: none; }
+  .table.stack-sm td { display: block; padding: 0; border: 0; min-width: 0; white-space: normal; text-align: left; overflow-wrap: anywhere; }
+  .table.stack-sm td::before { content: attr(data-label); display: block; margin-bottom: 2px; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .table.stack-sm td:first-child { grid-column: 1 / -1; font-size: 1.02rem; }
+  .table.stack-sm td:first-child::before, .table.stack-sm td[data-label='']::before, .table.stack-sm td:not([data-label])::before { display: none; }
+  .table.stack-sm td:empty { display: none; }
+  .table.stack-sm .badge { white-space: normal; }
+  .table.stack-sm td.access-cell { grid-column: 1 / -1; min-width: 0; }
+  .table.stack-sm td[data-label=''] { grid-column: 1 / -1; }
+}

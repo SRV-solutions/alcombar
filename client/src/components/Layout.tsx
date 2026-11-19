@@ -52,7 +52,7 @@ import { useRoverHome } from '../features/rovers/types';
 import { TutorialHost } from '../tutorials/TutorialHost';
 import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
-import { TotemAvatar } from './TotemAvatar';
+import { TotemAvatarButton } from './TotemAvatar';
 import { ThemeToggle } from './ThemeToggle';
 import { ReportProblemButton } from './ReportProblem';
 import { OpenOnPhoneButton } from './OpenOnPhone';
@@ -60,6 +60,7 @@ import { PoweredBySrv } from './PoweredBy';
 import { NotificationBell } from './NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
+import { installStackTables } from '../lib/stackTables';
 import './layout-extra.css';
 
 interface NavItem {
@@ -196,6 +197,9 @@ export function Layout() {
   };
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  // Tablas que en el celular se apilan como tarjetas (clase stack-sm)
+  const contentRef = useRef<HTMLElement>(null);
+  useEffect(() => (contentRef.current ? installStackTables(contentRef.current) : undefined), []);
   // Uso de la app: se anota qué pantalla abrió (sin datos de lo que hace adentro). Si falla, no molesta.
   useEffect(() => {
     void api.post('/audit/view', { path: location.pathname }).catch(() => undefined);
@@ -293,7 +297,7 @@ export function Layout() {
         </nav>
         <div className="sidebar-footer">
           <div className="who-row">
-            <TotemAvatar animal={me?.user.adult?.avatar} size={38} />
+            <TotemAvatarButton animal={me?.user.adult?.avatar} size={38} name={me?.user.name} totem={me?.user.adult?.totem} />
             <div style={{ minWidth: 0 }}>
               <div className="who">{me?.user.name}</div>
               <div className="roles">{me?.roles.map((r) => (r.unit ? `${r.name} (${r.unit.code})` : r.name)).join(' · ')}</div>
@@ -330,7 +334,7 @@ export function Layout() {
           </Link>
           <NotificationBell />
         </div>
-        <main className="content">
+        <main className="content" ref={contentRef}>
           <Outlet />
         </main>
       </div>
