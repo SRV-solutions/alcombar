@@ -5,7 +5,7 @@ import { currentContext } from './context';
 
 // Registro de auditoría (informe §2.4): toda creación, edición y eliminación queda registrada.
 const SKIP_MODELS = new Set(['AuditLog', 'Session', 'PasswordToken', 'Permission', 'Notification']);
-const HIDDEN_FIELDS = new Set(['passwordHash']);
+const HIDDEN_FIELDS = new Set(['passwordHash', 'certificateData']);
 const IGNORED_FIELDS = new Set(['createdAt', 'updatedAt', 'deletedAt', 'failedLogins', 'lockedUntil', 'lastLoginAt', 'tutorials']);
 
 function label(instance: Model): string | null {

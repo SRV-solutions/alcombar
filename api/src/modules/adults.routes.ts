@@ -1,7 +1,22 @@
 import { Router } from 'express';
 import { Op, type WhereOptions } from 'sequelize';
-import { adultAssignmentSchema, adultCourseSchema, adultSchema, ADULT_STATUS_LABELS, documentStatus, formatDate, isTeamLeaderPosition, memberDocumentSchema, todayIso, type AdultStatus } from '../shared';
-import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Member, Role, SupportTeam, Unit, User, UserRole } from '../models';
+import {
+  adultAssignmentSchema,
+  adultCourseSchema,
+  adultExperienceSchema,
+  adultHabilitationSchema,
+  adultSchema,
+  ADULT_STATUS_LABELS,
+  CERTIFICATE_MAX_BYTES,
+  certificateUploadSchema,
+  documentStatus,
+  formatDate,
+  isTeamLeaderPosition,
+  memberDocumentSchema,
+  todayIso,
+  type AdultStatus,
+} from '../shared';
+import { Adult, AdultAssignment, AdultCourse, AdultDocument, AdultExperience, AdultHabilitation, Course, DocumentType, Member, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
 import { personSearchWhere } from '../lib/personSearch';
 import { adultRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
@@ -161,6 +176,8 @@ adultsRouter.get(
       include: [
         { model: AdultAssignment, as: 'assignments', include: assignmentInclude },
         { model: AdultCourse, as: 'courses', include: [{ model: Course, as: 'course' }] },
+        { model: AdultExperience, as: 'experiences' },
+        { model: AdultHabilitation, as: 'habilitations' },
         { model: Adult, as: 'advisor', attributes: ['id', 'firstName', 'lastName', 'totem'] },
         { model: User, as: 'user', attributes: ['id', 'email', 'active'] },
       ],
@@ -339,6 +356,108 @@ adultsRouter.delete(
     const c = await AdultCourse.findByPk(req.params.cid);
     if (!c) throw notFound();
     await c.destroy();
+    res.json({ ok: true });
+  }),
+);
+
+// ---- Experiencias de formación (el historial, una por una, con su certificado en PDF) ----
+adultsRouter.post(
+  '/:id/experiences',
+  authorize('training', 'create'),
+  ah(async (req, res) => {
+    const adult = await Adult.findByPk(req.params.id);
+    if (!adult) throw notFound();
+    const data = parse(adultExperienceSchema, req.body);
+    const created = await AdultExperience.create({ ...data, adultId: adult.id });
+    res.status(201).json(await AdultExperience.findByPk(created.id));
+  }),
+);
+adultsRouter.put(
+  '/experiences/:eid',
+  authorize('training', 'edit'),
+  ah(async (req, res) => {
+    const e = await AdultExperience.findByPk(req.params.eid);
+    if (!e) throw notFound();
+    await e.update(parse(adultExperienceSchema, req.body));
+    res.json(e);
+  }),
+);
+adultsRouter.delete(
+  '/experiences/:eid',
+  authorize('training', 'delete'),
+  ah(async (req, res) => {
+    const e = await AdultExperience.findByPk(req.params.eid);
+    if (!e) throw notFound();
+    await e.destroy();
+    res.json({ ok: true });
+  }),
+);
+adultsRouter.put(
+  '/experiences/:eid/certificate',
+  authorize('training', 'edit'),
+  ah(async (req, res) => {
+    const e = await AdultExperience.findByPk(req.params.eid);
+    if (!e) throw notFound();
+    const { name, data } = parse(certificateUploadSchema, req.body);
+    const buf = Buffer.from(data.replace(/^data:[^,]*,/, ''), 'base64');
+    if (!buf.length || buf.subarray(0, 5).toString('latin1') !== '%PDF-') throw badRequest('El certificado tiene que ser un PDF');
+    if (buf.length > CERTIFICATE_MAX_BYTES) throw badRequest('El PDF es muy pesado (máximo 3 MB)');
+    await e.update({ certificateName: name.replace(/[\\/:*?"<>|\r\n]/g, ' ').trim() || 'certificado.pdf', certificateSize: buf.length, certificateData: buf });
+    res.json({ ok: true, certificateName: e.certificateName, certificateSize: e.certificateSize });
+  }),
+);
+adultsRouter.get(
+  '/experiences/:eid/certificate',
+  authorize('training', 'view'),
+  ah(async (req, res) => {
+    const e = await AdultExperience.unscoped().findByPk(req.params.eid);
+    if (!e || !e.certificateData) throw notFound();
+    const name = /\.pdf$/i.test(e.certificateName ?? '') ? e.certificateName! : `${e.certificateName ?? 'certificado'}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(name)}"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.send(e.certificateData);
+  }),
+);
+adultsRouter.delete(
+  '/experiences/:eid/certificate',
+  authorize('training', 'edit'),
+  ah(async (req, res) => {
+    const e = await AdultExperience.findByPk(req.params.eid);
+    if (!e) throw notFound();
+    await e.update({ certificateName: null, certificateSize: null, certificateData: null });
+    res.json({ ok: true });
+  }),
+);
+
+// ---- Habilitaciones por etapa ----
+adultsRouter.post(
+  '/:id/habilitations',
+  authorize('training', 'create'),
+  ah(async (req, res) => {
+    const adult = await Adult.findByPk(req.params.id);
+    if (!adult) throw notFound();
+    const data = parse(adultHabilitationSchema, req.body);
+    res.status(201).json(await AdultHabilitation.create({ ...data, adultId: adult.id }));
+  }),
+);
+adultsRouter.put(
+  '/habilitations/:hid',
+  authorize('training', 'edit'),
+  ah(async (req, res) => {
+    const h = await AdultHabilitation.findByPk(req.params.hid);
+    if (!h) throw notFound();
+    await h.update(parse(adultHabilitationSchema, req.body));
+    res.json(h);
+  }),
+);
+adultsRouter.delete(
+  '/habilitations/:hid',
+  authorize('training', 'delete'),
+  ah(async (req, res) => {
+    const h = await AdultHabilitation.findByPk(req.params.hid);
+    if (!h) throw notFound();
+    await h.destroy();
     res.json({ ok: true });
   }),
 );

@@ -9,7 +9,7 @@ import {
 } from 'sequelize';
 import { sequelize } from '../db';
 
-const { UUID, UUIDV4, STRING, TEXT, BOOLEAN, INTEGER, DATE, DATEONLY, JSONB } = DataTypes;
+const { UUID, UUIDV4, STRING, TEXT, BOOLEAN, INTEGER, DATE, DATEONLY, JSONB, BLOB } = DataTypes;
 const id = { type: UUID, defaultValue: UUIDV4, primaryKey: true };
 
 type Base = {
@@ -116,6 +116,8 @@ export class Adult extends Model<InferAttributes<Adult>, InferCreationAttributes
   declare deletedAt: CreationOptional<Date | null>;
   declare assignments?: NonAttribute<AdultAssignment[]>;
   declare courses?: NonAttribute<AdultCourse[]>;
+  declare experiences?: NonAttribute<AdultExperience[]>;
+  declare habilitations?: NonAttribute<AdultHabilitation[]>;
   declare advisor?: NonAttribute<Adult | null>;
   declare user?: NonAttribute<User | null>;
 }
@@ -204,6 +206,10 @@ export class AdultCourse extends Model<InferAttributes<AdultCourse>, InferCreati
   /** Módulos completados (para cursos por módulos). */
   declare modulesDone: CreationOptional<number | null>;
   declare certificateUrl: string | null;
+  /** Insignia de Madera: número de registro SAAC, dónde se otorgó y rama. */
+  declare registryNumber: CreationOptional<string | null>;
+  declare place: CreationOptional<string | null>;
+  declare branch: CreationOptional<string | null>;
   declare notes: string | null;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -216,12 +222,96 @@ AdultCourse.init(
     completedAt: DATEONLY,
     modulesDone: { type: INTEGER, allowNull: true },
     certificateUrl: STRING(500),
+    registryNumber: STRING(30),
+    place: STRING(80),
+    branch: STRING(20),
     notes: TEXT,
     createdAt: DATE,
     updatedAt: DATE,
     deletedAt: DATE,
   },
   { sequelize, tableName: 'adult_courses', modelName: 'AdultCourse' },
+);
+
+/** Experiencia de formación de un adulto (como el historial de Mi Rincón), con su certificado en PDF. */
+export class AdultExperience extends Model<InferAttributes<AdultExperience>, InferCreationAttributes<AdultExperience>> {
+  declare id: CreationOptional<string>;
+  declare adultId: ForeignKey<Adult['id']>;
+  declare name: string;
+  declare kind: CreationOptional<string>;
+  /** Quién la dictó: zona, distrito o nivel nacional (por ejemplo «Z1»). */
+  declare organism: string | null;
+  declare branch: string | null;
+  declare date: string | null;
+  declare status: CreationOptional<string>;
+  declare certificateName: CreationOptional<string | null>;
+  declare certificateSize: CreationOptional<number | null>;
+  /** El PDF. No viene en las consultas comunes: hay que pedirlo con unscoped(). */
+  declare certificateData: CreationOptional<Buffer | null>;
+  declare source: CreationOptional<string | null>;
+  declare notes: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+  declare deletedAt: CreationOptional<Date | null>;
+}
+AdultExperience.init(
+  {
+    id,
+    name: { type: STRING(200), allowNull: false },
+    kind: { type: STRING(30), allowNull: false, defaultValue: 'formacion' },
+    organism: STRING(60),
+    branch: STRING(20),
+    date: DATEONLY,
+    status: { type: STRING(20), allowNull: false, defaultValue: 'acreditada' },
+    certificateName: STRING(160),
+    certificateSize: INTEGER,
+    certificateData: BLOB,
+    source: STRING(40),
+    notes: TEXT,
+    createdAt: DATE,
+    updatedAt: DATE,
+    deletedAt: DATE,
+  },
+  {
+    sequelize,
+    tableName: 'adult_experiences',
+    modelName: 'AdultExperience',
+    defaultScope: { attributes: { exclude: ['certificateData'] } },
+  },
+);
+
+/** Habilitación de un adulto por etapa y rama, con su acta. */
+export class AdultHabilitation extends Model<InferAttributes<AdultHabilitation>, InferCreationAttributes<AdultHabilitation>> {
+  declare id: CreationOptional<string>;
+  declare adultId: ForeignKey<Adult['id']>;
+  declare level: string;
+  declare branch: string | null;
+  declare actDate: string | null;
+  declare book: string | null;
+  declare folio: string | null;
+  declare status: CreationOptional<string>;
+  declare source: CreationOptional<string | null>;
+  declare notes: string | null;
+  declare createdAt: CreationOptional<Date>;
+  declare updatedAt: CreationOptional<Date>;
+  declare deletedAt: CreationOptional<Date | null>;
+}
+AdultHabilitation.init(
+  {
+    id,
+    level: { type: STRING(20), allowNull: false },
+    branch: STRING(20),
+    actDate: DATEONLY,
+    book: STRING(20),
+    folio: STRING(20),
+    status: { type: STRING(20), allowNull: false, defaultValue: 'autorizada' },
+    source: STRING(40),
+    notes: TEXT,
+    createdAt: DATE,
+    updatedAt: DATE,
+    deletedAt: DATE,
+  },
+  { sequelize, tableName: 'adult_habilitations', modelName: 'AdultHabilitation' },
 );
 
 // ======================= ACCESO =======================
@@ -703,6 +793,10 @@ AdultAssignment.belongsTo(SupportTeam, { as: 'supportTeam', foreignKey: 'support
 Adult.hasMany(AdultCourse, { as: 'courses', foreignKey: 'adultId' });
 AdultCourse.belongsTo(Course, { as: 'course', foreignKey: 'courseId' });
 AdultCourse.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
+Adult.hasMany(AdultExperience, { as: 'experiences', foreignKey: 'adultId' });
+AdultExperience.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
+Adult.hasMany(AdultHabilitation, { as: 'habilitations', foreignKey: 'adultId' });
+AdultHabilitation.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
 
 User.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
 Adult.hasOne(User, { as: 'user', foreignKey: 'adultId' });

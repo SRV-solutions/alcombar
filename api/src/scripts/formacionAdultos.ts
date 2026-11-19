@@ -21,9 +21,9 @@ const COURSES = [
   { col: 'im programa de jovenes', name: 'Insignia de Madera de Programa', kind: 'insignia_madera', modules: null },
   { col: 'im gestion', name: 'Insignia de Madera de Gestión', kind: 'insignia_madera', modules: null },
   { col: 'miembro activo', name: 'Miembro Activo', kind: 'miembro_activo', modules: null },
-  { col: 'nivel 1 (de 2)', name: 'Nivel 1', kind: 'curso', modules: 2 },
-  { col: 'nivel 2 (de 9)', name: 'Nivel 2', kind: 'curso', modules: 9 },
-  { col: 'nivel 3 (de 5)', name: 'Nivel 3', kind: 'curso', modules: 5 },
+  { col: 'nivel 1 (de 2)', name: 'Etapa básica', kind: 'curso', modules: 2 },
+  { col: 'nivel 2 (de 9)', name: 'Etapa intermedia', kind: 'curso', modules: 9 },
+  { col: 'nivel 3 (de 5)', name: 'Etapa avanzada', kind: 'curso', modules: 5 },
 ] as const;
 
 const yes = (v: string | undefined) => /^s[ií]$/i.test((v ?? '').trim());

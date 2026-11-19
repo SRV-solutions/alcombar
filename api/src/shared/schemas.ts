@@ -6,6 +6,10 @@ import {
   AFFILIATION_STATUSES,
   ATTENDANCE_STATUSES,
   COURSE_KINDS,
+  EXPERIENCE_KINDS,
+  EXPERIENCE_STATUSES,
+  HABILITATION_LEVELS,
+  HABILITATION_STATUSES,
   MEMBER_STATUSES,
   TRANSFER_REASONS,
 } from './catalogs';
@@ -20,6 +24,11 @@ export const optStr = (max = 200) =>
     .max(max)
     .nullish()
     .transform((v) => (v ? v : null));
+/** Rama opcional: '' o null = sin rama. */
+export const optBranch = z
+  .union([z.enum(BRANCHES), z.literal(''), z.null()])
+  .optional()
+  .transform((v) => v || null);
 export const optDate = z
   .string()
   .nullish()
@@ -187,8 +196,34 @@ export const adultCourseSchema = z.object({
     .union([z.literal(''), z.string().trim().url('URL inválida').max(500)])
     .nullish()
     .transform((v) => (v ? v : null)),
+  /** Insignia de Madera: número de registro SAAC, dónde se otorgó y rama. */
+  registryNumber: optStr(30),
+  place: optStr(80),
+  branch: optBranch,
   notes: optStr(500),
 });
+export const adultExperienceSchema = z.object({
+  name: reqStr(200),
+  kind: z.enum(EXPERIENCE_KINDS).default('formacion'),
+  /** Quién la dictó: zona, distrito o nivel nacional (por ejemplo «Z1»). */
+  organism: optStr(60),
+  branch: optBranch,
+  date: optDate,
+  status: z.enum(EXPERIENCE_STATUSES).default('acreditada'),
+  notes: optStr(500),
+});
+export const adultHabilitationSchema = z.object({
+  level: z.enum(HABILITATION_LEVELS),
+  branch: optBranch,
+  actDate: optDate,
+  book: optStr(20),
+  folio: optStr(20),
+  status: z.enum(HABILITATION_STATUSES).default('autorizada'),
+  notes: optStr(500),
+});
+/** Certificado en PDF, en base64. */
+export const certificateUploadSchema = z.object({ name: reqStr(160), data: z.string().min(1, 'Falta el archivo') });
+
 
 // ---------- protagonistas ----------
 export const memberSchema = z.object({
@@ -267,6 +302,8 @@ export type SupportTeamInput = z.input<typeof supportTeamSchema>;
 export type AdultInput = z.input<typeof adultSchema>;
 export type AdultAssignmentInput = z.input<typeof adultAssignmentSchema>;
 export type AdultCourseInput = z.input<typeof adultCourseSchema>;
+export type AdultExperienceInput = z.input<typeof adultExperienceSchema>;
+export type AdultHabilitationInput = z.input<typeof adultHabilitationSchema>;
 export type MemberInput = z.input<typeof memberSchema>;
 export type GuardianInput = z.input<typeof guardianSchema>;
 export type TransferInput = z.input<typeof transferSchema>;

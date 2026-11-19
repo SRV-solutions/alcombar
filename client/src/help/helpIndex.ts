@@ -496,10 +496,10 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'formacion',
     title: 'Formación de adultos',
-    description: 'Insignia de Madera, Miembro Activo, niveles y cursos con fecha y enlace al certificado; Asesor Personal de Formación (APF).',
+    description: 'Insignia de Madera, Miembro Activo, etapas, habilitaciones y experiencias de formación con su certificado; Asesor Personal de Formación (APF).',
     path: '/adultos',
     section: 'Grupo',
-    keywords: ['formación', 'formacion', 'insignia de madera', 'im', 'miembro activo', 'curso', 'cursos', 'nivel 1', 'nivel 2', 'apf', 'asesor', 'certificado', 'sin formación'],
+    keywords: ['formación', 'formacion', 'insignia de madera', 'im', 'miembro activo', 'curso', 'cursos', 'nivel 1', 'nivel 2', 'etapa básica', 'etapa intermedia', 'etapa avanzada', 'habilitación', 'habilitaciones', 'experiencia', 'experiencias de formación', 'mi rincón', 'registro saac', 'apf', 'asesor', 'certificado', 'sin formación'],
     show: can('training', 'view'),
   },
   {

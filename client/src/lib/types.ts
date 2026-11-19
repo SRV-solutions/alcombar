@@ -54,7 +54,7 @@ export interface Course {
   id: string;
   name: string;
   kind: string;
-  /** Cantidad de módulos (Nivel 1: 2, Nivel 2: 9, Nivel 3: 5). */
+  /** Cantidad de módulos (Etapa básica: 2, intermedia: 9, avanzada: 5). */
   totalModules?: number | null;
   active: boolean;
 }
@@ -90,8 +90,37 @@ export interface AdultCourse {
   /** Módulos completados (cursos por módulos). */
   modulesDone?: number | null;
   certificateUrl: string | null;
+  /** Insignia de Madera: número de registro SAAC, dónde se otorgó y rama. */
+  registryNumber?: string | null;
+  place?: string | null;
+  branch?: string | null;
   notes: string | null;
   course: Course;
+}
+/** Experiencia de formación (el historial de Mi Rincón). */
+export interface AdultExperience {
+  id: string;
+  name: string;
+  kind: string;
+  organism: string | null;
+  branch: string | null;
+  date: string | null;
+  status: string;
+  /** Nombre del PDF adjunto, si tiene. */
+  certificateName: string | null;
+  certificateSize: number | null;
+  notes: string | null;
+}
+/** Habilitación por etapa y rama, con su acta. */
+export interface AdultHabilitation {
+  id: string;
+  level: string;
+  branch: string | null;
+  actDate: string | null;
+  book: string | null;
+  folio: string | null;
+  status: string;
+  notes: string | null;
 }
 export interface Adult extends AdultRef {
   dni: string | null;
@@ -110,6 +139,8 @@ export interface Adult extends AdultRef {
   user: { id: string; email?: string; active: boolean } | null;
 }
 export interface AdultDetail extends Adult {
+  experiences: AdultExperience[];
+  habilitations: AdultHabilitation[];
   advisor: AdultRef | null;
   advisees: AdultRef[];
   documents: MemberDoc[];

@@ -94,10 +94,34 @@ export const DEFAULT_COURSES = [
   { name: 'Insignia de Madera de Programa', kind: 'insignia_madera', totalModules: null },
   { name: 'Insignia de Madera de Gestión', kind: 'insignia_madera', totalModules: null },
   { name: 'Miembro Activo', kind: 'miembro_activo', totalModules: null },
-  { name: 'Nivel 1', kind: 'curso', totalModules: 2 },
-  { name: 'Nivel 2', kind: 'curso', totalModules: 9 },
-  { name: 'Nivel 3', kind: 'curso', totalModules: 5 },
+  { name: 'Etapa básica', kind: 'curso', totalModules: 2 },
+  { name: 'Etapa intermedia', kind: 'curso', totalModules: 9 },
+  { name: 'Etapa avanzada', kind: 'curso', totalModules: 5 },
 ] as const;
+
+// ---- Formación como la muestra Mi Rincón: experiencias una por una y habilitaciones por etapa ----
+export const EXPERIENCE_KINDS = ['formacion', 'perfeccionamiento', 'otra'] as const;
+export type ExperienceKind = (typeof EXPERIENCE_KINDS)[number];
+export const EXPERIENCE_KIND_LABELS: Record<ExperienceKind, string> = {
+  formacion: 'Experiencia de Formación',
+  perfeccionamiento: 'Perfeccionamiento Continuo',
+  otra: 'Otra',
+};
+export const EXPERIENCE_STATUSES = ['acreditada', 'pendiente'] as const;
+export type ExperienceStatus = (typeof EXPERIENCE_STATUSES)[number];
+export const EXPERIENCE_STATUS_LABELS: Record<ExperienceStatus, string> = { acreditada: 'Acreditada', pendiente: 'Pendiente de acreditar' };
+export const HABILITATION_LEVELS = ['basica', 'intermedia', 'avanzada'] as const;
+export type HabilitationLevel = (typeof HABILITATION_LEVELS)[number];
+export const HABILITATION_LEVEL_LABELS: Record<HabilitationLevel, string> = {
+  basica: 'Etapa básica',
+  intermedia: 'Etapa intermedia',
+  avanzada: 'Etapa avanzada',
+};
+export const HABILITATION_STATUSES = ['autorizada', 'en_tramite'] as const;
+export type HabilitationStatus = (typeof HABILITATION_STATUSES)[number];
+export const HABILITATION_STATUS_LABELS: Record<HabilitationStatus, string> = { autorizada: 'Autorizada', en_tramite: 'En trámite' };
+/** Tamaño máximo de un certificado en PDF. */
+export const CERTIFICATE_MAX_BYTES = 3 * 1024 * 1024;
 
 /**
  * Resumen de formación de un adulto (como la planilla del Grupo): IM Gestión > IM Programa > Miembro Activo >

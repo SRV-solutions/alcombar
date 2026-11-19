@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
-import { adultCourseSchema, ageAt, BRANCH_INFO, COURSE_KIND_LABELS, documentLabel, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
+import { adultCourseSchema, ageAt, BRANCHES, BRANCH_INFO, COURSE_KIND_LABELS, documentLabel, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
@@ -33,6 +33,7 @@ import {
 } from '../../components/ui';
 import { AdultStatusBadge } from './AdultsPage';
 import { AssignmentModal } from './AssignmentModal';
+import { ExperiencesCard, HabilitationsCard } from './TrainingRecords';
 
 // ---------------- Formación ----------------
 const courseFormSchema = adultCourseSchema.extend({ courseId: z.string().uuid('Elegí un curso') });
@@ -56,9 +57,12 @@ function CourseModal({ adultId, item, onClose }: { adultId: string; item?: Adult
           completedAt: item.completedAt ?? '',
           modulesDone: item.modulesDone ?? '',
           certificateUrl: item.certificateUrl ?? '',
+          registryNumber: item.registryNumber ?? '',
+          place: item.place ?? '',
+          branch: (item.branch as Branch | null) ?? '',
           notes: item.notes ?? '',
         }
-      : { courseId: '', completedAt: '', modulesDone: '', certificateUrl: '', notes: '' },
+      : { courseId: '', completedAt: '', modulesDone: '', certificateUrl: '', registryNumber: '', place: '', branch: '', notes: '' },
   });
 
   const onSubmit = async (values: CourseForm) => {
@@ -75,6 +79,7 @@ function CourseModal({ adultId, item, onClose }: { adultId: string; item?: Adult
 
   const available = (courses.data ?? []).filter((c) => c.active || c.id === item?.courseId);
   const selected = available.find((c) => c.id === watch('courseId'));
+  const isIM = selected?.kind === 'insignia_madera';
   return (
     <Modal
       title={item ? 'Editar formación' : 'Registrar formación'}
@@ -106,9 +111,33 @@ function CourseModal({ adultId, item, onClose }: { adultId: string; item?: Adult
             <Input type="number" min={0} max={selected.totalModules} {...register('modulesDone')} invalid={!!errors.modulesDone} />
           </Field>
         ) : null}
-        <Field label="Fecha de aprobación" error={errors.completedAt?.message} hint={selected?.totalModules ? 'Cuando completa todos los módulos' : undefined}>
+        <Field
+          label={isIM ? 'Fecha otorgada' : 'Fecha de aprobación'}
+          error={errors.completedAt?.message}
+          hint={selected?.totalModules ? 'Cuando completa todos los módulos' : undefined}
+        >
           <Input type="date" {...register('completedAt')} invalid={!!errors.completedAt} />
         </Field>
+        {isIM ? (
+          <>
+            <Field label="Registro SAAC" error={errors.registryNumber?.message} hint="El número de registro, como figura en Mi Rincón">
+              <Input {...register('registryNumber')} invalid={!!errors.registryNumber} placeholder="21578" />
+            </Field>
+            <Field label="Lugar" error={errors.place?.message} hint="Dónde se otorgó">
+              <Input {...register('place')} invalid={!!errors.place} />
+            </Field>
+            <Field label="Rama" error={errors.branch?.message}>
+              <Select {...register('branch')}>
+                <option value="">— Sin rama —</option>
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>
+                    {BRANCH_INFO[b].label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </>
+        ) : null}
         <Field label="Certificado (enlace)" error={errors.certificateUrl?.message} hint="Enlace al archivo en el Drive">
           <Input type="url" placeholder="https://drive.google.com/…" {...register('certificateUrl')} invalid={!!errors.certificateUrl} />
         </Field>
@@ -451,6 +480,17 @@ export function AdultDetailPage() {
                             · {c.modulesDone ?? 0}/{c.course.totalModules} módulos
                           </span>
                         ) : null}
+                        {c.registryNumber || c.place || c.branch ? (
+                          <div className="muted" style={{ fontSize: '0.85em' }}>
+                            {[
+                              c.registryNumber ? `Registro SAAC ${c.registryNumber}` : null,
+                              c.place,
+                              c.branch ? BRANCH_INFO[c.branch as Branch]?.label ?? c.branch : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </div>
+                        ) : null}
                       </td>
                       <td>{COURSE_KIND_LABELS[c.course?.kind as CourseKind] ?? c.course?.kind}</td>
                       <td className="nowrap">{c.completedAt ? formatDate(c.completedAt) : dash}</td>
@@ -491,6 +531,9 @@ export function AdultDetailPage() {
             </div>
           )}
         </Card>
+
+        <HabilitationsCard adultId={a.id} items={a.habilitations ?? []} />
+        <ExperiencesCard adultId={a.id} items={a.experiences ?? []} />
       </div>
 
       {assignment ? <AssignmentModal adultId={a.id} item={assignment === 'new' ? undefined : assignment} onClose={() => setAssignment(null)} /> : null}

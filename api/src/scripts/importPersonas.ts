@@ -79,8 +79,8 @@ function roleOfFunction(f: string): { key: string; unitRole: boolean } {
 }
 const COURSE_BY_LEVEL: Record<string, { name: string; kind: string }> = {
   'Insignia de Madera': { name: 'Insignia de Madera', kind: 'insignia_madera' },
-  'Nivel 1': { name: 'Nivel 1', kind: 'curso' },
-  'Nivel 2': { name: 'Nivel 2', kind: 'curso' },
+  'Nivel 1': { name: 'Etapa básica', kind: 'curso' },
+  'Nivel 2': { name: 'Etapa intermedia', kind: 'curso' },
 };
 
 async function main() {
