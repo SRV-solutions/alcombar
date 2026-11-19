@@ -268,8 +268,8 @@ export const CHALLENGE_KIND_LABELS: Record<ChallengeKind, string> = {
   propio: 'Propios',
 };
 /**
- * Cómo se nombran en cada rama. En la Manada son las «acciones» de los Rastros (requeridas y sugeridas); en la Unidad
- * Scout y las demás ramas, «desafíos» (requeridos y opcionales). Cada rama tiene lo suyo: no se mezclan.
+ * Cómo se nombran en cada rama. En la Manada son las «acciones» de los Rastros (requeridas y sugeridas) y en Caminantes
+ * las «acciones sugeridas» de las Fichas; en la Unidad Scout, «desafíos» (requeridos y opcionales). No se mezclan.
  */
 export function challengeTerms(branch: string | null | undefined): {
   one: string;
@@ -279,7 +279,8 @@ export function challengeTerms(branch: string | null | undefined): {
   fem: boolean;
   kinds: Record<ChallengeKind, string>;
 } {
-  if (branch === 'lobatos') {
+  // En la Manada (Rastros) y en Caminantes (Fichas) las guías hablan de «acciones»
+  if (branch === 'lobatos' || branch === 'caminantes') {
     return {
       one: 'acción',
       many: 'acciones',
