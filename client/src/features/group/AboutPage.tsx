@@ -1,17 +1,102 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, ArrowUp, BookOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, BookOpen, MessageSquarePlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
 import { Button, Card, ConfirmButton, Empty, ErrorBox, Field, Input, Loading, Modal, PageHeader, Textarea } from '../../components/ui';
 import './about.css';
 
+interface Note {
+  id: string;
+  author: string;
+  body: string;
+  createdAt: string;
+  mine: boolean;
+  canDelete: boolean;
+}
 interface Page {
   id: string;
   title: string;
   body: string | null;
   updatedAt: string;
   updatedBy: string | null;
+  notes: Note[];
+}
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+/** Los aportes de una sección: cualquiera que entra a la app puede sumar un dato, una anécdota o una corrección. */
+function Notes({ page, onChange }: { page: Page; onChange: () => Promise<unknown> }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    if (text.trim().length < 3) return;
+    setBusy(true);
+    try {
+      await api.post(`/group/pages/${page.id}/notes`, { body: text });
+      setText('');
+      setOpen(false);
+      await onChange();
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="about-notes">
+      {page.notes.length ? (
+        <>
+          <h3 className="about-notes-title">Aportes ({page.notes.length})</h3>
+          <ul className="list-plain">
+            {page.notes.map((n) => (
+              <li key={n.id} className="about-note">
+                <div className="about-note-head">
+                  <span>
+                    <strong>{n.author}</strong> <span className="muted">· {fmtDay(n.createdAt)}</span>
+                  </span>
+                  {n.canDelete ? (
+                    <ConfirmButton
+                      variant="ghost"
+                      size="sm"
+                      title="Borrar el aporte"
+                      message={n.mine ? 'Se borra tu aporte. No se puede deshacer.' : `Se borra el aporte de ${n.author}. No se puede deshacer.`}
+                      confirmLabel="Borrar"
+                      onConfirm={async () => {
+                        await api.del(`/group/notes/${n.id}`);
+                        await onChange();
+                      }}
+                    >
+                      <Trash2 />
+                    </ConfirmButton>
+                  ) : null}
+                </div>
+                <p>{n.body}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {open ? (
+        <div className="about-note-form">
+          <Textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} placeholder="Un dato, una anécdota, una corrección… Queda con tu nombre." autoFocus aria-label={`Tu aporte a «${page.title}»`} />
+          <div className="form-actions">
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void send()} loading={busy} disabled={text.trim().length < 3}>
+              Publicar
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+          <MessageSquarePlus /> Sumar un aporte
+        </Button>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -73,7 +158,7 @@ export function AboutPage() {
     <>
       <PageHeader
         title="Sobre el Grupo"
-        sub="Nuestra historia y lo que nos hace quienes somos. Para que lo conozca cualquiera que llega al Grupo."
+        sub="Nuestra historia y lo que nos hace quienes somos. Para que lo conozca cualquiera que llega al Grupo, y para que cada uno sume lo que sabe."
         actions={
           canEdit ? (
             <Button onClick={() => setEditing('new')}>
@@ -120,6 +205,7 @@ export function AboutPage() {
                   </div>
                   <div className="card-body about-body">
                     {p.body?.trim() ? renderBody(p.body) : <p className="muted">Esta sección está vacía: mientras no tenga texto, solo la ve quien puede editarla.</p>}
+                    {p.body?.trim() ? <Notes page={p} onChange={refresh} /> : null}
                     {canEdit && p.body?.trim() ? (
                       <p className="muted about-meta">
                         Última edición: {new Date(p.updatedAt).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}

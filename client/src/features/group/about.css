@@ -19,3 +19,11 @@
   .about-index { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; }
   .about-index a { border: 1px solid var(--border); padding: 8px 12px; min-height: 40px; display: inline-flex; align-items: center; }
 }
+
+/* Aportes de cada sección */
+.about-notes { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.about-notes-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; }
+.about-note { padding: 10px 0; }
+.about-note-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; }
+.about-note p { margin: 4px 0 0; white-space: pre-wrap; }
+.about-note-form { margin-top: 8px; }

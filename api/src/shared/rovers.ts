@@ -210,6 +210,7 @@ export const assemblyCloseSchema = z.object({ notes: optText(6000) });
 
 // ---- Sobre el Grupo ----
 export const groupPageSchema = z.object({ title: z.string().trim().min(1, 'Ponele un título').max(160), body: optText(40000) });
+export const groupPageNoteSchema = z.object({ body: z.string().trim().min(3, 'Escribí tu aporte').max(2000, 'Hasta 2000 caracteres') });
 export const groupPageOrderSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(200) });
 
 /** Se aprueba con más de la mitad de los presentes a favor (las abstenciones y los que no votan no suman). */

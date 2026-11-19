@@ -1,11 +1,12 @@
 import { Router, type Request } from 'express';
-import { QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import {
   BRANCH_INFO,
   can,
   courseSchema,
   documentTypeSchema,
   GROUP_CONTEXT,
+  groupPageNoteSchema,
   groupPageOrderSchema,
   groupPageSchema,
   isTeamLeaderPosition,
@@ -18,10 +19,10 @@ import {
 } from '../shared';
 import { sequelize } from '../db';
 import { Adult, AdultAssignment, AdultCourse, AdultDocument, Course, DocumentType, Member, MemberDocument, SmallGroup, SupportTeam, Unit } from '../models';
-import { GroupPage } from '../models/about';
+import { GroupPage, GroupPageNote } from '../models/about';
 import { User } from '../models';
 import { writeAudit } from '../lib/audit';
-import { ah, badRequest, conflict, notFound, parse } from '../lib/errors';
+import { ah, badRequest, conflict, forbidden, notFound, parse } from '../lib/errors';
 import { assertCan, authorize } from '../middlewares/auth';
 
 export const groupRouter = Router();
@@ -483,8 +484,22 @@ const pageJson = (p: GroupPage) => ({ id: p.id, title: p.title, body: p.body, up
 groupRouter.get(
   '/pages',
   ah(async (req, res) => {
-    const pages = await GroupPage.findAll({ include: [{ model: User, as: 'updatedBy', attributes: ['id', 'name'] }], order: [['sortOrder', 'ASC'], ['createdAt', 'ASC']] });
-    res.json({ canEdit: req.auth!.isSuperadmin || canEditGroup(req), pages: pages.map(pageJson) });
+    const pages = await GroupPage.findAll({
+      include: [
+        { model: User, as: 'updatedBy', attributes: ['id', 'name'] },
+        { model: GroupPageNote, as: 'notes' },
+      ],
+      order: [['sortOrder', 'ASC'], ['createdAt', 'ASC'], [{ model: GroupPageNote, as: 'notes' }, 'createdAt', 'ASC']],
+    });
+    const canEdit = req.auth!.isSuperadmin || canEditGroup(req);
+    res.json({
+      canEdit,
+      pages: pages.map((p) => ({
+        ...pageJson(p),
+        // Los aportes: texto que deja cualquiera que entra a la app
+        notes: (p.notes ?? []).map((n) => ({ id: n.id, author: n.authorName, body: n.body, createdAt: n.createdAt, mine: n.userId === req.user!.id, canDelete: canEdit || n.userId === req.user!.id })),
+      })),
+    });
   }),
 );
 
@@ -497,6 +512,33 @@ groupRouter.post(
     const page = await GroupPage.create({ ...data, sortOrder: last + 1, updatedByUserId: req.user!.id });
     await writeAudit({ action: 'create', entity: 'GroupPage', entityId: page.id, summary: `Sobre el Grupo: nueva sección «${page.title}»` });
     res.status(201).json({ id: page.id });
+  }),
+);
+
+/** Un aporte a una sección: lo puede dejar cualquiera que entra a la app (hasta 10 por hora por persona). */
+groupRouter.post(
+  '/pages/:id/notes',
+  ah(async (req, res) => {
+    const page = await GroupPage.findByPk(req.params.id, { attributes: ['id', 'title'] });
+    if (!page) throw notFound();
+    const { body } = parse(groupPageNoteSchema, req.body);
+    const recent = await GroupPageNote.count({ where: { userId: req.user!.id, createdAt: { [Op.gt]: new Date(Date.now() - 3_600_000) } } });
+    if (recent >= 10) throw badRequest('Dejaste muchos aportes seguidos. Probá de nuevo en un rato.');
+    const note = await GroupPageNote.create({ pageId: page.id, userId: req.user!.id, authorName: req.user!.name, body });
+    await writeAudit({ action: 'create', entity: 'GroupPageNote', entityId: note.id, summary: `Sobre el Grupo: aporte en «${page.title}»` });
+    res.status(201).json({ id: note.id });
+  }),
+);
+
+groupRouter.delete(
+  '/notes/:id',
+  ah(async (req, res) => {
+    const note = await GroupPageNote.findByPk(req.params.id, { include: [{ model: GroupPage, as: 'page', attributes: ['title'] }] });
+    if (!note) throw notFound();
+    if (note.userId !== req.user!.id && !req.auth!.isSuperadmin && !canEditGroup(req)) throw forbidden('Lo borra quien lo escribió o quien administra el Grupo');
+    await note.destroy();
+    await writeAudit({ action: 'delete', entity: 'GroupPageNote', entityId: note.id, summary: `Sobre el Grupo: se borró un aporte de ${note.authorName}` });
+    res.json({ ok: true });
   }),
 );
 
