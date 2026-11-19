@@ -267,6 +267,35 @@ export const CHALLENGE_KIND_LABELS: Record<ChallengeKind, string> = {
   especialidad: 'De especialidad',
   propio: 'Propios',
 };
+/**
+ * Cómo se nombran en cada rama. En la Manada son las «acciones» de los Rastros (requeridas y sugeridas); en la Unidad
+ * Scout y las demás ramas, «desafíos» (requeridos y opcionales). Cada rama tiene lo suyo: no se mezclan.
+ */
+export function challengeTerms(branch: string | null | undefined): {
+  one: string;
+  many: string;
+  Many: string;
+  /** Si el sustantivo es femenino (para concordar: «las», «asignadas»…). */
+  fem: boolean;
+  kinds: Record<ChallengeKind, string>;
+} {
+  if (branch === 'lobatos') {
+    return {
+      one: 'acción',
+      many: 'acciones',
+      Many: 'Acciones',
+      fem: true,
+      kinds: { requerido: 'Acciones requeridas', opcional: 'Acciones sugeridas', especialidad: 'De especialidad', propio: 'Propias' },
+    };
+  }
+  return {
+    one: 'desafío',
+    many: 'desafíos',
+    Many: 'Desafíos',
+    fem: false,
+    kinds: { requerido: 'Desafíos requeridos', opcional: 'Desafíos opcionales', especialidad: 'De especialidad', propio: 'Propios' },
+  };
+}
 /** Un desafío asignado a un protagonista dentro de una competencia. */
 export interface MemberChallenge {
   text: string;

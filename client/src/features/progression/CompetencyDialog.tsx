@@ -1,8 +1,9 @@
-// Una competencia de un protagonista: se le asignan desafíos tildándolos de la lista del catálogo (requeridos,
-// opcionales y de especialidad) o agregando uno propio, se marca cuáles logró y se anota cómo viene.
+// Una competencia de un protagonista: se le asignan desafíos (en la Manada, acciones de los Rastros) tildándolos de la
+// lista del catálogo —requeridos, opcionales y de especialidad— o agregando uno propio, se marca cuáles logró y se
+// anota cómo viene.
 import { useState } from 'react';
 import { Check, Plus, X } from 'lucide-react';
-import { CHALLENGE_KIND_LABELS, COMPETENCY_STATUSES, COMPETENCY_STATUS_LABELS, type ChallengeKind, type MemberChallenge } from '@shared';
+import { challengeTerms, COMPETENCY_STATUSES, COMPETENCY_STATUS_LABELS, type ChallengeKind, type MemberChallenge } from '@shared';
 import { api } from '../../lib/api';
 import { useToast } from '../../lib/toast';
 import { Button, Field, Input, Modal, Select, Textarea } from '../../components/ui';
@@ -10,8 +11,9 @@ import type { MemberCompetencyRow } from './types';
 
 const CATALOG_KINDS: ChallengeKind[] = ['requerido', 'opcional', 'especialidad'];
 
-export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompetencyRow; onClose: () => void; onSaved: () => void }) {
+export function CompetencyDialog({ row, branch, onClose, onSaved }: { row: MemberCompetencyRow; branch: string | null; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
+  const t = challengeTerms(branch);
   const comp = row.competency;
   const [status, setStatus] = useState(row.status);
   const [achievedAt, setAchievedAt] = useState(row.achievedAt ?? '');
@@ -35,12 +37,12 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
   const addOwn = () => {
     const text = own.trim();
     if (!text) return;
-    if (find(text)) return toast.error(new Error('Ese desafío ya está en la lista'));
+    if (find(text)) return toast.error(new Error(`${t.fem ? 'Esa' : 'Ese'} ${t.one} ya está en la lista`));
     setChallenges((list) => [...list, { text, kind: 'propio', done: false, doneAt: null }]);
     setOwn('');
   };
   const chooseAll = (kind: ChallengeKind, items: string[]) =>
-    setChallenges((list) => [...list, ...items.filter((t) => !list.some((c) => c.text === t)).map((text) => ({ text, kind, done: false, doneAt: null }))]);
+    setChallenges((list) => [...list, ...items.filter((x) => !list.some((c) => c.text === x)).map((text) => ({ text, kind, done: false, doneAt: null }))]);
 
   const save = async () => {
     setBusy(true);
@@ -56,19 +58,21 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
     }
   };
 
+  const doneWord = t.fem ? 'lograda' : 'logrado';
   const doneButton = (c: MemberChallenge) => (
     <button type="button" className={`challenge-done ${c.done ? 'on' : ''}`} onClick={() => toggleDone(c.text)} aria-pressed={c.done}>
       {c.done ? (
         <>
-          <Check size={13} /> Logrado
+          <Check size={13} /> {t.fem ? 'Lograda' : 'Logrado'}
         </>
       ) : (
-        'Marcar logrado'
+        `Marcar ${doneWord}`
       )}
     </button>
   );
   const assigned = challenges.length;
   const done = challenges.filter((c) => c.done).length;
+  const plural = (n: number, word: string) => (n === 1 ? word : `${word}s`);
 
   return (
     <Modal
@@ -88,19 +92,23 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
     >
       <div className="challenge-picker">
         <p className="muted" style={{ margin: 0 }}>
-          Tildá los desafíos que eligió para trabajar esta competencia y marcá los que va logrando.
-          {assigned ? ` Tiene ${assigned} asignado${assigned === 1 ? '' : 's'}, ${done} logrado${done === 1 ? '' : 's'}.` : ''}
+          Tildá {t.fem ? 'las' : 'los'} {t.many} que eligió para trabajar esta competencia y marcá {t.fem ? 'las' : 'los'} que va logrando.
+          {assigned ? ` Tiene ${assigned} ${plural(assigned, t.fem ? 'asignada' : 'asignado')}, ${done} ${plural(done, doneWord)}.` : ''}
         </p>
-        {!inCatalog.size ? <p className="muted">Esta competencia todavía no tiene desafíos cargados en el catálogo. Podés agregarle desafíos propios acá abajo.</p> : null}
+        {!inCatalog.size ? (
+          <p className="muted">
+            Esta competencia todavía no tiene {t.many} {t.fem ? 'cargadas' : 'cargados'} en el catálogo. Podés agregarle {t.many} {t.fem ? 'propias' : 'propios'} acá abajo.
+          </p>
+        ) : null}
         {groups.map((g) =>
           g.items.length ? (
             <section key={g.kind}>
               <header>
-                <strong>{CHALLENGE_KIND_LABELS[g.kind]}</strong>
+                <strong>{t.kinds[g.kind]}</strong>
                 <span className="muted"> ({g.items.length})</span>
-                {g.kind === 'requerido' && g.items.some((t) => !find(t)) ? (
+                {g.kind === 'requerido' && g.items.some((x) => !find(x)) ? (
                   <button type="button" className="link-btn" onClick={() => chooseAll(g.kind, g.items)}>
-                    Elegir todos
+                    Elegir {t.fem ? 'todas' : 'todos'}
                   </button>
                 ) : null}
               </header>
@@ -121,8 +129,8 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
         )}
         <section>
           <header>
-            <strong>{CHALLENGE_KIND_LABELS.propio}</strong>
-            <span className="muted"> — por si surge alguno que no está en la lista</span>
+            <strong>{t.kinds.propio}</strong>
+            <span className="muted"> — por si surge {t.fem ? 'alguna' : 'alguno'} que no está en la lista</span>
           </header>
           {extras.map((c) => (
             <div key={c.text} className="challenge-row on">
@@ -134,7 +142,7 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
                 </span>
               </label>
               {doneButton(c)}
-              <button type="button" className="challenge-remove" onClick={() => toggle(c.text, c.kind)} aria-label="Quitar desafío" title="Quitar">
+              <button type="button" className="challenge-remove" onClick={() => toggle(c.text, c.kind)} aria-label={`Quitar ${t.one}`} title="Quitar">
                 <X size={14} />
               </button>
             </div>
@@ -149,7 +157,7 @@ export function CompetencyDialog({ row, onClose, onSaved }: { row: MemberCompete
                   addOwn();
                 }
               }}
-              placeholder="Escribí un desafío propio…"
+              placeholder={`Escribí ${t.fem ? 'una' : 'un'} ${t.one} ${t.fem ? 'propia' : 'propio'}…`}
               maxLength={600}
             />
             <Button variant="secondary" onClick={addOwn} disabled={!own.trim()}>

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Award, CheckSquare, Flag, NotebookPen, Pencil, Plus, Trash2, Users } from 'lucide-react';
 import {
+  challengeTerms,
   COMPETENCIES_PER_STAGE,
   COMPETENCY_STATUSES,
   COMPETENCY_STATUS_LABELS,
@@ -400,7 +401,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
               )}
               {editable ? (
                 <div className="row-actions">
-                  <Button variant="ghost" size="sm" className="btn-icon" onClick={() => compDialog(c)} aria-label="Desafíos y seguimiento" title="Desafíos y seguimiento">
+                  <Button variant="ghost" size="sm" className="btn-icon" onClick={() => compDialog(c)} aria-label={`${challengeTerms(d.member.branch).Many} y seguimiento`} title={`${challengeTerms(d.member.branch).Many} y seguimiento`}>
                     <NotebookPen />
                   </Button>
                   {del('Quitar competencia', `¿Quitar «${c.competency?.name ?? ''}» de su progresión?`, `/progression/member-competencies/${c.id}`, 'Competencia quitada')}
@@ -707,7 +708,7 @@ export function MemberProgressPanel({ memberId }: { memberId: string }) {
       </div>
 
       {dialog ? <FormDialog key={dialog.title} {...dialog} onClose={() => setDialog(null)} /> : null}
-      {editComp ? <CompetencyDialog key={editComp.id} row={editComp} onClose={() => setEditComp(null)} onSaved={refresh} /> : null}
+      {editComp ? <CompetencyDialog key={editComp.id} row={editComp} branch={d.member.branch} onClose={() => setEditComp(null)} onSaved={refresh} /> : null}
       {choosing ? (
         <ChooseDialog data={d} memberStageId={current && !current.endedAt ? current.id : null} already={currentComps} onClose={() => setChoosing(false)} onDone={refresh} />
       ) : null}

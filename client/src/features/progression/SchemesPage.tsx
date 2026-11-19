@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ClipboardPaste, FilePlus2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { BRANCHES, BRANCH_INFO, COMING_SOON_TEXT, isComingSoon, parseCompetencyLines, type Branch } from '@shared';
+import { BRANCHES, BRANCH_INFO, COMING_SOON_TEXT, isComingSoon, parseCompetencyLines, type Branch, challengeTerms } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
@@ -110,9 +110,9 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
         { key: 'areaId', label: 'Área', type: 'select', options: areaOptions },
         { key: 'name', label: 'Competencia', required: true, full: true },
         { key: 'description', label: 'Descripción', type: 'textarea' },
-        { key: 'requiredChallenges', label: 'Desafíos requeridos', type: 'textarea', hint: 'Uno por línea' },
-        { key: 'optionalChallenges', label: 'Desafíos opcionales', type: 'textarea', hint: 'Uno por línea' },
-        { key: 'specialtyChallenges', label: 'Desafíos de especialidad', type: 'textarea', hint: 'Uno por línea' },
+        { key: 'requiredChallenges', label: challengeTerms(branch).kinds.requerido, type: 'textarea', hint: 'Uno por línea' },
+        { key: 'optionalChallenges', label: challengeTerms(branch).kinds.opcional, type: 'textarea', hint: 'Uno por línea' },
+        { key: 'specialtyChallenges', label: `${challengeTerms(branch).Many} de especialidad`, type: 'textarea', hint: 'Uno por línea' },
         { key: 'active', label: 'Activa (se puede elegir)', type: 'checkbox' },
       ],
       initial: {
@@ -183,7 +183,8 @@ function CompetenciesTab({ branch, canEdit, openDialog }: { branch: string; canE
                     {c.description ? <p className="muted">{c.description}</p> : null}
                     {c.requiredChallenges.length || c.optionalChallenges.length || c.specialtyChallenges?.length ? (
                       <p className="muted">
-                        {c.requiredChallenges.length} desafíos requeridos · {c.optionalChallenges.length} opcionales
+                        {c.requiredChallenges.length} {challengeTerms(branch).kinds.requerido.toLowerCase()} · {c.optionalChallenges.length}{' '}
+                        {challengeTerms(branch).kinds.opcional.toLowerCase().replace(/^(desafíos|acciones) /, '')}
                         {c.specialtyChallenges?.length ? ` · ${c.specialtyChallenges.length} de especialidad` : ''}
                       </p>
                     ) : null}
