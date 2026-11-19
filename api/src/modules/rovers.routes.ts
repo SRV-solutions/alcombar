@@ -56,7 +56,7 @@ async function resolveUnit(req: Request, self: Member | null) {
   return { unit, units };
 }
 const activeRovers = (unitId: string) =>
-  Member.findAll({ where: { unitId, status: 'activo' }, attributes: ['id', 'firstName', 'lastName'], order: [['lastName', 'ASC'], ['firstName', 'ASC']] });
+  Member.findAll({ where: { unitId, status: 'activo' }, attributes: ['id', 'firstName', 'lastName', 'youthRep'], order: [['lastName', 'ASC'], ['firstName', 'ASC']] });
 
 // ---------------- Inicio ----------------
 roversRouter.get(
@@ -81,6 +81,7 @@ roversRouter.get(
       rover = {
         memberId: self.id,
         firstName: self.firstName,
+        youthRep: self.youthRep,
         hasVision: Boolean(plan?.vision),
         goals: { total: goals.length, open: open.length, achieved: goals.filter((g) => g.status === 'lograda').length },
         nextGoal: next ? { title: next.title, dueDate: next.dueDate } : null,
@@ -128,6 +129,7 @@ roversRouter.get(
         return {
           id: r.id,
           name: personName(r),
+          youthRep: r.youthRep,
           hasAccount: Boolean(acc?.active),
           ...(edu
             ? { entered: Boolean(acc?.lastLoginAt), plan: { hasVision: Boolean(plan?.vision), goals: mine.length, open: mine.filter((g) => g.status === 'en_curso').length, achieved: mine.filter((g) => g.status === 'lograda').length, updatedAt: updated ?? null } }

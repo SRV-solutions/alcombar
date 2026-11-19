@@ -39,6 +39,12 @@ function CommunityPage() {
               <li key={r.id}>
                 <div className="who">
                   {r.hasAccount ? <Link to={`/rover/plan/${r.id}`}>{r.name}</Link> : <span>{r.name}</span>}
+                  {r.youthRep ? (
+                    <>
+                      {' '}
+                      <Badge tone="bordo">Representante juvenil</Badge>
+                    </>
+                  ) : null}
                   <div className="muted">
                     {!r.hasAccount ? (
                       <>

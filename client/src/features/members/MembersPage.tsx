@@ -263,7 +263,7 @@ export function MembersPage() {
                     </td>
                   ) : null}
                   <td>
-                    <strong>{m.lastName}</strong>, {m.firstName} {m.inRotation ? <Badge tone="info">En rotación</Badge> : null}
+                    <strong>{m.lastName}</strong>, {m.firstName} {m.inRotation ? <Badge tone="info">En rotación</Badge> : null} {m.youthRep && m.status !== 'baja' ? <Badge tone="bordo">Representante juvenil</Badge> : null}
                   </td>
                   {pendingView ? (
                     <td>

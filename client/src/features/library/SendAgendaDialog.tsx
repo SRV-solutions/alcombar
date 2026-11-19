@@ -21,7 +21,7 @@ export function SendAgendaDialog({ minute, onClose }: { minute: Minute; onClose:
   const [busy, setBusy] = useState(false);
   const counts = useQuery({
     queryKey: ['agenda-recipients', minute.id],
-    queryFn: () => api.get<{ educadores: Counts; todos: Counts }>(`/library/minutes/${minute.id}/agenda-recipients`),
+    queryFn: () => api.get<{ educadores: Counts; todos: Counts; representantes?: number }>(`/library/minutes/${minute.id}/agenda-recipients`),
   });
   const n = (k: 'educadores' | 'todos') => (counts.data ? `${counts.data[k].users} personas` : '…');
   const hasAgenda = !!minute.agenda?.trim();
@@ -85,6 +85,12 @@ export function SendAgendaDialog({ minute, onClose }: { minute: Minute; onClose:
           </div>
         </Field>
       </div>
+      <p className="muted">
+        {counts.data?.representantes
+          ? `También le llega a ${counts.data.representantes === 1 ? 'el representante juvenil rover que usa' : `los ${counts.data.representantes} representantes juveniles rovers que usan`} la app.`
+          : 'A los representantes juveniles rovers les llega cuando tengan acceso a la app.'}{' '}
+        A los caminantes no se les manda nada: avisales por su educador.
+      </p>
       {minute.agendaSentAt ? <p className="muted">Ya se envió el {formatDate(minute.agendaSentAt.slice(0, 10))}. Si lo reenviás, les llega de nuevo a todos.</p> : null}
     </Modal>
   );

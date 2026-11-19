@@ -42,6 +42,7 @@ import { AdultsPage } from './features/adults/AdultsPage';
 import { AdultDetailPage } from './features/adults/AdultDetailPage';
 import { AdultFormPage } from './features/adults/AdultFormPage';
 import { UsersPage } from './features/admin/UsersPage';
+import { CouncilAgendaPage } from './features/library/CouncilAgendaPage';
 import { RolesPage } from './features/admin/RolesPage';
 import { AuditPage } from './features/admin/AuditPage';
 import { CatalogsPage } from './features/admin/CatalogsPage';
@@ -112,6 +113,7 @@ export function App() {
         <Route path="inventario/*" element={<Guard perm={['inventory', 'view']}><InventoryRoutes /></Guard>} />
         <Route path="calendario/*" element={<Guard perm={['calendar', 'view']}><CalendarRoutes /></Guard>} />
         <Route path="actas/*" element={<Guard perm={['documents', 'view']}><LibraryRoutes /></Guard>} />
+        <Route path="consejo/:id" element={<CouncilAgendaPage />} />
 
         {/* Comunidad Rover: el propio módulo decide qué ve cada uno (rover, educador o colaborador) */}
         <Route path="rover/*" element={<RoverRoutes />} />

@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { Op } from 'sequelize';
-import { documentLinkSchema, minuteSchema } from '../shared';
+import { can, documentLinkSchema, minuteSchema } from '../shared';
 import { sequelize } from '../db';
-import { Unit, User } from '../models';
+import { Member, Unit, User } from '../models';
 import { CouncilMinute, DocumentLink } from '../models/operations';
 import { z } from 'zod';
 import { formatDate } from '../shared';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
-import { councilRecipients, isJefaturaUser, notify } from '../lib/notify';
+import { councilRecipients, isJefaturaUser, notify, youthRepRecipients } from '../lib/notify';
 import { authorize } from '../middlewares/auth';
 
 /** Etapa 8: actas del Consejo de Grupo y repositorio de documentos (enlaces al Drive). */
@@ -105,11 +105,24 @@ libraryRouter.get(
   authorize('documents', 'view'),
   ah(async (req, res) => {
     if (!(await isJefaturaUser(req.user!.id, req.auth!.isSuperadmin))) throw forbidden();
-    const [educadores, todos] = await Promise.all([councilRecipients('educadores', req.user!.id), councilRecipients('todos', req.user!.id)]);
+    const [educadores, todos, reps] = await Promise.all([councilRecipients('educadores', req.user!.id), councilRecipients('todos', req.user!.id), youthRepRecipients()]);
     res.json({
+      representantes: reps.userIds.length,
       educadores: { users: educadores.userIds.length, emails: educadores.emails.length },
       todos: { users: todos.userIds.length, emails: todos.emails.length },
     });
+  }),
+);
+
+/** El temario ya enviado, para quien va al Consejo sin ver las actas: los representantes juveniles. */
+libraryRouter.get(
+  '/minutes/:id/agenda',
+  ah(async (req, res) => {
+    const rep = req.user!.memberId ? await Member.findOne({ where: { id: req.user!.memberId, youthRep: true, status: 'activo' }, attributes: ['id'] }) : null;
+    if (!rep && !can(req.auth, 'documents', 'view')) throw forbidden();
+    const m = await CouncilMinute.findByPk(req.params.id, { attributes: ['id', 'title', 'date', 'agenda', 'agendaSentAt', 'agendaMessage'] });
+    if (!m || !m.agendaSentAt) throw notFound();
+    res.json({ id: m.id, title: m.title, date: m.date, agenda: m.agenda, message: m.agendaMessage, sentAt: m.agendaSentAt });
   }),
 );
 
@@ -149,8 +162,30 @@ libraryRouter.post(
         footnote: 'Te llega porque sos parte del Consejo de Grupo.',
       },
     });
+    // Los representantes juveniles (rovers con cuenta) lo leen en una pantalla propia: las actas no son para ellos
+    const reps = await youthRepRecipients();
+    if (reps.userIds.length) {
+      await notify({
+        recipients: reps,
+        kind: 'consejo',
+        title,
+        body: [d.message, topics.slice(0, 4).join(' · ') + (topics.length > 4 ? ' …' : '')].filter(Boolean).join(' — '),
+        link: `/consejo/${m.id}`,
+        email: {
+          subject: title,
+          paragraphs: [
+            `${actor.name}, de la Jefatura de Grupo, comparte el temario del Consejo de Grupo del ${formatDate(m.date)}.`,
+            ...(d.message ? [d.message] : []),
+            'Orden del día:',
+            ...topics.map((t) => (/^[-•*\d]/.test(t) ? t : `• ${t}`)),
+          ],
+          button: 'Ver el temario en ALCOMBAR',
+          footnote: 'Te llega porque sos representante juvenil de tu Comunidad en el Consejo de Grupo.',
+        },
+      });
+    }
     await m.update({ agendaSentAt: new Date(), agendaSentByUserId: actor.id, agendaMessage: d.message });
-    res.json({ ok: true, users: recipients.userIds.length, emails: recipients.emails.length });
+    res.json({ ok: true, users: recipients.userIds.length, emails: recipients.emails.length, representatives: reps.userIds.length });
   }),
 );
 

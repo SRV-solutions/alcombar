@@ -7,7 +7,7 @@
 import { Op } from 'sequelize';
 import { BRANCH_INFO, type Branch } from '../shared';
 import { config } from '../config';
-import { Adult, AdultAssignment, Role, SupportTeam, User, UserRole } from '../models';
+import { Adult, AdultAssignment, Member, Role, SupportTeam, User, UserRole } from '../models';
 import { Notification } from '../models/notifications';
 import { emailLayout, sendMailBatch, type OutgoingMail } from './mailer';
 
@@ -106,6 +106,17 @@ export async function councilRecipients(audience: CouncilAudience, excludeUserId
     chosen.map((a) => a.adultId),
     excludeUserId,
   );
+}
+
+/**
+ * Representantes juveniles con cuenta en la app (rovers): reciben el temario del Consejo.
+ * A los caminantes no se les avisa: son menores y no tienen acceso.
+ */
+export async function youthRepRecipients(): Promise<Recipients> {
+  const reps = await Member.findAll({ where: { youthRep: true, status: 'activo' }, attributes: ['id'] });
+  if (!reps.length) return { userIds: [], emails: [] };
+  const users = await User.findAll({ where: { memberId: reps.map((m) => m.id), active: true }, attributes: ['id', 'email', 'emailVerifiedAt'] });
+  return { userIds: users.map((u) => u.id), emails: users.filter((u) => u.email && u.emailVerifiedAt).map((u) => u.email!.toLowerCase()) };
 }
 
 // ---------------- Referentes de Programa por rama ----------------

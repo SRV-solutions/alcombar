@@ -55,6 +55,8 @@ export interface AdultRef {
   firstName: string;
   lastName: string;
   totem: string | null;
+  /** Foto de perfil: el animal de su tótem (clave de un dibujo de la app). */
+  avatar?: string | null;
 }
 export interface SupportTeam {
   id: string;
@@ -191,6 +193,8 @@ export interface MemberListItem {
   status: string;
   /** Rover en rotación. */
   inRotation?: boolean;
+  /** Representante juvenil de su unidad en el Consejo de Grupo. */
+  youthRep?: boolean;
   /** Rama: la de la unidad, o la conocida si está "por asignar". */
   branch: string | null;
   /** null = por asignar unidad */
@@ -239,6 +243,8 @@ export interface MemberDetail {
   status: string;
   leftAt: string | null;
   inRotation: boolean;
+  youthRep?: boolean;
+  canSetYouthRep?: boolean;
   rotationSince: string | null;
   departedAt: string | null;
   /** El adulto que pasó a ser después de la partida. */

@@ -25,6 +25,11 @@ export function RoverHome() {
   return (
     <>
       <PageHeader title={`Hola, ${first}`} sub={me.roles.map((x) => (x.unit ? `${x.name} · ${x.unit.name}` : x.name)).join(' · ') || undefined} />
+      {r?.youthRep ? (
+        <div className="alert alert-info">
+          <strong>Sos representante juvenil de tu Comunidad en el Consejo de Grupo.</strong> Cuando la Jefatura mande el temario de un Consejo te llega el aviso en la campanita.
+        </div>
+      ) : null}
       {home.data?.assembly ? (
         <Link to="/rover/asamblea" className="alert alert-ok assembly-live as-link">
           <span>

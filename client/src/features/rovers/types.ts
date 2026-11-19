@@ -19,6 +19,7 @@ export interface RoverHomeData {
   rover: {
     memberId: string;
     firstName: string;
+    youthRep?: boolean;
     hasVision: boolean;
     goals: { total: number; open: number; achieved: number };
     nextGoal: { title: string; dueDate: string } | null;
@@ -116,6 +117,7 @@ export interface CommunityData {
   rovers: {
     id: string;
     name: string;
+    youthRep?: boolean;
     hasAccount: boolean;
     entered?: boolean;
     plan?: { hasVision: boolean; goals: number; open: number; achieved: number; updatedAt: string | null };

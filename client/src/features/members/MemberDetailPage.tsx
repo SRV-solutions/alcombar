@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeftRight, Flag, Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw, Tent, Trash2, Unlink } from 'lucide-react';
+import { ArrowLeftRight, Flag, Mail, MessageCircle, Pencil, Phone, Plus, RefreshCw, Tent, Trash2, Unlink, Megaphone } from 'lucide-react';
 import {
   ageAt,
   AFFILIATION_STATUS_LABELS,
@@ -86,6 +86,17 @@ export function MemberDetailPage() {
       toast.error(e);
     }
   };
+  // Representante juvenil en el Consejo: lo eligen sus pares (caminantes y rovers) y lo marca su educador
+  const youthBranch = ['caminantes', 'rovers'].includes(m.unit?.branch ?? m.branch ?? '') && m.status === 'activo' && !!m.unit;
+  const setYouthRep = async (youthRep: boolean) => {
+    try {
+      await api.post(`/members/${m.id}/youth-rep`, { youthRep });
+      toast.ok(youthRep ? 'Es representante juvenil en el Consejo' : 'Ya no es representante juvenil');
+      refresh();
+    } catch (e) {
+      toast.error(e);
+    }
+  };
   const pendingDocs = m.documents?.filter((d) => d.status === 'missing' || d.status === 'expired').length ?? 0;
   const presentCount = m.attendance.filter((a) => a.status === 'presente' || a.status === 'tarde').length;
 
@@ -108,6 +119,7 @@ export function MemberDetailPage() {
             {m.firstName} {m.lastName} {m.status === 'baja' ? <Badge>Baja</Badge> : null}
             {m.status === 'partida' ? <Badge tone="info">Hizo la partida</Badge> : null}
             {m.inRotation ? <Badge tone="info">Rover en rotación</Badge> : null}
+            {m.youthRep ? <Badge tone="bordo">Representante juvenil</Badge> : null}
           </>
         }
         sub={
@@ -129,6 +141,15 @@ export function MemberDetailPage() {
             {canAssign ? (
               <Button onClick={() => setDialog({ kind: 'assign' })}>
                 <Tent /> Asignar unidad
+              </Button>
+            ) : null}
+            {m.canSetYouthRep && youthBranch ? (
+              <Button
+                variant="secondary"
+                onClick={() => void setYouthRep(!m.youthRep)}
+                title={isRover ? 'Los rovers eligen entre ellos a dos representantes en el Consejo de Grupo' : 'Cada Comunidad Caminante elige a un representante en el Consejo de Grupo'}
+              >
+                <Megaphone /> {m.youthRep ? 'Quitar de representante' : 'Representante juvenil'}
               </Button>
             ) : null}
             {m.canEdit && isRover ? (

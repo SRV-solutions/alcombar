@@ -52,6 +52,10 @@ import { personSearchWhere } from '../lib/personSearch';
 
 export const membersRouter = Router();
 
+/** Cuántos representantes juveniles elige cada comunidad, por rama. */
+const YOUTH_REPS: Record<string, number> = { caminantes: 1, rovers: 2 };
+const canSetYouthRep = (req: Request, unitId: string | null | undefined) =>
+  req.auth!.isSuperadmin || (!!unitId && (can(req.auth, 'members', 'edit', unitId) || can(req.auth, 'progression', 'edit', unitId)));
 const memberUnit = async (req: Request) => (await Member.findByPk(req.params.id, { attributes: ['unitId'] }))?.unitId;
 
 const unitInclude = [
@@ -306,6 +310,8 @@ membersRouter.get(
     const u = m.unitId;
     const flags = {
       canEdit: can(req.auth, 'members', 'edit', u),
+      // Al representante juvenil lo marca el equipo de educadores de su unidad
+      canSetYouthRep: canSetYouthRep(req, u),
       canDelete: can(req.auth, 'members', 'delete', u),
       canViewContacts: can(req.auth, 'member_contacts', 'view', u),
       canEditContacts: can(req.auth, 'member_contacts', 'edit', u),
@@ -505,6 +511,35 @@ async function activeRover(id: string) {
   if (member.status !== 'activo') throw badRequest('No está activo/a');
   return member;
 }
+
+/**
+ * Representante juvenil en el Consejo de Grupo: lo eligen sus pares y lo marca el equipo de educadores de la unidad.
+ * Dos por Comunidad Rover, uno por Comunidad Caminante. No cambia permisos: es una etiqueta (y, a los rovers con
+ * cuenta, les llega el temario del Consejo).
+ */
+membersRouter.post(
+  '/:id/youth-rep',
+  ah(async (req, res) => {
+    const member = await Member.findByPk(req.params.id, { include: [{ model: Unit, as: 'unit', attributes: ['id', 'name', 'branch'] }] });
+    if (!member) throw notFound();
+    if (!canSetYouthRep(req, member.unitId)) throw forbidden('Lo marca el equipo de educadores de su unidad');
+    const { youthRep } = parse(z.object({ youthRep: z.boolean() }), req.body);
+    const branch = member.unit?.branch ?? member.branch;
+    const max = YOUTH_REPS[branch ?? ''];
+    if (youthRep && !member.youthRep) {
+      if (!max || !member.unitId) throw badRequest('Los representantes juveniles son de las Comunidades Caminantes y Rovers');
+      if (member.status !== 'activo') throw badRequest('No está activo/a');
+      const others = await Member.findAll({ where: { unitId: member.unitId, youthRep: true, status: 'activo' }, attributes: ['firstName', 'lastName'] });
+      if (others.length >= max) {
+        const names = others.map((o) => `${o.firstName} ${o.lastName}`).join(' y ');
+        throw badRequest(max === 1 ? `${member.unit?.name ?? 'La Comunidad'} ya tiene representante: ${names}. Quitalo primero.` : `${member.unit?.name ?? 'La Comunidad'} ya tiene sus ${max} representantes: ${names}. Quitá a uno primero.`);
+      }
+    }
+    await member.update({ youthRep, youthRepSince: youthRep ? (member.youthRep ? member.youthRepSince : todayIso()) : null });
+    await writeAudit({ action: 'update', entity: 'Member', entityId: member.id, summary: `${member.firstName} ${member.lastName}: ${youthRep ? 'representante juvenil en el Consejo' : 'deja de ser representante juvenil'}` });
+    res.json({ ok: true, youthRep: member.youthRep });
+  }),
+);
 
 /** Rover en rotación: su último tiempo en la rama, antes de la partida. Sigue siendo rover. */
 membersRouter.post(

@@ -104,6 +104,8 @@ export class Adult extends Model<InferAttributes<Adult>, InferCreationAttributes
   declare firstName: string;
   declare lastName: string;
   declare totem: string | null;
+  /** Foto de perfil: el animal de su tótem (clave de un dibujo de la app). */
+  declare avatar: CreationOptional<string | null>;
   declare dni: string | null;
   declare birthDate: string | null;
   declare email: string | null;
@@ -130,6 +132,7 @@ Adult.init(
     firstName: { type: STRING(80), allowNull: false },
     lastName: { type: STRING(80), allowNull: false },
     totem: STRING(80),
+    avatar: STRING(30),
     dni: STRING(12),
     birthDate: DATEONLY,
     email: STRING(200),
@@ -526,6 +529,9 @@ export class Member extends Model<InferAttributes<Member>, InferCreationAttribut
   declare leftAt: string | null;
   /** Rover en rotación: sigue siendo rover, en su último tiempo antes de la partida. */
   declare inRotation: CreationOptional<boolean>;
+  /** Representante juvenil de su unidad en el Consejo de Grupo (caminantes y rovers). */
+  declare youthRep: CreationOptional<boolean>;
+  declare youthRepSince: CreationOptional<string | null>;
   declare rotationSince: CreationOptional<string | null>;
   /** Fecha de la partida (el estado pasa a 'partida'). */
   declare departedAt: CreationOptional<string | null>;
@@ -558,6 +564,8 @@ Member.init(
     status: { type: STRING(20), allowNull: false, defaultValue: 'activo' },
     leftAt: DATEONLY,
     inRotation: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    youthRep: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    youthRepSince: DATEONLY,
     rotationSince: DATEONLY,
     departedAt: DATEONLY,
     notes: TEXT,
@@ -788,6 +796,14 @@ AdultAttendance.init(
   },
   { sequelize, tableName: 'adult_attendances', modelName: 'AdultAttendance', paranoid: false },
 );
+
+Member.addHook('beforeSave', (m) => {
+  const member = m as Member;
+  if (member.youthRep && (member.changed('unitId') || (member.changed('status') && member.status !== 'activo'))) {
+    member.youthRep = false;
+    member.youthRepSince = null;
+  }
+});
 
 // ======================= RELACIONES =======================
 Unit.hasMany(SmallGroup, { as: 'smallGroups', foreignKey: 'unitId' });
