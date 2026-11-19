@@ -75,9 +75,11 @@
 .registry-note p:last-child { margin-bottom: 0; }
 
 /* Referentes de rama */
-.referents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: stretch; }
-/* Todas a la misma altura (sin el margen que llevan las tarjetas apiladas) y el alta siempre abajo */
-.referents-grid > .card { margin: 0; display: flex; flex-direction: column; }
+/* Las cinco ramas entran en una fila en una pantalla de escritorio; en pantallas más chicas bajan de a una */
+.referents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 16px; align-items: stretch; }
+/* Todas a la misma altura y el alta siempre abajo. El selector lleva las dos clases a propósito: tiene que ganarle a
+   «.card + .card» (el margen de las tarjetas apiladas) sin depender de qué hoja de estilos se cargue primero. */
+.referents-grid > .card.referent-branch { margin: 0; display: flex; flex-direction: column; }
 .referents-grid > .card > .card-body { flex: 1; display: flex; flex-direction: column; }
 .card.referent-branch { border-top: 4px solid var(--branch-color, var(--primary)); }
 .referent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
