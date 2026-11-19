@@ -20,6 +20,58 @@ const ENTITY_LABELS: Record<string, string> = {
   AdultCourse: 'Formación de adulto',
   AdultExperience: 'Experiencia de formación',
   AdultHabilitation: 'Habilitación de adulto',
+  AdultDocument: 'Documentación de adulto',
+  AdultAttendance: 'Asistencia de educadores',
+  Competency: 'Competencia',
+  BranchArea: 'Área de rama',
+  MemberCompetency: 'Competencia de protagonista',
+  MemberStage: 'Etapa de progresión',
+  MemberProgress: 'Seguimiento de progresión',
+  MemberRole: 'Rol en el pequeño grupo',
+  MemberSpecialty: 'Especialidad de protagonista',
+  Specialty: 'Especialidad',
+  CycleReview: 'Revisión de ciclo',
+  ProgressionNote: 'Nota de progresión',
+  ProgressionScheme: 'Esquema de progresión',
+  ProgressionStage: 'Etapa del esquema',
+  ActivitySheet: 'Ficha de actividad',
+  ActivityCompetency: 'Competencia de una ficha',
+  ProgramCycle: 'Ciclo de programa',
+  MeetingProgram: 'Programa del sábado',
+  MeetingItem: 'Momento del programa',
+  Camp: 'Campamento o salida',
+  CampEnrollment: 'Inscripción a campamento',
+  CampSite: 'Lugar de acampe',
+  CampUnit: 'Unidad en campamento',
+  CampMenuItem: 'Menú de campamento',
+  CampShoppingItem: 'Compra de campamento',
+  CampBudgetLine: 'Presupuesto de campamento',
+  SignedAuthorization: 'Autorización firmada',
+  RegistryTask: 'Alta o baja para Cruz del Sur',
+  Saturday: 'Sábado del calendario',
+  CalendarEvent: 'Evento del calendario',
+  CouncilMinute: 'Acta',
+  DocumentLink: 'Documento del Grupo',
+  Account: 'Cuenta',
+  Category: 'Categoría contable',
+  Movement: 'Movimiento',
+  Budget: 'Presupuesto',
+  BudgetLine: 'Línea de presupuesto',
+  PeriodClose: 'Cierre de período',
+  Charge: 'Cuota',
+  Payment: 'Pago',
+  PaymentAllocation: 'Imputación de pago',
+  FeePlan: 'Plan de cuotas',
+  MemberFeeSetting: 'Cuota de un protagonista',
+  Event: 'Evento',
+  EventTask: 'Tarea de evento',
+  EventBudgetLine: 'Presupuesto de evento',
+  Item: 'Elemento de inventario',
+  ItemCategory: 'Categoría de inventario',
+  ItemLocation: 'Lugar de guardado',
+  Loan: 'Préstamo',
+  LoanItem: 'Elemento prestado',
+  SupportReport: 'Reporte de problema',
   Unit: 'Unidad',
   SmallGroup: 'Pequeño grupo',
   SupportTeam: 'Equipo de apoyo',
@@ -171,6 +223,80 @@ function Changes({ entry, units }: { entry: AuditEntry; units: Unit[] }) {
 
 const fmtDateTime = (s: string) => new Date(s).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'medium' });
 
+interface Usage {
+  days: number;
+  users: number;
+  views: number;
+  totalUsers: number;
+  enteredEver: number;
+  byPath: { path: string; users: number; views: number }[];
+  byDay: { day: string; users: number }[];
+}
+
+/** Qué pantallas se abren de verdad: cuántas personas distintas y cuántas veces. */
+function UsageCard() {
+  const [days, setDays] = useState(7);
+  const usage = useQuery({ queryKey: ['audit-usage', days], queryFn: () => api.get<Usage>(`/audit/usage${qs({ days })}`) });
+  const u = usage.data;
+  return (
+    <Card
+      title="Uso de la app"
+      bodyClass=""
+      actions={
+        <Select value={String(days)} onChange={(e) => setDays(Number(e.target.value))} aria-label="Período" style={{ width: 'auto' }}>
+          <option value="1">Hoy y ayer</option>
+          <option value="7">Últimos 7 días</option>
+          <option value="30">Últimos 30 días</option>
+        </Select>
+      }
+    >
+      <div className="card-body">
+        {usage.isLoading ? (
+          <Loading />
+        ) : usage.error ? (
+          <ErrorBox error={usage.error} />
+        ) : u ? (
+          <p style={{ margin: 0 }}>
+            <strong>{u.users}</strong> de {u.totalUsers} usuarios abrieron la app en este período ({u.enteredEver} entraron alguna vez).
+            {u.byDay.length ? (
+              <span className="muted">
+                {' '}
+                Por día: {u.byDay.slice(0, 7).map((d) => `${d.day.slice(8)}/${d.day.slice(5, 7)}: ${d.users}`).join(' · ')}
+              </span>
+            ) : (
+              <span className="muted"> Se empieza a medir desde que se publicó este registro.</span>
+            )}
+          </p>
+        ) : null}
+      </div>
+      {u?.byPath.length ? (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Pantalla</th>
+                <th className="num">Personas</th>
+                <th className="num">Veces</th>
+              </tr>
+            </thead>
+            <tbody>
+              {u.byPath.map((p) => (
+                <tr key={p.path}>
+                  <td>
+                    <code>{p.path}</code>
+                  </td>
+                  <td className="num">{p.users}</td>
+                  <td className="num">{p.views}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
 export function AuditPage() {
   const [page, setPage] = useState(1);
   const [entity, setEntity] = useState('');
@@ -192,6 +318,9 @@ export function AuditPage() {
   return (
     <>
       <PageHeader title="Auditoría" sub="Quién, cuándo y qué cambió. Cada alta, modificación y baja queda registrada." />
+      <div className="mb">
+        <UsageCard />
+      </div>
       <div className="toolbar">
         <Select
           value={entity}

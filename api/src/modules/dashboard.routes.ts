@@ -109,6 +109,59 @@ dashboardRouter.get(
 
 export const auditRouter = Router();
 
+// ---- Uso de la app: qué pantalla abre cada usuario (sin identificadores ni lo que hace adentro) ----
+const cleanPath = (raw: unknown): string | null => {
+  if (typeof raw !== 'string' || !raw.startsWith('/')) return null;
+  const p = raw
+    .split(/[?#]/)[0]
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ':id')
+    .replace(/\/\d+(?=\/|$)/g, '/:id')
+    .replace(/\/+$/, '');
+  return (p || '/').slice(0, 160);
+};
+auditRouter.post(
+  '/view',
+  ah(async (req, res) => {
+    const path = cleanPath(req.body?.path);
+    // Volver a la misma pantalla en menos de un minuto no cuenta de nuevo
+    if (path)
+      await sequelize.query(
+        `INSERT INTO page_views (user_id, path)
+         SELECT :userId, :path WHERE NOT EXISTS (
+           SELECT 1 FROM page_views WHERE user_id = :userId AND path = :path AND created_at > now() - interval '1 minute')`,
+        { replacements: { userId: req.user!.id, path } },
+      );
+    res.json({ ok: true });
+  }),
+);
+auditRouter.get(
+  '/usage',
+  authorize('audit', 'view'),
+  ah(async (req, res) => {
+    const days = Math.min(90, Math.max(1, Number(req.query.days) || 7));
+    const since = { replacements: { days }, type: QueryTypes.SELECT as const };
+    const [totals] = await sequelize.query<{ users: number; views: number }>(
+      `SELECT COUNT(DISTINCT user_id)::int AS users, COUNT(*)::int AS views FROM page_views WHERE created_at > now() - make_interval(days => :days)`,
+      since,
+    );
+    const byPath = await sequelize.query<{ path: string; users: number; views: number }>(
+      `SELECT path, COUNT(DISTINCT user_id)::int AS users, COUNT(*)::int AS views FROM page_views
+       WHERE created_at > now() - make_interval(days => :days) GROUP BY path ORDER BY users DESC, views DESC LIMIT 60`,
+      since,
+    );
+    const byDay = await sequelize.query<{ day: string; users: number }>(
+      `SELECT to_char((created_at AT TIME ZONE 'America/Argentina/Buenos_Aires')::date, 'YYYY-MM-DD') AS day, COUNT(DISTINCT user_id)::int AS users
+       FROM page_views WHERE created_at > now() - make_interval(days => :days) GROUP BY 1 ORDER BY 1 DESC`,
+      since,
+    );
+    const [people] = await sequelize.query<{ total: number; entered: number }>(
+      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE last_login_at IS NOT NULL)::int AS entered FROM users WHERE deleted_at IS NULL AND active`,
+      { type: QueryTypes.SELECT },
+    );
+    res.json({ days, users: totals?.users ?? 0, views: totals?.views ?? 0, totalUsers: people?.total ?? 0, enteredEver: people?.entered ?? 0, byPath, byDay });
+  }),
+);
+
 auditRouter.get(
   '/',
   authorize('audit', 'view'),

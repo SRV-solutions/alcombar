@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   ArrowLeftRight,
@@ -152,6 +152,10 @@ export function Layout() {
   const visible: Record<string, boolean> = { registry: !!registry.data?.canSee };
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  // Uso de la app: se anota qué pantalla abrió (sin datos de lo que hace adentro). Si falla, no molesta.
+  useEffect(() => {
+    void api.post('/audit/view', { path: location.pathname }).catch(() => undefined);
+  }, [location.pathname]);
   const [lastPath, setLastPath] = useState(location.pathname);
   if (lastPath !== location.pathname) {
     setLastPath(location.pathname);
