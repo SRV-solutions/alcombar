@@ -6,7 +6,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { useToast } from '../../lib/toast';
 import { Card } from '../../components/ui';
-import { TotemAvatar } from '../../components/TotemAvatar';
+import { TotemAvatar, TotemAvatarButton, totemHasArt } from '../../components/TotemAvatar';
 
 /** Foto de perfil: quien tiene tótem elige el dibujo de su animal. Por ahora no se suben imágenes. */
 export function TotemAvatarCard() {
@@ -19,7 +19,7 @@ export function TotemAvatarCard() {
   const mine = animalFromTotem(adult.totem);
   const current = adult.avatar ?? null;
   // Primero el animal de su tótem; después el resto de la tribu
-  const options = [...TOTEM_ANIMALS].sort((a, b) => Number(b.key === mine) - Number(a.key === mine) || a.label.localeCompare(b.label, 'es'));
+  const options = TOTEM_ANIMALS.filter((a) => totemHasArt(a.key)).sort((a, b) => Number(b.key === mine) - Number(a.key === mine) || a.label.localeCompare(b.label, 'es'));
   const choose = async (avatar: string | null) => {
     if (avatar === current) return;
     setBusy(avatar ?? 'none');
@@ -36,13 +36,13 @@ export function TotemAvatarCard() {
   return (
     <Card title="Tu foto de perfil">
       <div className="avatar-current">
-        {current ? <TotemAvatar animal={current} size={72} /> : <span className="avatar-empty" aria-hidden />}
+        {current && totemHasArt(current) ? <TotemAvatarButton animal={current} size={84} name={me?.user.name} totem={adult.totem} /> : <span className="avatar-empty" aria-hidden />}
         <div>
           <strong>«{adult.totem}»</strong>
           <div className="muted">
             {current
-              ? `Tu foto de perfil: ${totemAnimalLabel(current)}. Se ve al lado de tu nombre.`
-              : mine
+              ? `Tu foto de perfil: ${totemAnimalLabel(current)}. Tocala para verla grande, con el animal completo.`
+              : mine && totemHasArt(mine)
                 ? 'Elegí el dibujo de tu animal: se ve al lado de tu nombre.'
                 : 'Tu animal todavía no está dibujado: mientras tanto podés elegir otro de la tribu, o avisarnos para sumarlo.'}
           </div>
