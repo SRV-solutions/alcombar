@@ -82,7 +82,13 @@ const findTarget = (target: TutorialStep['target']) => {
   if (!target) return null;
   let els: HTMLElement[] = [];
   try {
-    els = [...document.querySelectorAll<HTMLElement>(target.selector)].filter(visible);
+    const all = [...document.querySelectorAll<HTMLElement>(target.selector)];
+    // Un ítem del menú que está en una sección plegada: se despliega y se lo encuentra en el próximo intento
+    if (target.selector.startsWith('.sidebar')) {
+      const folded = all.map((el) => el.closest<HTMLElement>('.nav-group:not(.open)')).find(Boolean);
+      if (folded?.dataset.group) window.dispatchEvent(new CustomEvent('alc:nav-open', { detail: folded.dataset.group }));
+    }
+    els = all.filter(visible);
   } catch {
     return null;
   }
@@ -271,11 +277,12 @@ export function TutorialHost() {
   useEffect(() => {
     if (!me || !progress.data || autoStarted.current || current) return;
     autoStarted.current = true;
-    // Los tutoriales son de las pantallas de los adultos: a un rover no se le presenta solo
-    if (me.user.memberId) return;
-    if (data.done.includes('bienvenida') || data.skipped.includes('bienvenida')) return;
+    // Un rover tiene su propia bienvenida, y recién cuando ya eligió su contraseña
+    if (me.user.mustChangePassword) return;
+    const welcome = me.user.memberId ? 'bienvenida-rover' : 'bienvenida';
+    if (data.done.includes(welcome) || data.skipped.includes(welcome)) return;
     const t = setTimeout(() => {
-      if (!current) startTutorial('bienvenida');
+      if (!current) startTutorial(welcome);
     }, 1200);
     return () => clearTimeout(t);
   }, [me, progress.data]); // eslint-disable-line react-hooks/exhaustive-deps

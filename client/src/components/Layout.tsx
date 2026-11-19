@@ -1,8 +1,15 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   ArrowLeftRight,
+  Backpack,
   BookOpenCheck,
+  ChevronDown,
+  Flag,
+  Map as MapIcon,
+  Signpost,
+  Wallet,
+  Wrench,
   Bug,
   Boxes,
   CalendarCheck,
@@ -67,12 +74,19 @@ interface NavItem {
   badgeKey?: 'support' | 'registry' | 'assembly';
   /** Se muestra solo si el servidor dice que esta persona lo puede ver. */
   visibleKey?: 'registry' | 'roverSelf' | 'roverEdu' | 'roverAny' | 'roverCommunity';
+  /** Se esconde a quien tiene este permiso (ya lo encuentra en otra pantalla). */
+  unless?: [ModuleKey, Action];
 }
 
-const SECTIONS: { title?: string; items: NavItem[] }[] = [
+/** Con pocas pantallas el menú se muestra entero; con más, cada sección se pliega y queda abierta solo la que se está usando. */
+const FLAT_MENU_MAX = 9;
+const inSection = (it: NavItem, pathname: string) => (it.end ? pathname === it.to : pathname === it.to || pathname.startsWith(`${it.to}/`));
+
+const SECTIONS: { title?: string; icon?: ReactNode; items: NavItem[] }[] = [
   { items: [{ to: '/', label: 'Inicio', icon: <Home />, end: true }] },
   {
     title: 'Comunidad Rover',
+    icon: <Signpost />,
     items: [
       { to: '/rover/plan', label: 'Mi Plan Personal', icon: <RouteIcon />, visibleKey: 'roverSelf' },
       { to: '/rover', label: 'La Comunidad', icon: <UsersRound />, visibleKey: 'roverEdu', end: true },
@@ -82,6 +96,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: 'Protagonistas',
+    icon: <Backpack />,
     items: [
       { to: '/protagonistas', label: 'Padrón', icon: <Users />, perm: ['members', 'view'] },
       { to: '/pases', label: 'Pases de unidad', icon: <ArrowLeftRight />, perm: ['members', 'edit'] },
@@ -93,6 +108,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: 'Programa',
+    icon: <MapIcon />,
     items: [
       { to: '/programa', label: 'Fichas de actividad', icon: <FileText />, perm: ['activities', 'view'], end: true },
       { to: '/programa/ciclos', label: 'Ciclos de programa', icon: <CalendarRange />, perm: ['activities', 'view'] },
@@ -104,6 +120,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: 'Tesorería',
+    icon: <Wallet />,
     items: [
       { to: '/contabilidad', label: 'Contabilidad', icon: <Landmark />, perm: ['accounting', 'view'], end: true },
       { to: '/contabilidad/cuotas', label: 'Cuotas y pagos', icon: <Coins />, perm: ['fees', 'view'] },
@@ -113,6 +130,7 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: 'Grupo',
+    icon: <Flag />,
     items: [
       { to: '/grupo/sobre', label: 'Sobre el Grupo', icon: <BookOpen /> },
       { to: '/grupo/unidades', label: 'Unidades', icon: <Tent />, perm: ['group', 'view'] },
@@ -128,8 +146,10 @@ const SECTIONS: { title?: string; items: NavItem[] }[] = [
   },
   {
     title: 'Administración',
+    icon: <Wrench />,
     items: [
-      { to: '/admin/usuarios', label: 'Usuarios', icon: <UserCog />, perm: ['users', 'view'] },
+      // Los accesos se manejan desde Adultos; esta pantalla queda para quien administra usuarios sin ver adultos
+      { to: '/admin/usuarios', label: 'Usuarios', icon: <UserCog />, perm: ['users', 'view'], unless: ['adults', 'view'] },
       { to: '/admin/roles', label: 'Roles y permisos', icon: <ShieldCheck />, perm: ['roles', 'view'] },
       {
         to: '/admin/catalogos',
@@ -179,11 +199,57 @@ export function Layout() {
   useEffect(() => {
     void api.post('/audit/view', { path: location.pathname }).catch(() => undefined);
   }, [location.pathname]);
+  // Qué ve esta cuenta en el menú, sección por sección
+  const sections = SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((it) => {
+      if (it.superadmin) return !!me?.isSuperadmin;
+      if (it.unless && can(it.unless[0], it.unless[1])) return false;
+      if (it.visibleKey) return visible[it.visibleKey];
+      const perms = it.anyOf ?? (it.perm ? [it.perm] : []);
+      return !perms.length || perms.some(([m, a]) => can(m, a));
+    }),
+  })).filter((s) => s.items.length);
+  const collapsible = sections.reduce((n, s) => n + s.items.length, 0) > FLAT_MENU_MAX;
+  // La sección de la pantalla actual: la del ítem que mejor coincide con la dirección
+  const current =
+    sections
+      .flatMap((s) => s.items.filter((it) => inSection(it, location.pathname)).map((it) => ({ title: s.title, len: it.to.length })))
+      .sort((a, b) => b.len - a.len)[0]?.title ?? null;
+  const [group, setGroup] = useState<string | null>(current);
+  const navRef = useRef<HTMLElement>(null);
+  const toggleGroup = (title: string) => {
+    const opening = group !== title;
+    setGroup(opening ? title : null);
+    // Al desplegar una sección de abajo, que sus ítems queden a la vista
+    if (opening) setTimeout(() => navRef.current?.querySelector(`[data-group="${title}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 240);
+  };
+  // Los tutoriales señalan ítems del menú: si están en una sección plegada, la abren
+  useEffect(() => {
+    const onOpen = (e: Event) => setGroup((e as CustomEvent<string>).detail);
+    window.addEventListener('alc:nav-open', onOpen);
+    return () => window.removeEventListener('alc:nav-open', onOpen);
+  }, []);
+  // Los permisos del menú llegan de a poco: cuando recién se sabe cuál es la sección actual, se abre
+  const [lastCurrent, setLastCurrent] = useState(current);
+  if (lastCurrent !== current) {
+    setLastCurrent(current);
+    if (current) setGroup(current);
+  }
   const [lastPath, setLastPath] = useState(location.pathname);
   if (lastPath !== location.pathname) {
     setLastPath(location.pathname);
     setOpen(false);
+    // Al cambiar de pantalla queda abierta su sección (y solo esa)
+    if (current) setGroup(current);
   }
+  const navLink = (it: NavItem) => (
+    <NavLink key={it.to} to={it.to} end={it.end}>
+      {it.icon}
+      {it.label}
+      {it.badgeKey && badges[it.badgeKey] ? <span className="nav-badge">{badges[it.badgeKey]}</span> : null}
+    </NavLink>
+  );
 
   return (
     <div className="app">
@@ -196,25 +262,30 @@ export function Layout() {
             <div className="brand-sub">Grupo Scout 155 · Gestión</div>
           </div>
         </div>
-        <nav className="nav">
-          {SECTIONS.map((s, i) => {
-            const items = s.items.filter((it) => {
-              if (it.superadmin) return !!me?.isSuperadmin;
-              if (it.visibleKey) return visible[it.visibleKey];
-              const perms = it.anyOf ?? (it.perm ? [it.perm] : []);
-              return !perms.length || perms.some(([m, a]) => can(m, a));
-            });
-            if (!items.length) return null;
+        <nav className="nav" ref={navRef} aria-label="Menú principal">
+          {sections.map((s, i) => {
+            // Una sección de un solo ítem no se pliega: es un enlace más
+            if (!s.title || s.items.length === 1 || !collapsible) {
+              return (
+                <div key={i} style={{ display: 'contents' }}>
+                  {s.title && !collapsible ? <div className="nav-section">{s.title}</div> : null}
+                  {s.items.map(navLink)}
+                </div>
+              );
+            }
+            const isOpen = group === s.title;
+            const pending = s.items.reduce((n, it) => n + (it.badgeKey ? (badges[it.badgeKey] ?? 0) : 0), 0);
             return (
-              <div key={i} style={{ display: 'contents' }}>
-                {s.title ? <div className="nav-section">{s.title}</div> : null}
-                {items.map((it) => (
-                  <NavLink key={it.to} to={it.to} end={it.end}>
-                    {it.icon}
-                    {it.label}
-                    {it.badgeKey && badges[it.badgeKey] ? <span className="nav-badge">{badges[it.badgeKey]}</span> : null}
-                  </NavLink>
-                ))}
+              <div key={i} className={`nav-group ${isOpen ? 'open' : ''} ${current === s.title ? 'current' : ''}`} data-group={s.title}>
+                <button type="button" className="nav-group-head" aria-expanded={isOpen} aria-controls={`nav-group-${i}`} onClick={() => toggleGroup(s.title!)}>
+                  {s.icon}
+                  <span className="nav-group-title">{s.title}</span>
+                  {!isOpen && pending ? <span className="nav-badge">{pending}</span> : null}
+                  <ChevronDown className="nav-chevron" aria-hidden />
+                </button>
+                <div className="nav-group-items" id={`nav-group-${i}`}>
+                  <div>{s.items.map(navLink)}</div>
+                </div>
               </div>
             );
           })}
