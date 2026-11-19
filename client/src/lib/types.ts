@@ -106,9 +106,8 @@ export interface AdultExperience {
   branch: string | null;
   date: string | null;
   status: string;
-  /** Nombre del PDF adjunto, si tiene. */
-  certificateName: string | null;
-  certificateSize: number | null;
+  /** Enlace al certificado (en el Drive). */
+  certificateUrl: string | null;
   notes: string | null;
 }
 /** Habilitación por etapa y rama, con su acta. */

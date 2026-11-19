@@ -1,14 +1,13 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileText, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   adultExperienceSchema,
   adultHabilitationSchema,
   BRANCHES,
   BRANCH_INFO,
-  CERTIFICATE_MAX_BYTES,
   EXPERIENCE_KINDS,
   EXPERIENCE_KIND_LABELS,
   EXPERIENCE_STATUSES,
@@ -248,9 +247,10 @@ function ExperienceModal({ adultId, item, onClose }: { adultId: string; item?: A
           branch: (item.branch as Branch | null) ?? '',
           date: item.date ?? '',
           status: item.status as ExperienceStatus,
+          certificateUrl: item.certificateUrl ?? '',
           notes: item.notes ?? '',
         }
-      : { name: '', kind: 'formacion', organism: '', branch: '', date: '', status: 'acreditada', notes: '' },
+      : { name: '', kind: 'formacion', organism: '', branch: '', date: '', status: 'acreditada', certificateUrl: '', notes: '' },
   });
   const onSubmit = async (values: AdultExperienceInput) => {
     try {
@@ -309,7 +309,10 @@ function ExperienceModal({ adultId, item, onClose }: { adultId: string; item?: A
             ))}
           </Select>
         </Field>
-        <Field label="Notas" error={errors.notes?.message} full hint={item ? undefined : 'El certificado en PDF se adjunta después, desde la lista'}>
+        <Field label="Certificado (enlace)" error={errors.certificateUrl?.message} full hint="Enlace al PDF en el Drive">
+          <Input type="url" placeholder="https://drive.google.com/…" {...register('certificateUrl')} invalid={!!errors.certificateUrl} />
+        </Field>
+        <Field label="Notas" error={errors.notes?.message} full>
           <Textarea {...register('notes')} style={{ minHeight: 60 }} />
         </Field>
       </form>
@@ -317,22 +320,11 @@ function ExperienceModal({ adultId, item, onClose }: { adultId: string; item?: A
   );
 }
 
-const readAsBase64 = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
-    r.onerror = () => reject(new Error('No se pudo leer el archivo'));
-    r.readAsDataURL(file);
-  });
-
 export function ExperiencesCard({ adultId, items }: { adultId: string; items: AdultExperience[] }) {
   const { can } = useAuth();
   const toast = useToast();
   const refresh = useRefreshAdult(adultId);
   const [editing, setEditing] = useState<AdultExperience | 'new' | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const target = useRef<AdultExperience | null>(null);
   const list = [...items].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || a.name.localeCompare(b.name, 'es'));
   const canEdit = can('training', 'edit');
   const actions = canEdit || can('training', 'delete');
@@ -344,46 +336,6 @@ export function ExperiencesCard({ adultId, items }: { adultId: string; items: Ad
       toast.ok('Experiencia eliminada');
     } catch (e) {
       toast.error(e);
-    }
-  };
-  const pickFile = (x: AdultExperience) => {
-    target.current = x;
-    fileInput.current?.click();
-  };
-  const upload = async (file: File | undefined) => {
-    const x = target.current;
-    if (fileInput.current) fileInput.current.value = '';
-    if (!file || !x) return;
-    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) return toast.error(new Error('El certificado tiene que ser un PDF'));
-    if (file.size > CERTIFICATE_MAX_BYTES) return toast.error(new Error('El PDF es muy pesado (máximo 3 MB)'));
-    setBusy(x.id);
-    try {
-      await api.put(`/adults/experiences/${x.id}/certificate`, { name: file.name, data: await readAsBase64(file) });
-      await refresh();
-      toast.ok('Certificado adjuntado');
-    } catch (e) {
-      toast.error(e);
-    } finally {
-      setBusy(null);
-    }
-  };
-  const removeCertificate = async (x: AdultExperience) => {
-    try {
-      await api.del(`/adults/experiences/${x.id}/certificate`);
-      await refresh();
-      toast.ok('Certificado quitado');
-    } catch (e) {
-      toast.error(e);
-    }
-  };
-  const view = async (x: AdultExperience) => {
-    setBusy(x.id);
-    try {
-      await api.openFile(`/adults/experiences/${x.id}/certificate`);
-    } catch (e) {
-      toast.error(e);
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -399,7 +351,6 @@ export function ExperiencesCard({ adultId, items }: { adultId: string; items: Ad
         ) : null
       }
     >
-      <input ref={fileInput} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => void upload(e.target.files?.[0])} />
       {!list.length ? (
         <Empty>Sin experiencias registradas. Es el historial que cada adulto ve en Mi Rincón, en «Mi Formación».</Empty>
       ) : (
@@ -432,27 +383,10 @@ export function ExperiencesCard({ adultId, items }: { adultId: string; items: Ad
                     <Badge tone={x.status === 'acreditada' ? 'ok' : 'warn'}>{EXPERIENCE_STATUS_LABELS[x.status as ExperienceStatus] ?? x.status}</Badge>
                   </td>
                   <td className="nowrap">
-                    {x.certificateName ? (
-                      <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
-                        <Button variant="ghost" size="sm" loading={busy === x.id} onClick={() => void view(x)} title={x.certificateName}>
-                          <FileText /> Ver PDF
-                        </Button>
-                        {canEdit ? (
-                          <ConfirmButton
-                            size="sm"
-                            title="Quitar certificado"
-                            message={<p>¿Quitar el certificado de «{x.name}»? La experiencia queda registrada.</p>}
-                            confirmLabel="Quitar"
-                            onConfirm={() => removeCertificate(x)}
-                          >
-                            <Trash2 />
-                          </ConfirmButton>
-                        ) : null}
-                      </div>
-                    ) : canEdit ? (
-                      <Button variant="ghost" size="sm" loading={busy === x.id} onClick={() => pickFile(x)}>
-                        <Paperclip /> Adjuntar PDF
-                      </Button>
+                    {x.certificateUrl ? (
+                      <a href={x.certificateUrl} target="_blank" rel="noopener noreferrer" className="row" style={{ gap: 4 }}>
+                        Ver <ExternalLink size={14} />
+                      </a>
                     ) : (
                       dash
                     )}
@@ -468,7 +402,7 @@ export function ExperiencesCard({ adultId, items }: { adultId: string; items: Ad
                         <ConfirmButton
                           size="sm"
                           title="Eliminar experiencia"
-                          message={<p>¿Eliminar «{x.name}» del historial? También se borra su certificado.</p>}
+                          message={<p>¿Eliminar «{x.name}» del historial?</p>}
                           confirmLabel="Eliminar"
                           onConfirm={() => remove(x)}
                         >

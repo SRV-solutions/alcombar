@@ -120,8 +120,6 @@ export const HABILITATION_LEVEL_LABELS: Record<HabilitationLevel, string> = {
 export const HABILITATION_STATUSES = ['autorizada', 'en_tramite'] as const;
 export type HabilitationStatus = (typeof HABILITATION_STATUSES)[number];
 export const HABILITATION_STATUS_LABELS: Record<HabilitationStatus, string> = { autorizada: 'Autorizada', en_tramite: 'En trámite' };
-/** Tamaño máximo de un certificado en PDF. */
-export const CERTIFICATE_MAX_BYTES = 3 * 1024 * 1024;
 
 /**
  * Resumen de formación de un adulto (como la planilla del Grupo): IM Gestión > IM Programa > Miembro Activo >

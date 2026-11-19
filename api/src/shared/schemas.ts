@@ -24,6 +24,11 @@ export const optStr = (max = 200) =>
     .max(max)
     .nullish()
     .transform((v) => (v ? v : null));
+/** Enlace opcional (por ejemplo al archivo en el Drive). */
+export const optUrl = z
+  .union([z.literal(''), z.string().trim().url('URL inválida').max(500)])
+  .nullish()
+  .transform((v) => (v ? v : null));
 /** Rama opcional: '' o null = sin rama. */
 export const optBranch = z
   .union([z.enum(BRANCHES), z.literal(''), z.null()])
@@ -192,10 +197,7 @@ export const adultCourseSchema = z.object({
   courseId: z.string().uuid(),
   completedAt: optDate,
   modulesDone: z.coerce.number().int().min(0).max(50).nullish().or(z.literal('')).transform((v) => (v === '' || v === null || v === undefined ? null : Number(v))),
-  certificateUrl: z
-    .union([z.literal(''), z.string().trim().url('URL inválida').max(500)])
-    .nullish()
-    .transform((v) => (v ? v : null)),
+  certificateUrl: optUrl,
   /** Insignia de Madera: número de registro SAAC, dónde se otorgó y rama. */
   registryNumber: optStr(30),
   place: optStr(80),
@@ -210,6 +212,8 @@ export const adultExperienceSchema = z.object({
   branch: optBranch,
   date: optDate,
   status: z.enum(EXPERIENCE_STATUSES).default('acreditada'),
+  /** Enlace al certificado (en el Drive). */
+  certificateUrl: optUrl,
   notes: optStr(500),
 });
 export const adultHabilitationSchema = z.object({
@@ -221,8 +225,6 @@ export const adultHabilitationSchema = z.object({
   status: z.enum(HABILITATION_STATUSES).default('autorizada'),
   notes: optStr(500),
 });
-/** Certificado en PDF, en base64. */
-export const certificateUploadSchema = z.object({ name: reqStr(160), data: z.string().min(1, 'Falta el archivo') });
 
 
 // ---------- protagonistas ----------

@@ -80,21 +80,6 @@ export const api = {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
-  /** Abre un archivo (PDF) en otra pestaña respetando la sesión. */
-  async openFile(path: string) {
-    // La pestaña se abre antes de pedir el archivo: si no, el navegador la bloquea como ventana emergente
-    const tab = window.open('', '_blank');
-    try {
-      const res = await request(path, { method: 'GET' });
-      const url = URL.createObjectURL(await res.blob());
-      if (tab) tab.location.href = url;
-      else window.location.href = url;
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (e) {
-      tab?.close();
-      throw e;
-    }
-  },
 };
 
 /** Construye querystring ignorando vacíos. */

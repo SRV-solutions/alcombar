@@ -7,8 +7,6 @@ import {
   adultHabilitationSchema,
   adultSchema,
   ADULT_STATUS_LABELS,
-  CERTIFICATE_MAX_BYTES,
-  certificateUploadSchema,
   documentStatus,
   formatDate,
   isTeamLeaderPosition,
@@ -360,7 +358,7 @@ adultsRouter.delete(
   }),
 );
 
-// ---- Experiencias de formación (el historial, una por una, con su certificado en PDF) ----
+// ---- Experiencias de formación (el historial, una por una, con el enlace a su certificado) ----
 adultsRouter.post(
   '/:id/experiences',
   authorize('training', 'create'),
@@ -368,8 +366,7 @@ adultsRouter.post(
     const adult = await Adult.findByPk(req.params.id);
     if (!adult) throw notFound();
     const data = parse(adultExperienceSchema, req.body);
-    const created = await AdultExperience.create({ ...data, adultId: adult.id });
-    res.status(201).json(await AdultExperience.findByPk(created.id));
+    res.status(201).json(await AdultExperience.create({ ...data, adultId: adult.id }));
   }),
 );
 adultsRouter.put(
@@ -392,44 +389,6 @@ adultsRouter.delete(
     res.json({ ok: true });
   }),
 );
-adultsRouter.put(
-  '/experiences/:eid/certificate',
-  authorize('training', 'edit'),
-  ah(async (req, res) => {
-    const e = await AdultExperience.findByPk(req.params.eid);
-    if (!e) throw notFound();
-    const { name, data } = parse(certificateUploadSchema, req.body);
-    const buf = Buffer.from(data.replace(/^data:[^,]*,/, ''), 'base64');
-    if (!buf.length || buf.subarray(0, 5).toString('latin1') !== '%PDF-') throw badRequest('El certificado tiene que ser un PDF');
-    if (buf.length > CERTIFICATE_MAX_BYTES) throw badRequest('El PDF es muy pesado (máximo 3 MB)');
-    await e.update({ certificateName: name.replace(/[\\/:*?"<>|\r\n]/g, ' ').trim() || 'certificado.pdf', certificateSize: buf.length, certificateData: buf });
-    res.json({ ok: true, certificateName: e.certificateName, certificateSize: e.certificateSize });
-  }),
-);
-adultsRouter.get(
-  '/experiences/:eid/certificate',
-  authorize('training', 'view'),
-  ah(async (req, res) => {
-    const e = await AdultExperience.unscoped().findByPk(req.params.eid);
-    if (!e || !e.certificateData) throw notFound();
-    const name = /\.pdf$/i.test(e.certificateName ?? '') ? e.certificateName! : `${e.certificateName ?? 'certificado'}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(name)}"`);
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.send(e.certificateData);
-  }),
-);
-adultsRouter.delete(
-  '/experiences/:eid/certificate',
-  authorize('training', 'edit'),
-  ah(async (req, res) => {
-    const e = await AdultExperience.findByPk(req.params.eid);
-    if (!e) throw notFound();
-    await e.update({ certificateName: null, certificateSize: null, certificateData: null });
-    res.json({ ok: true });
-  }),
-);
-
 // ---- Habilitaciones por etapa ----
 adultsRouter.post(
   '/:id/habilitations',

@@ -432,7 +432,14 @@ export function AdultDetailPage() {
         </Card>
 
         <Card
-          title="Formación"
+          title={
+            <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+              <h2>Formación</h2>
+              <Badge tone={training.summary.startsWith('Insignia') ? 'ok' : training.summary === 'Sin formación registrada' ? 'warn' : 'info'}>
+                {training.summary}
+              </Badge>
+            </div>
+          }
           bodyClass=""
           actions={
             can('training', 'create') ? (
@@ -442,18 +449,6 @@ export function AdultDetailPage() {
             ) : null
           }
         >
-          <div className="card-body" style={{ paddingBottom: courses.length ? 0 : undefined }}>
-            <div className="row" style={{ gap: 8 }}>
-              <Badge tone={training.summary.startsWith('Insignia') ? 'ok' : training.summary === 'Sin formación registrada' ? 'warn' : 'info'}>
-                {training.summary}
-              </Badge>
-              <span className="muted">¿Puede ser Jefe/a de Grupo?</span>
-              <Badge tone={training.canLeadGroup === 'si' ? 'ok' : training.canLeadGroup === 'con_compromiso' ? 'warn' : 'neutral'}>
-                {training.canLeadGroup === 'si' ? 'Sí' : training.canLeadGroup === 'con_compromiso' ? 'Sí, con compromiso' : 'No'}
-              </Badge>
-              <span className="muted">({training.reason})</span>
-            </div>
-          </div>
           {!courses.length ? (
             <Empty>Sin formación registrada.</Empty>
           ) : (

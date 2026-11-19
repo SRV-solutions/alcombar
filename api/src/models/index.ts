@@ -9,7 +9,7 @@ import {
 } from 'sequelize';
 import { sequelize } from '../db';
 
-const { UUID, UUIDV4, STRING, TEXT, BOOLEAN, INTEGER, DATE, DATEONLY, JSONB, BLOB } = DataTypes;
+const { UUID, UUIDV4, STRING, TEXT, BOOLEAN, INTEGER, DATE, DATEONLY, JSONB } = DataTypes;
 const id = { type: UUID, defaultValue: UUIDV4, primaryKey: true };
 
 type Base = {
@@ -233,7 +233,7 @@ AdultCourse.init(
   { sequelize, tableName: 'adult_courses', modelName: 'AdultCourse' },
 );
 
-/** Experiencia de formación de un adulto (como el historial de Mi Rincón), con su certificado en PDF. */
+/** Experiencia de formación de un adulto (como el historial de Mi Rincón), con el enlace a su certificado. */
 export class AdultExperience extends Model<InferAttributes<AdultExperience>, InferCreationAttributes<AdultExperience>> {
   declare id: CreationOptional<string>;
   declare adultId: ForeignKey<Adult['id']>;
@@ -244,10 +244,8 @@ export class AdultExperience extends Model<InferAttributes<AdultExperience>, Inf
   declare branch: string | null;
   declare date: string | null;
   declare status: CreationOptional<string>;
-  declare certificateName: CreationOptional<string | null>;
-  declare certificateSize: CreationOptional<number | null>;
-  /** El PDF. No viene en las consultas comunes: hay que pedirlo con unscoped(). */
-  declare certificateData: CreationOptional<Buffer | null>;
+  /** Enlace al certificado (en el Drive). */
+  declare certificateUrl: CreationOptional<string | null>;
   declare source: CreationOptional<string | null>;
   declare notes: string | null;
   declare createdAt: CreationOptional<Date>;
@@ -263,21 +261,14 @@ AdultExperience.init(
     branch: STRING(20),
     date: DATEONLY,
     status: { type: STRING(20), allowNull: false, defaultValue: 'acreditada' },
-    certificateName: STRING(160),
-    certificateSize: INTEGER,
-    certificateData: BLOB,
+    certificateUrl: STRING(500),
     source: STRING(40),
     notes: TEXT,
     createdAt: DATE,
     updatedAt: DATE,
     deletedAt: DATE,
   },
-  {
-    sequelize,
-    tableName: 'adult_experiences',
-    modelName: 'AdultExperience',
-    defaultScope: { attributes: { exclude: ['certificateData'] } },
-  },
+  { sequelize, tableName: 'adult_experiences', modelName: 'AdultExperience' },
 );
 
 /** Habilitación de un adulto por etapa y rama, con su acta. */
