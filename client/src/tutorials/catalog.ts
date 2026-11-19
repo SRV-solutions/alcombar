@@ -42,7 +42,7 @@ export const TUTORIALS: Tutorial[] = [
     title: 'Primeros pasos en ALCOMBAR',
     description: 'El menú, el buscador, el modo oscuro y dónde volver a ver estos tutoriales.',
     keywords: ['primeros pasos', 'empezar', 'inicio', 'cómo se usa', 'intro', 'introducción'],
-    audience: (c) => c.loggedIn,
+    audience: (c) => c.loggedIn && !c.rover,
     steps: [
       {
         pose: 'wave',
@@ -54,7 +54,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: '.sidebar .nav' },
         pose: 'point',
         title: 'El menú',
-        text: 'Desde acá entrás a cada sección: protagonistas, asistencia, documentación, unidades, adultos… Solo ves lo que corresponde a tu rol en el Grupo.',
+        text: 'Desde acá entrás a todo. Cada sección —Protagonistas, Programa, Tesorería, Grupo…— se despliega al tocarla y queda abierta la que estás usando. Solo ves lo que corresponde a tu rol en el Grupo.',
       },
       {
         target: { selector: '.gsearch-input' },
@@ -85,6 +85,63 @@ export const TUTORIALS: Tutorial[] = [
   },
 
   // ---------- Protagonistas ----------
+  // ---------- Comunidad Rover (para los rovers) ----------
+  {
+    id: 'bienvenida-rover',
+    title: 'Primeros pasos en ALCOMBAR',
+    description: 'Qué tenés en la app como rover y dónde está cada cosa.',
+    keywords: ['primeros pasos', 'empezar', 'inicio', 'cómo se usa', 'intro'],
+    audience: (c) => c.rover,
+    steps: [
+      { pose: 'wave', title: '¡Hola! Soy Luisito 👋', text: 'Soy Luisito, del Grupo Scout 155. Esta es la app del Grupo y de tu Comunidad Rover. Te muestro dónde está cada cosa; podés omitir el tutorial y volver a verlo desde tu perfil.' },
+      { route: '/', target: { selector: '.sidebar .nav' }, pose: 'point', title: 'El menú', text: 'Tu Plan Personal, los proyectos y mingas, la Asamblea y lo del Grupo: su historia, el organigrama y el calendario.' },
+      { target: { selector: '.gsearch-input' }, pose: 'point', title: 'El buscador', text: 'Escribí lo que querés hacer, como "minga" o "asamblea", y te llevo directo.' },
+      { target: { selector: '.sidebar a[href="/perfil"]' }, pose: 'think', title: 'Tu perfil', text: 'Ahí cargás tu mail (lo confirmás con un código de 6 números), cambiás tu contraseña y volvés a ver estos tutoriales.' },
+      { pose: 'cheer', title: '¡Buen camino!', text: 'Seguí con el tutorial de tu Plan Personal cuando quieras.' },
+    ],
+  },
+  {
+    id: 'mi-plan-personal',
+    title: 'Tu Plan Personal',
+    description: 'Tu visión a futuro, tus metas con acciones y plazos, y los altos en el camino.',
+    keywords: ['plan personal', 'ppa', 'metas', 'visión', 'alto en el camino'],
+    audience: (c) => c.rover,
+    steps: [
+      { route: '/rover/plan', target: nav('/rover/plan'), pose: 'point', title: 'Mi Plan Personal', text: 'Tu carta de navegación: hacia dónde querés ir y qué vas a hacer para llegar. Lo ven solo vos y tus educadores.' },
+      { target: { selector: '.card', text: 'Mi visión a futuro' }, pose: 'point', title: 'Tu visión', text: 'Empezá por acá: cómo te imaginás dentro de tres o cuatro años. De esa visión salen tus metas.' },
+      { target: button('Nueva meta'), pose: 'point', title: 'Tus metas', text: 'Una meta es algo concreto que querés lograr en menos de un año. Le ponés acciones, recursos y un plazo, y vas tildando las acciones a medida que las hacés.' },
+      { target: button('Hacer un alto'), pose: 'think', title: 'Un alto en el camino', text: 'Cada tanto pará a mirar cómo venís: qué aprendiste, qué conservás, qué dejás atrás. Compartilo con tu Comunidad y tus educadores, y ajustá tu Plan.' },
+      { pose: 'cheer', title: '¡A caminar!', text: 'Cuando logres una meta, marcala como lograda y contá cómo te fue: queda en tu historia.' },
+    ],
+  },
+  {
+    id: 'mis-proyectos-y-mingas',
+    title: 'Proyectos y mingas',
+    description: 'Armar tu propuesta, invitar a otros y postularla en la Asamblea.',
+    keywords: ['proyecto', 'minga', 'ficha', 'postular', 'invitar'],
+    audience: (c) => c.rover,
+    steps: [
+      { route: '/rover/proyectos', target: nav('/rover/proyectos'), pose: 'point', title: 'Proyectos y mingas', text: 'Tus propuestas y las de la Comunidad que ya pasaron por la Asamblea o a las que te invitaron.' },
+      { target: button('Nuevo proyecto'), pose: 'point', title: 'Un proyecto', text: 'Con la ficha de la Rama: qué, por qué, cómo y dónde, para quiénes, con quiénes, cuándo, cuánto cuesta, cómo se financia y cómo lo evaluamos y festejamos.' },
+      { target: button('Nueva minga'), pose: 'point', title: 'Una minga', text: 'Trabajo solidario y organizado que la Comunidad hace junto con otros —vecinos, una escuela, una organización— y que termina en festejo. Tiene su plantilla: propósito, participantes, actividades, recursos, difusión y cierre. Puede ser parte de un proyecto.' },
+      { pose: 'think', title: 'Borrador e invitados', text: 'Mientras es borrador lo ven solo vos, tus educadores y a quienes sumes con «Invitar»: otros rovers o adultos del Grupo. A la gente de afuera la anotás en la ficha.' },
+      { pose: 'cheer', title: '¡A la Asamblea!', text: 'Cuando haya Asamblea lo postulás. Si se aprueba, lo ponés en marcha y al terminar escribís el cierre: aprendizajes, impacto y próximos pasos.' },
+    ],
+  },
+  {
+    id: 'asamblea-como-rover',
+    title: 'Participar de la Asamblea',
+    description: 'Dar el presente, postular y votar desde el celular.',
+    keywords: ['asamblea', 'votar', 'presente', 'postular'],
+    audience: (c) => c.rover,
+    steps: [
+      { route: '/rover/asamblea', target: nav('/rover/asamblea'), pose: 'point', title: 'Asamblea', text: 'Donde la Comunidad decide. Cuando tu educador activa el modo Asamblea, te aparece un aviso en el inicio y acá pasa todo.' },
+      { pose: 'think', title: 'Dá el presente', text: 'Es lo primero: sin presente no se puede votar. Arriba vas a ver para qué es la Asamblea, el orden del día y quién preside.' },
+      { pose: 'think', title: 'Postulá lo tuyo', text: 'Tus borradores aparecen listos para postular. Para postular hace falta haber escrito al menos de qué se trata.' },
+      { pose: 'point', title: 'Votá', text: 'A favor, en contra o abstención. El voto es a la vista y lo podés cambiar hasta que se cierre la votación. Se aprueba con más de la mitad de los presentes a favor.' },
+      { pose: 'cheer', title: '¡Listo!', text: 'Si tu propuesta no se aprueba, vuelve a vos para reformularla con lo que se habló y postularla de nuevo.' },
+    ],
+  },
   {
     id: 'importar-protagonistas',
     title: 'Cargar chicos desde una planilla',
@@ -617,6 +674,49 @@ export const TUTORIALS: Tutorial[] = [
       { pose: 'cheer', title: '¡Buen camino!', text: 'Así cada chico sabe dónde está y hacia dónde va.' },
     ],
   },
+  // ---------- Comunidad Rover (para sus educadores) ----------
+  {
+    id: 'acceso-rovers',
+    title: 'Darle acceso a un rover',
+    description: 'Los rovers entran con su DNI: su educador les genera una contraseña provisoria desde la ficha.',
+    keywords: ['rover', 'rovers', 'acceso', 'dni', 'contraseña provisoria', 'cuenta de rover'],
+    audience: (c) => c.roverEducator && c.can('members', 'edit'),
+    steps: [
+      { route: '/protagonistas', target: nav('/protagonistas'), pose: 'point', title: 'Desde la ficha del rover', text: 'Los rovers son mayores de 18 y pueden usar la app. El acceso se lo das vos, desde su ficha en el padrón.' },
+      { pose: 'think', title: 'La tarjeta «Acceso a la app»', text: 'Aparece en la ficha de un rover activo, mayor de 18 y con el DNI cargado. Si falta el DNI, cargalo primero.' },
+      { pose: 'point', title: 'Generar acceso', text: 'Te muestra una sola vez su DNI y una contraseña provisoria para dictársela ahí mismo. No se manda ningún mail.' },
+      { pose: 'think', title: 'Su primera entrada', text: 'Entra con el DNI y la provisoria, y la app le pide elegir su propia contraseña. Después carga su mail y lo confirma con un código de 6 números.' },
+      { pose: 'cheer', title: '¡Listo!', text: 'Si se olvida la contraseña y todavía no tiene mail, le generás otra desde la misma tarjeta. En Adultos ves la lista de rovers con acceso.' },
+    ],
+  },
+  {
+    id: 'comunidad-rover',
+    title: 'La Comunidad Rover',
+    description: 'Cómo viene el Plan Personal de cada rover y qué proyectos y mingas propone la Comunidad.',
+    keywords: ['rovers', 'comunidad', 'plan personal', 'ppa', 'proyectos', 'mingas'],
+    audience: (c) => c.roverEducator,
+    steps: [
+      { route: '/rover', target: nav('/rover'), pose: 'point', title: 'La Comunidad', text: 'Cada rover, si ya entró a la app y cómo viene su Plan Personal: metas en curso y logradas.' },
+      { pose: 'think', title: 'El Plan Personal', text: 'Tocando a un rover leés su Plan: su visión, sus metas con acciones y plazos, y sus «altos en el camino». Lo escribe él; vos lo acompañás. Lo ven solo el rover y sus educadores.' },
+      { route: '/rover/proyectos', target: nav('/rover/proyectos'), pose: 'point', title: 'Proyectos y mingas', text: 'Todo lo que propone la Comunidad, desde el borrador: los proyectos con la ficha de la Rama y las mingas con su plantilla de organización.' },
+      { pose: 'think', title: 'Qué es una minga', text: 'Trabajo solidario y organizado que la Comunidad hace junto con otros y que termina en festejo. Puede ser parte de un proyecto. La ficha la escribe cada rover.' },
+      { pose: 'cheer', title: 'Se aprueban en Asamblea', text: 'Mirá el tutorial «Conducir una Asamblea» para ver cómo se postulan y se votan.' },
+    ],
+  },
+  {
+    id: 'asamblea-rover',
+    title: 'Conducir una Asamblea',
+    description: 'Activar el modo Asamblea, tomar los presentes, abrir cada votación y cerrar.',
+    keywords: ['asamblea', 'modo asamblea', 'votación', 'votar', 'presentes', 'orden del día'],
+    audience: (c) => c.roverEducator,
+    steps: [
+      { route: '/rover/asamblea', target: nav('/rover/asamblea'), pose: 'point', title: 'Asamblea de Comunidad', text: 'Donde la Comunidad decide: acá se presentan y se votan las mingas y los proyectos.' },
+      { target: button('Activar el modo Asamblea'), pose: 'point', title: 'Activar el modo Asamblea', text: 'Cuando la Comunidad está reunida. Podés anotar para qué se reúnen, el orden del día y qué rover preside; conviene un solo objetivo por Asamblea.' },
+      { pose: 'think', title: 'Presentes y postulaciones', text: 'Cada rover da el presente desde su celular; a quien no tiene cuenta lo marcás vos. Los rovers postulan sus borradores.' },
+      { pose: 'point', title: 'Las votaciones', text: 'Abrís una votación por vez. Votan solo los rovers presentes, a la vista; a quien no tiene celular le cargás el voto. Se aprueba con más de la mitad de los presentes a favor; si no, vuelve a su responsable para reformular.' },
+      { pose: 'cheer', title: 'Cerrar la Asamblea', text: 'Escribís las notas de lo que se habló. Lo que no se llegó a votar vuelve a borrador para la próxima. Queda todo en «Asambleas anteriores».' },
+    ],
+  },
   {
     id: 'esquemas-y-catalogos',
     title: 'Esquemas y catálogos',
@@ -951,6 +1051,19 @@ export const TUTORIALS: Tutorial[] = [
 
   // ---------- Grupo ----------
   {
+    id: 'sobre-el-grupo',
+    title: 'Sobre el Grupo',
+    description: 'La historia del Grupo, sus jefes y jefas, la tribu.',
+    keywords: ['historia', 'sobre el grupo', 'jefes de grupo', 'tribu', 'quiénes somos'],
+    audience: (c) => c.loggedIn,
+    steps: [
+      { route: '/grupo/sobre', target: nav('/grupo/sobre'), pose: 'point', title: 'Sobre el Grupo', text: 'Nuestra historia y lo que nos hace quienes somos, para que lo conozca cualquiera que llega al Grupo.' },
+      { target: { selector: '.about-index' }, pose: 'point', title: 'Las secciones', text: 'El índice te lleva a cada una: la historia, los jefes y jefas de Grupo, la tribu.' },
+      { target: button('Nueva sección'), pose: 'think', title: 'Escribirlo', text: 'Si administrás el Grupo, con «Nueva sección» y «Editar» cargás el texto. Dejá una línea en blanco entre párrafos; «## » arma un subtítulo y «- » una lista. Una sección vacía solo la ve quien puede editarla.' },
+      { pose: 'cheer', title: '¡Siempre listos!', text: 'Por ahora es solo texto: las fotos vienen más adelante.' },
+    ],
+  },
+  {
     id: 'unidades-y-patrullas',
     title: 'Unidades y pequeños grupos',
     description: 'Las unidades del Grupo y sus patrullas, seisenas o equipos.',
@@ -981,7 +1094,7 @@ export const TUTORIALS: Tutorial[] = [
     keywords: ['adultos', 'dirigentes', 'educadores', 'cargos', 'formación', 'insignia de madera', 'apf'],
     audience: (c) => c.can('adults', 'view'),
     steps: [
-      { route: '/adultos', target: nav('/adultos'), pose: 'point', title: 'Adultos', text: 'Todos los adultos del Grupo con sus cargos de este año y su formación.' },
+      { route: '/adultos', target: nav('/adultos'), pose: 'point', title: 'Adultos', text: 'Todos los adultos del Grupo con sus cargos de este año, su formación y su acceso a la app.' },
       { target: button('Nuevo adulto'), pose: 'point', title: 'Nuevo adulto', text: 'Para sumar a alguien que se incorpora al Grupo.' },
       { target: firstRow, clickOnNext: true, pose: 'point', title: 'Abrí una ficha', text: 'Tocando un nombre ves su ficha. Te abro la primera.' },
       {
@@ -1016,25 +1129,26 @@ export const TUTORIALS: Tutorial[] = [
   // ---------- Administración ----------
   {
     id: 'usuarios-e-invitaciones',
-    title: 'Usuarios e invitaciones',
-    description: 'Darle acceso a un adulto y mandarle el enlace para que elija su contraseña.',
-    keywords: ['usuarios', 'crear usuario', 'invitar', 'invitación', 'enlace', 'acceso', 'contraseña'],
-    audience: (c) => c.can('users', 'create'),
+    title: 'Dar acceso a la app',
+    description: 'Desde Adultos: darle acceso a una persona, elegir sus roles y mandarle el enlace para que elija su contraseña.',
+    keywords: ['usuarios', 'crear usuario', 'invitar', 'invitación', 'enlace', 'acceso', 'contraseña', 'roles', 'desactivar'],
+    audience: (c) => c.can('users', 'create') && c.can('adults', 'view'),
     steps: [
-      { route: '/admin/usuarios', target: nav('/admin/usuarios'), pose: 'point', title: 'Usuarios', text: 'Quiénes tienen acceso a la app y con qué roles. No hay registro público: los usuarios se crean acá.' },
+      { route: '/adultos', target: nav('/adultos'), pose: 'point', title: 'Personas y accesos, juntos', text: 'Los adultos del Grupo y su acceso a la app están en una sola pantalla. No hay registro público: el acceso se da desde acá.' },
+      { target: { selector: 'th', text: 'Acceso a la app' }, pose: 'point', title: 'La columna «Acceso a la app»', text: 'Muestra quién puede entrar, con qué roles y si ya entró alguna vez. Con el filtro «Con o sin acceso» encontrás a quién le falta o quién todavía no entró.' },
       {
-        target: button('Nuevo usuario'),
+        target: button('Dar acceso'),
         pose: 'point',
-        title: 'Nuevo usuario',
-        text: 'Elegís al adulto, su email y sus roles. Los roles de unidad (Jefe/a de Unidad, Educador/a, Finanzas de la unidad) piden la unidad. Secretaría es quien cobra cuotas, afiliaciones y campamentos.',
+        title: 'Dar acceso',
+        text: 'A quien no tiene usuario: su mail y sus roles. Los roles de unidad (Jefe/a de Unidad, Educador/a, Finanzas de la unidad) piden la unidad. Secretaría es quien cobra cuotas, afiliaciones y campamentos. Al guardar se genera su invitación.',
       },
       {
-        target: button('Generar enlace'),
+        target: button('Acceso'),
         pose: 'point',
-        title: 'El enlace de acceso',
-        text: 'Genera un enlace de un solo uso para que la persona elija su contraseña (o la restablezca si se la olvidó). Copialo y mandáselo por WhatsApp.',
+        title: 'Cambiar un acceso',
+        text: 'Para sumar o quitar roles, corregir el mail o generar un enlace nuevo si la persona se olvidó la contraseña: es de un solo uso, copialo y mandáselo por WhatsApp. Lo mismo tenés en la ficha de cada adulto.',
       },
-      { pose: 'cheer', title: '¡Bienvenidos!', text: 'Si alguien deja el Grupo, desactivá su usuario: se conserva lo que cargó.' },
+      { pose: 'cheer', title: '¡Bienvenidos!', text: 'Si alguien deja el Grupo, desactivá su usuario: se conserva lo que cargó. Los rovers entran con su DNI y su acceso se da desde la ficha de cada uno.' },
     ],
   },
   {

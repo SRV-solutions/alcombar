@@ -12,6 +12,10 @@ export interface HelpContext {
   canAll: (module: ModuleKey, action: Action) => boolean;
   isSuperadmin: boolean;
   loggedIn: boolean;
+  /** Es la cuenta de un rover (entra con su DNI). */
+  rover: boolean;
+  /** Es del equipo de educadores de una Comunidad Rover. */
+  roverEducator: boolean;
 }
 
 export interface HelpEntry {
@@ -468,11 +472,56 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'adultos',
     title: 'Adultos',
-    description: 'Educadores y colaboradores del Grupo: datos, tótem, cargos de este año, formación y si tienen usuario.',
+    description: 'Educadores y colaboradores del Grupo: datos, tótem, cargos de este año, formación y su acceso a la app (mail, roles y enlace para entrar).',
     path: '/adultos',
     section: 'Grupo',
-    keywords: ['adultos', 'dirigentes', 'educadores', 'jefes', 'ayudantes', 'colaboradores', 'tótem', 'totem', 'nómina de adultos'],
+    keywords: ['adultos', 'dirigentes', 'educadores', 'jefes', 'ayudantes', 'colaboradores', 'tótem', 'totem', 'nómina de adultos', 'usuarios', 'acceso'],
     show: can('adults', 'view'),
+  },
+  {
+    id: 'sobre-el-grupo',
+    title: 'Sobre el Grupo',
+    description: 'La historia del Grupo, sus jefes y jefas, la tribu. Texto que escribe quien administra el Grupo y lee cualquiera que entra a la app.',
+    path: '/grupo/sobre',
+    section: 'Grupo',
+    keywords: ['historia', 'historia del grupo', 'jefes de grupo', 'tribu', 'tótems', 'quiénes somos', 'sobre el grupo'],
+    show: (c) => c.loggedIn,
+  },
+  {
+    id: 'rover-plan',
+    title: 'Mi Plan Personal',
+    description: 'Tu visión a futuro, tus metas con acciones y plazos, y tus «altos en el camino». Lo ven solo vos y tus educadores.',
+    path: '/rover/plan',
+    section: 'Comunidad Rover',
+    keywords: ['plan personal', 'ppa', 'metas', 'visión', 'alto en el camino', 'evaluación'],
+    show: (c) => c.rover,
+  },
+  {
+    id: 'rover-comunidad',
+    title: 'La Comunidad Rover',
+    description: 'Cada rover, si ya entra a la app y cómo viene su Plan Personal.',
+    path: '/rover',
+    section: 'Comunidad Rover',
+    keywords: ['rovers', 'comunidad', 'plan personal', 'ppa', 'planes'],
+    show: (c) => c.roverEducator,
+  },
+  {
+    id: 'rover-proyectos',
+    title: 'Proyectos y mingas',
+    description: 'La ficha del Proyecto Rover y la plantilla de organización de la Minga. Se arman en borrador, se postulan en la Asamblea y, aprobados, se ponen en marcha.',
+    path: '/rover/proyectos',
+    section: 'Comunidad Rover',
+    keywords: ['proyecto', 'proyectos', 'minga', 'mingas', 'ficha de proyecto', 'servicio', 'solidario'],
+    show: (c) => c.rover || c.roverEducator,
+  },
+  {
+    id: 'rover-asamblea',
+    title: 'Asamblea de Comunidad',
+    description: 'El educador activa el modo Asamblea; los rovers dan el presente, postulan y votan desde el celular. Se aprueba con más de la mitad de los presentes.',
+    path: '/rover/asamblea',
+    section: 'Comunidad Rover',
+    keywords: ['asamblea', 'votar', 'votación', 'postular', 'orden del día', 'presentes'],
+    show: (c) => c.rover || c.roverEducator,
   },
   {
     id: 'cargos',
@@ -630,9 +679,9 @@ export const HELP_INDEX: HelpEntry[] = [
   },
   {
     id: 'usuarios',
-    title: 'Usuarios e invitaciones',
-    description: 'Crear el acceso de un adulto, asignarle roles y generar el enlace para que elija su contraseña (se lo mandás por WhatsApp).',
-    path: '/admin/usuarios',
+    title: 'Acceso a la app (usuarios e invitaciones)',
+    description: 'Desde Adultos: darle acceso a una persona, asignarle roles, desactivarla y generar el enlace para que elija su contraseña (se lo mandás por WhatsApp).',
+    path: '/adultos',
     section: 'Administración',
     keywords: ['usuarios', 'crear usuario', 'invitar', 'invitación', 'acceso', 'enlace', 'link', 'contraseña olvidada', 'restablecer', 'desactivar usuario'],
     show: can('users', 'view'),

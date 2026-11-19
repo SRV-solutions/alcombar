@@ -63,7 +63,7 @@ export function ProfilePage() {
     <>
       <PageHeader
         title="Mi perfil"
-        sub={me.user.memberId ? 'Tu mail, la apariencia de la app y tu contraseña.' : 'Tus datos (los podés editar), la apariencia de la app, tus tutoriales y tu contraseña.'}
+        sub={me.user.memberId ? 'Tu mail, la apariencia de la app, tus tutoriales y tu contraseña.' : 'Tus datos (los podés editar), la apariencia de la app, tus tutoriales y tu contraseña.'}
       />
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
         {/* La cuenta de un rover: sus datos los lleva su ficha; acá carga y confirma su mail */}
@@ -77,11 +77,9 @@ export function ProfilePage() {
         </Card>
       </div>
 
-      {me.user.memberId ? null : (
-        <div className="mt">
-          <TutorialsCard />
-        </div>
-      )}
+      <div className="mt">
+        <TutorialsCard />
+      </div>
 
       <div className="mt" id="celular">
         <Card title="ALCOMBAR en tu celular">
