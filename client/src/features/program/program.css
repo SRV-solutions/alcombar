@@ -30,6 +30,9 @@
 .meeting-row { display: grid; grid-template-columns: 90px minmax(0, 2fr) minmax(0, 1.4fr) 80px auto; gap: 8px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .meeting-row:last-child { border-bottom: none; }
 .meeting-row .row-actions { display: flex; gap: 2px; }
+/* Aviso cuando un momento se pisa con el siguiente */
+.meeting-overlap { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--warn-soft, rgba(242, 194, 48, 0.14)); color: var(--warn, #b7791f); font-size: 0.85rem; }
+.meeting-overlap svg { flex-shrink: 0; }
 @media (max-width: 760px) {
   .meeting-row { grid-template-columns: 1fr 1fr; }
   .meeting-row .what { grid-column: 1 / -1; }

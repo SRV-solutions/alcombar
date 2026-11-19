@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, CalendarDays, Plus, Printer, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, Plus, Printer, Save, Trash2, X } from 'lucide-react';
 import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
 import { adultName, useAdults } from '../../lib/queries';
@@ -36,6 +36,14 @@ const addMinutes = (time: string, m: number) => {
   const [h, mm] = time.split(':').map(Number);
   const t = (h * 60 + mm + m) % (24 * 60);
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+};
+/** Minutos entre dos horas HH:MM (null si falta alguna o la segunda no es posterior). */
+const minutesBetween = (from: string, to: string) => {
+  if (!/^\d{2}:\d{2}$/.test(from) || !/^\d{2}:\d{2}$/.test(to)) return null;
+  const [h1, m1] = from.split(':').map(Number);
+  const [h2, m2] = to.split(':').map(Number);
+  const d = h2 * 60 + m2 - (h1 * 60 + m1);
+  return d > 0 && d <= 600 ? d : null;
 };
 
 let seq = 0;
@@ -93,6 +101,21 @@ export function MeetingPage() {
   }, [q.data, unitId, date]);
 
   const sheetById = useMemo(() => new Map((sheets.data ?? []).map((s) => [s.id, s])), [sheets.data]);
+  // Momentos que se pisan con el siguiente: terminan después de que el otro empieza
+  const overlaps = useMemo(() => {
+    const out = new Map<number, string>();
+    rows.forEach((r, i) => {
+      const next = rows[i + 1];
+      const n = Number(r.durationMin);
+      if (!next || !n || !/^\d{2}:\d{2}$/.test(r.time) || !/^\d{2}:\d{2}$/.test(next.time)) return;
+      const gap = minutesBetween(r.time, next.time);
+      const end = addMinutes(r.time, n);
+      const name = next.title.trim() || sheetById.get(next.activitySheetId)?.name || 'el siguiente momento';
+      if (gap === null) out.set(r.key, `Empieza a la misma hora o después que «${name}» (${next.time}): revisá el orden.`);
+      else if (n > gap) out.set(r.key, `Se pisa ${n - gap} min con «${name}»: termina a las ${end} y el otro empieza a las ${next.time}.`);
+    });
+    return out;
+  }, [rows, sheetById]);
   const sheetGroups = useMemo(() => {
     const all = sheets.data ?? [];
     return {
@@ -112,6 +135,41 @@ export function MeetingPage() {
 
   const update = (key: number, patch: Partial<Row>) => {
     setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    setDirty(true);
+  };
+  /**
+   * Cambiar la hora de un momento ajusta las duraciones para que nada se pise: este dura hasta que empieza el
+   * siguiente, y el anterior, hasta que empieza este.
+   */
+  const changeTime = (key: number, time: string) => {
+    setRows((rs) => {
+      const i = rs.findIndex((r) => r.key === key);
+      if (i < 0) return rs;
+      return rs.map((r, j) => {
+        if (j === i) {
+          const next = rs[i + 1];
+          const d = next ? minutesBetween(time, next.time) : null;
+          return { ...r, time, ...(d ? { durationMin: String(d) } : {}) };
+        }
+        if (j === i - 1) {
+          const d = minutesBetween(r.time, time);
+          return d ? { ...r, durationMin: String(d) } : r;
+        }
+        return r;
+      });
+    });
+    setDirty(true);
+  };
+  /** Y al revés: cambiar los minutos de un momento corre la hora del siguiente para que empiece cuando este termina. */
+  const changeDuration = (key: number, durationMin: string) => {
+    setRows((rs) => {
+      const i = rs.findIndex((r) => r.key === key);
+      if (i < 0) return rs;
+      const n = Number(durationMin);
+      const start = rs[i].time;
+      const shift = /^\d{2}:\d{2}$/.test(start) && durationMin !== '' && Number.isFinite(n) && n > 0 && n <= 600;
+      return rs.map((r, j) => (j === i ? { ...r, durationMin } : j === i + 1 && shift ? { ...r, time: addMinutes(start, n) } : r));
+    });
     setDirty(true);
   };
   const move = (i: number, d: -1 | 1) => {
@@ -309,7 +367,7 @@ export function MeetingPage() {
                   return (
                     <div key={r.key} className="meeting-row">
                       <Field label="Hora">
-                        <Input type="time" value={r.time} onChange={(e) => update(r.key, { time: e.target.value })} />
+                        <Input type="time" value={r.time} onChange={(e) => changeTime(r.key, e.target.value)} />
                       </Field>
                       <div className="what stack" style={{ gap: 6 }}>
                         <Field label="Ficha (opcional)">
@@ -391,7 +449,7 @@ export function MeetingPage() {
                         ) : null}
                       </Field>
                       <Field label="Min.">
-                        <Input type="number" min={0} max={600} value={r.durationMin} onChange={(e) => update(r.key, { durationMin: e.target.value })} />
+                        <Input type="number" min={0} max={600} value={r.durationMin} invalid={!!overlaps.get(r.key)} onChange={(e) => changeDuration(r.key, e.target.value)} />
                       </Field>
                       <div className="row-actions" style={{ paddingTop: 22 }}>
                         <Button variant="ghost" size="sm" className="btn-icon" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Subir" title="Subir">
@@ -404,6 +462,11 @@ export function MeetingPage() {
                           <X />
                         </Button>
                       </div>
+                      {overlaps.get(r.key) ? (
+                        <div className="meeting-overlap" role="alert">
+                          <AlertTriangle size={14} /> {overlaps.get(r.key)}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
