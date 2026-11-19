@@ -9,6 +9,7 @@ import { SetPasswordPage } from './features/auth/SetPasswordPage';
 import { QrLoginPage } from './features/auth/QrLoginPage';
 import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage';
 import { ProfilePage } from './features/auth/ProfilePage';
+import { ChoosePasswordPage } from './features/auth/ChoosePasswordPage';
 import { HelpPage } from './features/help/HelpPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { MembersPage } from './features/members/MembersPage';
@@ -49,6 +50,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();
   if (loading) return <Loading />;
   if (!me) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  // Entró con una contraseña provisoria: antes de usar la app elige la suya
+  if (me.user.mustChangePassword) return <ChoosePasswordPage />;
   return <>{children}</>;
 }
 

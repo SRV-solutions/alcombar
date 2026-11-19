@@ -13,6 +13,7 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { OpenOnPhoneDialog } from '../../components/OpenOnPhone';
 import { TutorialsCard } from '../../tutorials/TutorialsCard';
 import { MyDataCard } from './MyDataCard';
+import { EmailVerifyCard } from './EmailVerifyCard';
 
 const schema = changePasswordSchema
   .extend({ confirm: z.string().min(1, 'Requerido') })
@@ -60,9 +61,13 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Mi perfil" sub="Tus datos (los podés editar), la apariencia de la app, tus tutoriales y tu contraseña." />
+      <PageHeader
+        title="Mi perfil"
+        sub={me.user.memberId ? 'Tu mail, la apariencia de la app y tu contraseña.' : 'Tus datos (los podés editar), la apariencia de la app, tus tutoriales y tu contraseña.'}
+      />
       <div className="grid grid-2" style={{ alignItems: 'start' }}>
-        <MyDataCard />
+        {/* La cuenta de un rover: sus datos los lleva su ficha; acá carga y confirma su mail */}
+        {me.user.memberId ? <EmailVerifyCard /> : <MyDataCard />}
 
         <Card title="Apariencia">
           <p className="muted" style={{ marginTop: 0 }}>
@@ -72,9 +77,11 @@ export function ProfilePage() {
         </Card>
       </div>
 
-      <div className="mt">
-        <TutorialsCard />
-      </div>
+      {me.user.memberId ? null : (
+        <div className="mt">
+          <TutorialsCard />
+        </div>
+      )}
 
       <div className="mt" id="celular">
         <Card title="ALCOMBAR en tu celular">

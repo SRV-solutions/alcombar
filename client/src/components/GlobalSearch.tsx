@@ -145,7 +145,15 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
       <input
         ref={inputRef}
         className="input gsearch-input"
-        placeholder={compact ? 'Buscar persona, DNI o pantalla…' : 'Buscá una persona (nombre, apellido o DNI) o qué querés hacer…  (Ctrl+K)'}
+        placeholder={
+          !canMembers && !canAdults
+            ? compact
+              ? 'Buscar pantalla o ayuda…'
+              : 'Buscá una pantalla o qué querés hacer…  (Ctrl+K)'
+            : compact
+              ? 'Buscar persona, DNI o pantalla…'
+              : 'Buscá una persona (nombre, apellido o DNI) o qué querés hacer…  (Ctrl+K)'
+        }
         value={q}
         onChange={(e) => {
           setQ(e.target.value);

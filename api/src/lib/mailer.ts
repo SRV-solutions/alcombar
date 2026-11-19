@@ -70,7 +70,9 @@ async function sendWithResend(to: string, subject: string, text: string, html?: 
 }
 
 /** Envía un email al instante. Devuelve true si salió; si falla, lo registra y devuelve false (la app muestra el enlace). */
-export async function sendMail(to: string, subject: string, text: string, html?: string): Promise<boolean> {
+export async function sendMail(to: string | null | undefined, subject: string, text: string, html?: string): Promise<boolean> {
+  // Una cuenta sin mail cargado (un rover que entra con DNI) no recibe correo
+  if (!to) return false;
   const provider = mailProvider();
   if (!provider) {
     console.log(`\n✉  [email no enviado: falta configurar RESEND_API_KEY o SMTP]\n   Para: ${to}\n   Asunto: ${subject}\n   ${text.replace(/\n/g, '\n   ')}\n`);

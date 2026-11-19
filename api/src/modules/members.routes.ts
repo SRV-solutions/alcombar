@@ -20,6 +20,7 @@ import {
   TRANSFER_REASON_LABELS,
   type TransferReason,
   unitsWith,
+  ageAt,
   type MemberImportRow,
 } from '../shared';
 import { sequelize } from '../db';
@@ -32,11 +33,16 @@ import {
   Member,
   MemberDocument,
   MemberGuardian,
+  Role,
   SmallGroup,
   Unit,
   UnitTransfer,
+  User,
+  UserRole,
 } from '../models';
 import { writeAudit } from '../lib/audit';
+import { hashPassword, temporaryPassword } from '../lib/security';
+import { revokeAllSessions } from '../lib/session';
 import { adultRegistered, memberRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
 import { sendCsv, toCsv } from '../lib/csv';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
@@ -193,8 +199,19 @@ membersRouter.post(
 );
 
 // ---------------- Importación ----------------
+/** La importación es para quien carga protagonistas (en todo el Grupo o en su unidad). */
+const canImport = ah(async (req, _res, next) => {
+  const any = (action: 'create' | 'edit') => {
+    const u = unitsWith(req.auth, 'members', action);
+    return u === 'all' || u.length > 0;
+  };
+  if (!any('create') && !any('edit')) throw forbidden();
+  next();
+});
+
 membersRouter.post(
   '/import/preview',
+  canImport,
   ah(async (req, res) => {
     const { rows } = parse(memberImportSchema, req.body);
     const results = await analyzeRows(rows as MemberImportRow[], req);
@@ -211,6 +228,7 @@ membersRouter.post(
 
 membersRouter.post(
   '/import/commit',
+  canImport,
   ah(async (req, res) => {
     const { rows } = parse(memberImportSchema, req.body);
     res.json(await commitRows(rows as MemberImportRow[], req));
@@ -542,6 +560,15 @@ membersRouter.post(
         created = true;
       }
       await member.update({ status: 'partida', leftAt: date, departedAt: date, inRotation: false, adultId: a.id }, { transaction });
+      // Si tenía cuenta de rover, pasa a ser la cuenta del adulto (sin el rol Rover: sus permisos nuevos los da la Jefatura)
+      const account = await User.findOne({ where: { memberId: member.id }, transaction });
+      if (account) {
+        const roverRole = await Role.findOne({ where: { key: 'rover' }, transaction });
+        if (roverRole) await UserRole.destroy({ where: { userId: account.id, roleId: roverRole.id }, transaction });
+        const taken = await User.findOne({ where: { adultId: a.id }, transaction });
+        if (taken) await account.update({ memberId: null, active: false }, { transaction });
+        else await account.update({ memberId: null, adultId: a.id }, { transaction });
+      }
       await writeAudit(
         { action: 'update', entity: 'Member', entityId: member.id, summary: `${member.firstName} ${member.lastName} hizo la partida (${date}) y pasa a ser adulto del Grupo` },
         transaction,
@@ -707,6 +734,89 @@ membersRouter.put(
     const existing = await Affiliation.findOne({ where: { memberId: req.params.id, year: data.year } });
     if (existing) await existing.update(data);
     else await Affiliation.create({ ...data, memberId: req.params.id });
+    res.json({ ok: true });
+  }),
+);
+
+// ---- Acceso a la app de un rover: se lo da su educador y le dicta una contraseña provisoria ----
+/** Estado del acceso de un protagonista (para su ficha). */
+async function memberAccess(memberId: string) {
+  const user = await User.findOne({ where: { memberId } });
+  if (!user) return null;
+  return {
+    active: user.active,
+    lastLoginAt: user.lastLoginAt,
+    mustChangePassword: user.mustChangePassword,
+    email: user.email,
+    pendingEmail: user.pendingEmail ?? null,
+    emailVerified: Boolean(user.email && user.emailVerifiedAt),
+  };
+}
+
+membersRouter.get(
+  '/:id/access',
+  authorize('members', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const member = await Member.findByPk(req.params.id, { attributes: ['id', 'branch', 'status', 'dni', 'birthDate'] });
+    if (!member) throw notFound();
+    const age = ageAt(member.birthDate);
+    // Por qué (todavía) no se le puede dar acceso
+    const blocked =
+      member.branch !== 'rovers' || member.status !== 'activo'
+        ? 'El acceso a la app es para rovers activos.'
+        : !member.dni
+          ? 'Cargale el DNI: es con lo que va a entrar.'
+          : age === null
+            ? 'Cargale la fecha de nacimiento: la cuenta propia es para mayores de 18.'
+            : age < 18
+              ? 'Todavía no cumplió 18: la cuenta propia es para mayores de edad.'
+              : null;
+    res.json({ access: await memberAccess(member.id), blocked });
+  }),
+);
+
+membersRouter.post(
+  '/:id/access',
+  authorize('members', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const member = await Member.findByPk(req.params.id);
+    if (!member) throw notFound();
+    if (member.status !== 'activo' || member.branch !== 'rovers') throw badRequest('El acceso a la app es para rovers activos');
+    if (!member.dni) throw badRequest('Cargale el DNI en su ficha: es con lo que va a entrar');
+    const age = ageAt(member.birthDate);
+    if (age === null || age < 18) throw badRequest('La cuenta propia es para mayores de 18 con la fecha de nacimiento cargada');
+    const role = await Role.findOne({ where: { key: 'rover' } });
+    if (!role) throw badRequest('Falta el rol Rover');
+    const password = temporaryPassword();
+    const passwordHash = await hashPassword(password);
+    const name = `${member.firstName} ${member.lastName}`.slice(0, 120);
+    const { user, created } = await sequelize.transaction(async (transaction) => {
+      let u = await User.findOne({ where: { memberId: member.id }, transaction });
+      const isNew = !u;
+      if (u) await u.update({ passwordHash, mustChangePassword: true, active: true, failedLogins: 0, lockedUntil: null, name }, { transaction });
+      else u = await User.create({ email: null, name, passwordHash, adultId: null, memberId: member.id, mustChangePassword: true, lastLoginAt: null, lockedUntil: null }, { transaction });
+      const has = await UserRole.findOne({ where: { userId: u.id, roleId: role.id }, transaction });
+      if (has) await has.update({ unitId: member.unitId }, { transaction });
+      else await UserRole.create({ userId: u.id, roleId: role.id, unitId: member.unitId }, { transaction });
+      return { user: u, created: isNew };
+    });
+    // Si tenía sesiones abiertas con la contraseña anterior, se cierran
+    await revokeAllSessions(user.id);
+    await writeAudit({ action: created ? 'create' : 'update', entity: 'User', entityId: user.id, summary: `Acceso a la app para ${name}: contraseña provisoria ${created ? 'generada' : 'renovada'}` });
+    // La contraseña provisoria se muestra una sola vez, para dictársela en el momento
+    res.json({ ok: true, dni: member.dni, password, access: await memberAccess(member.id) });
+  }),
+);
+
+membersRouter.delete(
+  '/:id/access',
+  authorize('members', 'edit', memberUnit),
+  ah(async (req, res) => {
+    const user = await User.findOne({ where: { memberId: req.params.id } });
+    if (!user) throw notFound();
+    await user.update({ active: false });
+    await revokeAllSessions(user.id);
+    await writeAudit({ action: 'update', entity: 'User', entityId: user.id, summary: `Acceso a la app suspendido para ${user.name}` });
     res.json({ ok: true });
   }),
 );

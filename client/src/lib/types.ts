@@ -2,7 +2,21 @@
 import type { DocStatus, Grant } from '@shared';
 
 export interface Me {
-  user: { id: string; email: string; name: string; adultId: string | null; adult: AdultRef | null };
+  user: {
+    id: string;
+    /** Vacío mientras una cuenta que entra con DNI no confirmó su mail. */
+    email: string | null;
+    name: string;
+    adultId: string | null;
+    adult: AdultRef | null;
+    /** La cuenta es de un protagonista (un rover mayor de edad). */
+    memberId?: string | null;
+    member?: { id: string; firstName: string; lastName: string; unitId: string | null; branch: string | null; status: string } | null;
+    /** Entró con la contraseña que le dictó su educador: tiene que elegir la suya. */
+    mustChangePassword?: boolean;
+    pendingEmail?: string | null;
+    emailVerified?: boolean;
+  };
   isSuperadmin: boolean;
   /** Jefatura de Grupo (o superadmin): maneja el servicio de los sábados y manda el temario del Consejo. */
   isJefatura?: boolean;
@@ -250,9 +264,12 @@ export interface RoleInfo {
 }
 export interface UserInfo {
   id: string;
-  email: string;
+  /** Vacío en la cuenta de un rover que todavía no confirmó su mail. */
+  email: string | null;
   name: string;
   adultId: string | null;
+  /** Cuenta de un protagonista (rover): se maneja desde su ficha. */
+  memberId?: string | null;
   active: boolean;
   lastLoginAt: string | null;
   hasPassword: boolean;

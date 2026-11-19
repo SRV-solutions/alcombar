@@ -311,10 +311,18 @@ AdultHabilitation.init(
 // ======================= ACCESO =======================
 export class User extends Model<InferAttributes<User>, InferCreationAttributes<User>> {
   declare id: CreationOptional<string>;
-  declare email: string;
+  /** Opcional: un rover entra con su DNI y carga el mail después. */
+  declare email: string | null;
   declare name: string;
   declare passwordHash: string | null;
   declare adultId: ForeignKey<Adult['id']> | null;
+  /** La cuenta es de un protagonista (un rover mayor de edad). */
+  declare memberId: CreationOptional<ForeignKey<Member['id']> | null>;
+  /** La contraseña se la generó su educador: tiene que cambiarla al entrar. */
+  declare mustChangePassword: CreationOptional<boolean>;
+  /** Mail cargado que todavía no confirmó con el código. */
+  declare pendingEmail: CreationOptional<string | null>;
+  declare emailVerifiedAt: CreationOptional<Date | null>;
   declare active: CreationOptional<boolean>;
   declare lastLoginAt: Date | null;
   declare failedLogins: CreationOptional<number>;
@@ -326,6 +334,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare adult?: NonAttribute<Adult | null>;
   declare userRoles?: NonAttribute<UserRole[]>;
 
+  declare member?: NonAttribute<Member | null>;
+
   toJSON() {
     const { passwordHash, failedLogins, lockedUntil, ...rest } = this.get({ plain: true }) as Record<string, unknown>;
     return { ...rest, hasPassword: Boolean(passwordHash) } as never;
@@ -334,9 +344,12 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
 User.init(
   {
     id,
-    email: { type: STRING(200), allowNull: false },
+    email: { type: STRING(200), allowNull: true },
     name: { type: STRING(120), allowNull: false },
     passwordHash: STRING(200),
+    mustChangePassword: { type: BOOLEAN, allowNull: false, defaultValue: false },
+    pendingEmail: STRING(200),
+    emailVerifiedAt: DATE,
     active: { type: BOOLEAN, allowNull: false, defaultValue: true },
     lastLoginAt: DATE,
     failedLogins: { type: INTEGER, allowNull: false, defaultValue: 0 },
@@ -445,9 +458,11 @@ export class PasswordToken extends Model<InferAttributes<PasswordToken>, InferCr
   declare id: CreationOptional<string>;
   declare userId: ForeignKey<User['id']>;
   declare tokenHash: string;
-  declare purpose: 'invite' | 'reset' | 'qr_login';
+  declare purpose: 'invite' | 'reset' | 'qr_login' | 'email';
   declare expiresAt: Date;
   declare usedAt: Date | null;
+  /** Intentos fallidos sobre un código de verificación. */
+  declare attempts: CreationOptional<number>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 }
@@ -458,6 +473,7 @@ PasswordToken.init(
     purpose: { type: STRING(10), allowNull: false },
     expiresAt: { type: DATE, allowNull: false },
     usedAt: DATE,
+    attempts: { type: INTEGER, allowNull: false, defaultValue: 0 },
     createdAt: DATE,
     updatedAt: DATE,
   },
@@ -795,6 +811,8 @@ AdultHabilitation.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
 
 User.belongsTo(Adult, { as: 'adult', foreignKey: 'adultId' });
 Adult.hasOne(User, { as: 'user', foreignKey: 'adultId' });
+User.belongsTo(Member, { as: 'member', foreignKey: 'memberId' });
+Member.hasOne(User, { as: 'user', foreignKey: 'memberId' });
 User.hasMany(UserRole, { as: 'userRoles', foreignKey: 'userId' });
 UserRole.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 UserRole.belongsTo(Role, { as: 'role', foreignKey: 'roleId' });

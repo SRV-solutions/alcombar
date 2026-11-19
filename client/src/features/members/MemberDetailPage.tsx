@@ -29,6 +29,7 @@ import { MemberProgressTab } from '../progression/MemberProgressTab';
 import { MemberPaymentsTab } from '../accounting/MemberPaymentsTab';
 import { PendingBadge } from './MembersPage';
 import { useAuth } from '../../lib/auth';
+import { MemberAccessCard } from './MemberAccessCard';
 
 type TabKey = 'datos' | 'familia' | 'docs' | 'historial' | 'asistencia' | 'progresion' | 'pagos';
 
@@ -273,6 +274,8 @@ export function MemberDetailPage() {
               <p style={{ whiteSpace: 'pre-wrap' }}>{m.notes}</p>
             </Card>
           ) : null}
+          {/* Los rovers (mayores de edad) pueden tener su propia cuenta: se la da su educador */}
+          {m.canEdit && isRover ? <MemberAccessCard memberId={m.id} firstName={m.firstName} /> : null}
         </div>
       ) : null}
 

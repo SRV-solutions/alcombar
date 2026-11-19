@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy, Link2, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { userCreateSchema, userUpdateSchema } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -17,7 +18,7 @@ interface LinkInfo {
   purpose: 'invite' | 'reset';
   emailSent: boolean;
   userName: string;
-  userEmail: string;
+  userEmail: string | null;
 }
 
 const fmtDateTime = (s: string | null) => (s ? new Date(s).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
@@ -43,7 +44,7 @@ export function UsersPage() {
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
     return (users.data ?? []).filter(
-      (u) => (showInactive || u.active) && (!term || u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term)),
+      (u) => (showInactive || u.active) && (!term || u.name.toLowerCase().includes(term) || (u.email ?? '').toLowerCase().includes(term)),
     );
   }, [users.data, q, showInactive]);
 
@@ -93,8 +94,12 @@ export function UsersPage() {
                     {/* Nombre, email y adulto en una sola columna: casi siempre el adulto es la misma persona */}
                     <td className="user-cell">
                       <div style={{ fontWeight: 600 }}>{u.name}</div>
-                      <div className="muted user-email">{u.email}</div>
-                      {u.adult && adultName(u.adult).replace(/s*(«.*»)$/, '').trim().toLowerCase() !== u.name.trim().toLowerCase() ? (
+                      <div className="muted user-email">{u.email ?? 'Entra con su DNI (todavía sin mail)'}</div>
+                      {u.memberId ? (
+                        <div className="muted user-email">
+                          Rover · <Link to={`/protagonistas/${u.memberId}`}>ver su ficha</Link>
+                        </div>
+                      ) : u.adult && adultName(u.adult).replace(/s*(«.*»)$/, '').trim().toLowerCase() !== u.name.trim().toLowerCase() ? (
                         <div className="muted user-email">Adulto: {adultName(u.adult)}</div>
                       ) : u.adult?.totem ? (
                         <div className="muted user-email">«{u.adult.totem}»</div>
@@ -138,6 +143,8 @@ export function UsersPage() {
                     <td className="nowrap">{fmtDateTime(u.lastLoginAt)}</td>
                     {canEdit ? (
                       <td className="nowrap">
+                        {/* La cuenta de un rover se maneja desde su ficha (acceso, contraseña y suspensión) */}
+                        {u.memberId ? null : (
                         <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
                           <Button variant="ghost" size="sm" onClick={() => setEditing(u)}>
                             <Pencil /> Editar
@@ -154,6 +161,7 @@ export function UsersPage() {
                             </Button>
                           ) : null}
                         </div>
+                        )}
                       </td>
                     ) : null}
                   </tr>
@@ -256,7 +264,7 @@ function UserFormModal({ user, onClose, onCreated }: { user: UserInfo | null; on
     resolver: zodResolver(isNew ? userCreateSchema : userUpdateSchema),
     defaultValues: user
       ? {
-          email: user.email,
+          email: user.email ?? '',
           name: user.name,
           adultId: user.adultId ?? '',
           active: user.active,

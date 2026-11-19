@@ -35,6 +35,8 @@ referentsRouter.get(
     ]);
     const users = assignments.length ? await User.findAll({ where: { adultId: assignments.map((a) => a.adultId) }, attributes: ['id', 'email', 'active', 'adultId'] }) : [];
     const manage = await canManage(req);
+    // Mail y teléfono de los referentes: para los adultos del Grupo, no para una cuenta de rover
+    const seesContact = req.auth!.isSuperadmin || Boolean(req.user!.adultId) || can(req.auth, 'adults', 'view');
     // Para quien los administra: avisa si el referente no va a poder abrir las fichas de su rama
     const warnings = new Map<string, string | null>();
     if (manage) {
@@ -66,8 +68,8 @@ referentsRouter.get(
             firstName: a.adult!.firstName,
             lastName: a.adult!.lastName,
             totem: a.adult!.totem,
-            email: user?.email ?? a.adult!.email,
-            phone: a.adult!.phone,
+            email: seesContact ? (user?.email ?? a.adult!.email) : null,
+            phone: seesContact ? a.adult!.phone : null,
             warning: warnings.get(a.id) ?? null,
           };
         })
@@ -83,7 +85,9 @@ referentsRouter.get(
       : [];
     res.json({
       year: currentYear(),
-      team: team ? { id: team.id, name: team.name, leader } : null,
+      team: team
+        ? { id: team.id, name: team.name, leader: leader && !seesContact ? { id: leader.id, firstName: leader.firstName, lastName: leader.lastName, totem: leader.totem, email: null, phone: null } : leader }
+        : null,
       canManage: manage,
       branches,
       candidates,

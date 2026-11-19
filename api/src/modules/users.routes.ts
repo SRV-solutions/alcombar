@@ -94,6 +94,7 @@ usersRouter.put(
     const data = parse(userUpdateSchema, req.body);
     const user = await User.findByPk(req.params.id, { include });
     if (!user) throw notFound();
+    if (user.memberId) throw badRequest('La cuenta de un rover se maneja desde su ficha de protagonista');
     const targetIsSuperadmin = user.userRoles?.some((ur) => ur.role?.key === 'superadmin');
     if (targetIsSuperadmin && !req.auth!.isSuperadmin) throw forbidden('Solo un superadmin puede editar a otro superadmin');
     const roles = await validateRoles(data.roles, req.auth!.isSuperadmin);
@@ -145,6 +146,7 @@ usersRouter.post(
     const user = await User.findByPk(req.params.id);
     if (!user) throw notFound();
     if (!user.active) throw badRequest('El usuario está desactivado');
+    if (!user.email) throw badRequest('Todavía no tiene mail: la contraseña se le genera desde su ficha de protagonista');
     const purpose = user.passwordHash ? 'reset' : 'invite';
     const url = await createPasswordLink(user, purpose);
     const emailSent = purpose === 'invite' ? await sendInvite(user, url) : await sendReset(user, url);

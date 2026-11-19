@@ -271,6 +271,8 @@ export function TutorialHost() {
   useEffect(() => {
     if (!me || !progress.data || autoStarted.current || current) return;
     autoStarted.current = true;
+    // Los tutoriales son de las pantallas de los adultos: a un rover no se le presenta solo
+    if (me.user.memberId) return;
     if (data.done.includes('bienvenida') || data.skipped.includes('bienvenida')) return;
     const t = setTimeout(() => {
       if (!current) startTutorial('bienvenida');

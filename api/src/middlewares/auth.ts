@@ -5,7 +5,7 @@ import { config } from '../config';
 import { Session, User } from '../models';
 import { loadSubject } from '../lib/access';
 import { currentContext } from '../lib/context';
-import { ah, forbidden, notFound, unauthorized } from '../lib/errors';
+import { ah, forbidden, HttpError, notFound, unauthorized } from '../lib/errors';
 import { ACCESS_COOKIE, type AccessPayload } from '../lib/session';
 
 declare global {
@@ -32,6 +32,10 @@ export const authenticate = ah(async (req, _res, next) => {
   const [user, session] = await Promise.all([User.findByPk(payload.sub), Session.findByPk(payload.sid)]);
   if (!session || (session.revokedAt && !session.replacedById)) throw unauthorized('Sesión cerrada', 'session_expired');
   if (!user || !user.active) throw unauthorized('Usuario inactivo', 'session_expired');
+  // Con la contraseña que le dictó su educador solo puede ver quién es y elegir la suya
+  if (user.mustChangePassword && !/\/auth\/(me|change-password|logout)\/?(\?.*)?$/.test(req.originalUrl)) {
+    throw new HttpError(403, 'Primero elegí tu contraseña', 'must_change_password');
+  }
   req.user = user;
   req.sessionId = session.id;
   req.auth = await loadSubject(user.id, user.adultId ?? null);

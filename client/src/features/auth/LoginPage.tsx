@@ -8,6 +8,7 @@ import { useAuth } from '../../lib/auth';
 import { Button, Field, Input, PasswordInput } from '../../components/ui';
 import { Logo } from '../../components/Logo';
 import { PoweredBySrv } from '../../components/PoweredBy';
+import { rememberLoginPassword } from './loginMemo';
 
 export function AuthShell({ children, subtitle }: { children: React.ReactNode; subtitle?: string }) {
   return (
@@ -43,6 +44,8 @@ export function LoginPage() {
     setError(null);
     try {
       await api.post('/auth/login', values);
+      // Si entró con una contraseña provisoria, no se la volvemos a pedir al elegir la suya (queda solo en memoria)
+      rememberLoginPassword(values.password);
       await refetch();
       navigate(from, { replace: true });
     } catch (e) {
@@ -54,8 +57,8 @@ export function LoginPage() {
     <AuthShell>
       <form onSubmit={onSubmit} noValidate>
         {error ? <div className="alert alert-error">{error}</div> : null}
-        <Field label="Email" error={formState.errors.email?.message}>
-          <Input type="email" autoComplete="username" autoFocus {...register('email')} invalid={!!formState.errors.email} />
+        <Field label="Email o DNI" error={formState.errors.email?.message}>
+          <Input type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="username" autoFocus {...register('email')} invalid={!!formState.errors.email} />
         </Field>
         <Field label="Contraseña" error={formState.errors.password?.message}>
           <PasswordInput autoComplete="current-password" {...register('password')} invalid={!!formState.errors.password} />
@@ -67,7 +70,7 @@ export function LoginPage() {
           <Link to="/olvide-clave">¿Primera vez, o te olvidaste la contraseña?</Link>
         </div>
         <p className="muted" style={{ textAlign: 'center', margin: 0 }}>
-          Si el Grupo ya te dio de alta, pedí tu enlace con tu email y elegí tu contraseña. No hay registro público.
+          Si el Grupo ya te dio de alta, pedí tu enlace con tu email y elegí tu contraseña. Los rovers entran con su DNI y la contraseña que les da su educador. No hay registro público.
         </p>
       </form>
     </AuthShell>

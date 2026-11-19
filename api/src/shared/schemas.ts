@@ -84,9 +84,17 @@ export const password = z.string().min(10, 'La contraseña debe tener al menos 1
 
 // ---------- auth ----------
 export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Email inválido'),
+  /** Email o DNI (los rovers entran con el DNI). El campo se sigue llamando email por compatibilidad. */
+  email: z.string().trim().toLowerCase().min(1, 'Requerido').max(200),
   password: z.string().min(1, 'Requerido'),
 });
+/** Lo que se escribió para entrar: un DNI (solo números, con o sin puntos) o un email. */
+export function loginIdentifier(raw: string): { dni: string } | { email: string } {
+  const digits = raw.replace(/[.\s]/g, '');
+  return /^\d{6,9}$/.test(digits) ? { dni: digits } : { email: raw };
+}
+export const emailRequestSchema = z.object({ email: z.string().trim().toLowerCase().email('Email inválido').max(200) });
+export const emailConfirmSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, 'El código tiene 6 números') });
 export const setPasswordSchema = z.object({ token: z.string().min(10), password });
 export const forgotPasswordSchema = z.object({ email: z.string().trim().toLowerCase().email('Email inválido') });
 export const changePasswordSchema = z.object({ currentPassword: z.string().min(1, 'Requerido'), password });

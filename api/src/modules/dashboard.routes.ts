@@ -3,7 +3,7 @@ import { Op, QueryTypes } from 'sequelize';
 import { can, documentStatus, kidsPerAdultOf, requiredAdults, todayIso, unitsWith } from '../shared';
 import { sequelize } from '../db';
 import { AuditLog, DocumentType, Member, MemberDocument, Unit, User } from '../models';
-import { ah } from '../lib/errors';
+import { ah, forbidden } from '../lib/errors';
 import { authorize } from '../middlewares/auth';
 
 export const dashboardRouter = Router();
@@ -11,6 +11,8 @@ export const dashboardRouter = Router();
 dashboardRouter.get(
   '/',
   ah(async (req, res) => {
+    // Los números del Grupo son para los adultos: la cuenta de un rover tiene su propio inicio
+    if (req.user!.memberId) throw forbidden();
     const year = new Date().getFullYear();
     const units = await Unit.findAll({ where: { active: true } });
     const memberCounts = await sequelize.query<{ unit_id: string; n: number }>(

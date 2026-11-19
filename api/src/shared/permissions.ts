@@ -423,6 +423,14 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Solo lectura de lo no sensible: organigrama, calendario y documentos.',
     permissions: ['group:view', 'calendar:view', 'documents:view'],
   },
+  {
+    key: 'rover',
+    name: 'Rover',
+    scope: 'unit',
+    description: 'Rover de la Comunidad: su Plan Personal, sus proyectos y mingas, y lo no sensible del Grupo (organigrama y calendario).',
+    // Sin «Actas y documentos»: las actas del Consejo no son para la Comunidad
+    permissions: ['group:view', 'calendar:view'],
+  },
 ];
 
 export function parsePermissionCode(code: string): { module: ModuleKey; action: Action; unitLimited: boolean } {

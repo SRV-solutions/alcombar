@@ -6,6 +6,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Badge, Card, ErrorBox, LinkButton, Loading, PageHeader, UnitBadge } from '../../components/ui';
 import { PendingCard, UpcomingCard } from './DashboardExtras';
+import { RoverHome } from '../rovers/RoverHome';
 
 interface Dashboard {
   year: number;
@@ -27,7 +28,13 @@ interface Dashboard {
 
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
+/** Inicio: el de un rover es propio; el del resto, el panel del Grupo. */
 export function DashboardPage() {
+  const { me } = useAuth();
+  return me?.user.memberId ? <RoverHome /> : <GroupDashboard />;
+}
+
+function GroupDashboard() {
   const { me, can, canAll } = useAuth();
   const { data, isLoading, error } = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<Dashboard>('/dashboard') });
   if (isLoading) return <Loading />;
