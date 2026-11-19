@@ -1,4 +1,4 @@
-"""Genera docs/ALCOMBAR-Gestion-Manual.pdf a partir de index.html (manual) y contratapa.html.
+"""Genera docs/ALCONBAR-Gestion-Manual.pdf a partir de index.html (manual) y contratapa.html.
 
 Uso (desde la raíz del repo):  python docs/manual/build.py
 Necesita Google Chrome y PyMuPDF (pip install pymupdf). La contratapa se imprime aparte y se une al final
@@ -11,7 +11,7 @@ import tempfile
 import pymupdf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(os.path.dirname(HERE), 'ALCOMBAR-Gestion-Manual.pdf')
+OUT = os.path.join(os.path.dirname(HERE), 'ALCONBAR-Gestion-Manual.pdf')
 CHROME = os.environ.get('CHROME', r'C:\Program Files\Google\Chrome\Application\chrome.exe')
 
 
@@ -34,9 +34,9 @@ with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
     with pymupdf.open(back) as b:
         doc.insert_pdf(b, from_page=0, to_page=0)
     doc.set_metadata({
-        'title': 'ALCOMBAR Gestión — Manual de uso',
+        'title': 'ALCONBAR Gestión — Manual de uso',
         'author': 'Grupo Scout 155 Divina Providencia',
-        'subject': 'Cómo funciona ALCOMBAR Gestión',
+        'subject': 'Cómo funciona ALCONBAR Gestión',
         'creator': 'SRV · wearesrv.com',
         'producer': 'SRV · wearesrv.com',
     })

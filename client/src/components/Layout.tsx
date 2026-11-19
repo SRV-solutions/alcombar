@@ -263,7 +263,7 @@ export function Layout() {
         <div className="brand">
           <Logo className="brand-logo" />
           <div>
-            <div className="brand-name">ALCOMBAR</div>
+            <div className="brand-name">ALCONBAR</div>
             <div className="brand-sub">Grupo Scout 155 · Gestión</div>
           </div>
         </div>
@@ -326,7 +326,7 @@ export function Layout() {
             <Menu />
           </button>
           <Logo className="brand-logo" />
-          <span className="brand-name">ALCOMBAR</span>
+          <span className="brand-name">ALCONBAR</span>
           <GlobalSearch compact />
           <ThemeToggle compact />
           <NotificationBell compact />

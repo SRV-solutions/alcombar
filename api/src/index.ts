@@ -8,7 +8,7 @@ async function main() {
   installAuditHooks();
   const app = createApp();
   app.listen(config.port, () => {
-    console.log(`✓ API de ALCOMBAR Gestión en http://localhost:${config.port}/api/v1`);
+    console.log(`✓ API de ALCONBAR Gestión en http://localhost:${config.port}/api/v1`);
   });
 }
 

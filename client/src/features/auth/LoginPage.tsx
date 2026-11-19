@@ -17,7 +17,7 @@ export function AuthShell({ children, subtitle }: { children: React.ReactNode; s
         <div className="auth-head">
           <Logo />
           <div>
-            <div className="brand-name">ALCOMBAR Gestión</div>
+            <div className="brand-name">ALCONBAR Gestión</div>
             <div className="brand-sub">{subtitle ?? 'Grupo Scout 155 Divina Providencia'}</div>
           </div>
         </div>

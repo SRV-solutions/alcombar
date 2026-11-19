@@ -1,7 +1,7 @@
-# ALCOMBAR Gestión
+# ALCONBAR Gestión
 
 Plataforma de gestión del **Grupo Scout 155 Divina Providencia**. La especificación completa está en
-`ALCOMBAR Gestión - Informe de definición.pdf`.
+`ALCOMBAR Gestión - Informe de definición.pdf` (el informe original, de cuando el nombre se escribía con M).
 
 **Estado: MVP — Etapas 0, 1 y 2 del informe**
 
@@ -67,7 +67,7 @@ pide la contraseña actual.
 
 ### Emails
 
-Salen por **Resend** (`RESEND_API_KEY`), a nombre de **ALCOMBAR Gestión** (`MAIL_FROM_NAME`).
+Salen por **Resend** (`RESEND_API_KEY`), a nombre de **ALCONBAR Gestión** (`MAIL_FROM_NAME`).
 - Resend usa la API por HTTPS, que funciona en Railway (Railway bloquea el SMTP).
 - El remitente (`MAIL_FROM`) tiene que ser de un dominio verificado en Resend; hoy es `info@wearesrv.com`.
 - Las respuestas van a `MAIL_REPLY_TO`.

@@ -39,7 +39,7 @@ supportRouter.post(
       const label = REPORT_CATEGORY_LABELS[data.category as ReportCategory];
       void sendMail(
         config.supportEmail,
-        `Nuevo reporte en ALCOMBAR: ${label}`,
+        `Nuevo reporte en ALCONBAR: ${label}`,
         `${req.user!.name} <${req.user!.email}> reportó (${label}) en ${data.pageUrl ?? '-'}:\n\n${data.description}\n\nVer: ${config.appUrl}/admin/reportes`,
         emailLayout({
           title: `Nuevo reporte: ${label}`,
@@ -113,12 +113,12 @@ supportRouter.put(
       const status = REPORT_STATUS_LABELS[data.status as ReportStatus];
       void sendMail(
         report.user.email,
-        `Tu reporte en ALCOMBAR: ${status}`,
+        `Tu reporte en ALCONBAR: ${status}`,
         `Hola ${report.user.name}:\n\nTu reporte quedó "${status}".${data.response ? `\n\nRespuesta:\n${data.response}` : ''}\n\nGracias por ayudarnos a mejorar.`,
         emailLayout({
           title: `Tu reporte: ${status}`,
           paragraphs: [`Hola ${report.user.name}:`, `Tu reporte quedó "${status}".`, ...(data.response ? [`Respuesta: ${data.response}`] : []), 'Gracias por ayudarnos a mejorar.'],
-          button: { label: 'Abrir ALCOMBAR', url: config.appUrl },
+          button: { label: 'Abrir ALCONBAR', url: config.appUrl },
         }),
       );
     }

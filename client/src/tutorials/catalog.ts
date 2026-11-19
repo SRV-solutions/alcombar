@@ -39,7 +39,7 @@ const firstRow = { selector: 'table tbody tr.clickable' };
 export const TUTORIALS: Tutorial[] = [
   {
     id: 'bienvenida',
-    title: 'Primeros pasos en ALCOMBAR',
+    title: 'Primeros pasos en ALCONBAR',
     description: 'El menú, el buscador, el modo oscuro y dónde volver a ver estos tutoriales.',
     keywords: ['primeros pasos', 'empezar', 'inicio', 'cómo se usa', 'intro', 'introducción'],
     audience: (c) => c.loggedIn && !c.rover,
@@ -88,7 +88,7 @@ export const TUTORIALS: Tutorial[] = [
   // ---------- Comunidad Rover (para los rovers) ----------
   {
     id: 'bienvenida-rover',
-    title: 'Primeros pasos en ALCOMBAR',
+    title: 'Primeros pasos en ALCONBAR',
     description: 'Qué tenés en la app como rover y dónde está cada cosa.',
     keywords: ['primeros pasos', 'empezar', 'inicio', 'cómo se usa', 'intro'],
     audience: (c) => c.rover,
@@ -448,7 +448,7 @@ export const TUTORIALS: Tutorial[] = [
         target: nav('/cruz-del-sur'),
         pose: 'point',
         title: 'Altas y bajas',
-        text: 'Cada vez que se da de alta o de baja a un protagonista o a un adulto en ALCOMBAR, queda acá para cargarlo en Cruz del Sur, la plataforma de SAAC.',
+        text: 'Cada vez que se da de alta o de baja a un protagonista o a un adulto en ALCONBAR, queda acá para cargarlo en Cruz del Sur, la plataforma de SAAC.',
       },
       {
         target: tab('Pendientes'),
@@ -1237,7 +1237,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'app-en-el-celular',
     title: 'La app en tu celular',
-    description: 'Abrir ALCOMBAR en el celular escaneando un código QR, sin escribir la contraseña.',
+    description: 'Abrir ALCONBAR en el celular escaneando un código QR, sin escribir la contraseña.',
     keywords: ['celular', 'qr', 'app', 'instalar', 'teléfono'],
     audience: (c) => c.loggedIn,
     steps: [
@@ -1250,7 +1250,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         pose: 'think',
         title: 'Escaneá con la cámara',
-        text: 'Apuntá la cámara del celular al código y tocá el enlace: se abre ALCOMBAR con tu sesión iniciada. El código sirve una sola vez y vence en 3 minutos.',
+        text: 'Apuntá la cámara del celular al código y tocá el enlace: se abre ALCONBAR con tu sesión iniciada. El código sirve una sola vez y vence en 3 minutos.',
       },
       {
         pose: 'cheer',

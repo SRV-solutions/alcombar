@@ -457,7 +457,7 @@ membersRouter.delete(
     await member.destroy();
     if (memberRegistered(member.status)) {
       await recordRegistryChanges(req, [
-        { kind: 'baja', member, detail: 'Se eliminó de ALCOMBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
+        { kind: 'baja', member, detail: 'Se eliminó de ALCONBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
       ]);
     }
     res.json({ ok: true });

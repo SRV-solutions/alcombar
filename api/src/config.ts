@@ -38,5 +38,5 @@ export const config = {
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
   mailFrom: process.env.MAIL_FROM || '',
-  mailFromName: process.env.MAIL_FROM_NAME || 'ALCOMBAR Gestión',
+  mailFromName: process.env.MAIL_FROM_NAME || 'ALCONBAR Gestión',
 };

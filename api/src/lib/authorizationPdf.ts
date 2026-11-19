@@ -378,7 +378,7 @@ function proofPages(doc: Doc, items: PdfAuthorization[]) {
     centered(doc, 'CONSTANCIA DE FIRMA EN PANTALLA', 56, 13);
     y = paragraph(
       doc,
-      'Las autorizaciones que siguen fueron firmadas por la madre, el padre o el tutor con trazo manuscrito sobre la pantalla, en persona, en el dispositivo de un educador o educadora del Grupo Scout que presenció la firma. El sistema ALCOMBAR Gestión guarda el trazo de cada firma, la fecha y la hora, y un código de verificación que deja de coincidir si se modifica el texto o los datos.',
+      'Las autorizaciones que siguen fueron firmadas por la madre, el padre o el tutor con trazo manuscrito sobre la pantalla, en persona, en el dispositivo de un educador o educadora del Grupo Scout que presenció la firma. El sistema ALCONBAR Gestión guarda el trazo de cada firma, la fecha y la hora, y un código de verificación que deja de coincidir si se modifica el texto o los datos.',
       84,
       { size: 9, pitch: 11.5, justify: true, draw: true },
     );
@@ -409,7 +409,7 @@ function proofPages(doc: Doc, items: PdfAuthorization[]) {
 /** Un PDF con una hoja por autorización. */
 export function authorizationsPdf(items: PdfAuthorization[], title: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ autoFirstPage: false, margin: 0, info: { Title: title, Author: 'ALCOMBAR Gestión', Creator: 'ALCOMBAR Gestión' } });
+    const doc = new PDFDocument({ autoFirstPage: false, margin: 0, info: { Title: title, Author: 'ALCONBAR Gestión', Creator: 'ALCONBAR Gestión' } });
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));

@@ -161,7 +161,7 @@ export function GlobalSearch({ compact }: { compact?: boolean }) {
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        aria-label="Buscar en ALCOMBAR"
+        aria-label="Buscar en ALCONBAR"
         role="combobox"
         aria-expanded={open && results.length > 0}
         aria-controls="gsearch-list"

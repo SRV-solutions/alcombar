@@ -89,7 +89,7 @@ export function ProfilePage() {
       </div>
 
       <div className="mt" id="celular">
-        <Card title="ALCOMBAR en tu celular">
+        <Card title="ALCONBAR en tu celular">
           <p className="muted" style={{ marginTop: 0 }}>
             Escaneá un código QR con el celular y se abre la app con tu sesión iniciada, sin escribir la contraseña. Después la podés
             agregar a la pantalla de inicio para usarla como una app.

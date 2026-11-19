@@ -286,7 +286,7 @@ adultsRouter.delete(
     await adult.destroy();
     if (adultRegistered(adult.status)) {
       await recordRegistryChanges(req, [
-        { kind: 'baja', adult, detail: 'Se eliminó de ALCOMBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
+        { kind: 'baja', adult, detail: 'Se eliminó de ALCONBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
       ]);
     }
     res.json({ ok: true });

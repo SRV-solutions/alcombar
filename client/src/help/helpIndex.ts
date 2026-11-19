@@ -1,5 +1,5 @@
 /**
- * Índice de todo lo que se puede hacer en ALCOMBAR: lo usa el buscador global (Ctrl+K) y la página de Ayuda.
+ * Índice de todo lo que se puede hacer en ALCONBAR: lo usa el buscador global (Ctrl+K) y la página de Ayuda.
  * Cada entrada sabe adónde lleva y quién puede verla. Las palabras clave están pensadas para cómo lo diría
  * un/a dirigente ("nómina", "quién vino", "ficha médica", "patrulla"), no para cómo se llama el módulo.
  */
@@ -761,7 +761,7 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'celular',
     title: 'Usar la app en el celular',
-    description: 'Botón "Abrir en el celular" (abajo en el menú) o Mi perfil → ALCOMBAR en tu celular: escaneás un código QR y se abre la app con tu sesión iniciada. Después la agregás a la pantalla de inicio.',
+    description: 'Botón "Abrir en el celular" (abajo en el menú) o Mi perfil → ALCONBAR en tu celular: escaneás un código QR y se abre la app con tu sesión iniciada. Después la agregás a la pantalla de inicio.',
     path: '/perfil#celular',
     section: 'Mi cuenta',
     keywords: ['celular', 'celu', 'teléfono', 'móvil', 'qr', 'código qr', 'escanear', 'app', 'instalar', 'pantalla de inicio', 'android', 'iphone'],

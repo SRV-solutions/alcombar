@@ -158,7 +158,7 @@ libraryRouter.post(
           ...topics.map((t) => (/^[-•*\d]/.test(t) ? t : `• ${t}`)),
           'Si querés sumar un tema, avisale a la Jefatura antes del Consejo.',
         ],
-        button: 'Ver el temario en ALCOMBAR',
+        button: 'Ver el temario en ALCONBAR',
         footnote: 'Te llega porque sos parte del Consejo de Grupo.',
       },
     });
@@ -179,7 +179,7 @@ libraryRouter.post(
             'Orden del día:',
             ...topics.map((t) => (/^[-•*\d]/.test(t) ? t : `• ${t}`)),
           ],
-          button: 'Ver el temario en ALCOMBAR',
+          button: 'Ver el temario en ALCONBAR',
           footnote: 'Te llega porque sos representante juvenil de tu Comunidad en el Consejo de Grupo.',
         },
       });

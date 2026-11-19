@@ -1,4 +1,4 @@
-/* ALCOMBAR Gestión — identidad del Grupo: bordó y oro (informe §9).
+/* ALCONBAR Gestión — identidad del Grupo: bordó y oro (informe §9).
  * Tema claro/oscuro con variables (data-theme en <html>, ver lib/theme.tsx). Los colores se usan siempre
  * por token: --bg, --surface, --text, --primary… Los nombres viejos (--bordo, --gris…) siguen como alias. */
 :root {

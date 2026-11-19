@@ -449,7 +449,7 @@ export function MeetingPage() {
         <div className="print-only print-sheet">
           <div className="print-head">
             <div>
-              <div className="brand">ALCOMBAR · Grupo Scout 155 Divina Providencia</div>
+              <div className="brand">ALCONBAR · Grupo Scout 155 Divina Providencia</div>
               <div>{unit?.name}</div>
             </div>
             <div className="code">{formatDate(date)}</div>

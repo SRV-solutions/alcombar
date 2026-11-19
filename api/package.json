@@ -2,7 +2,7 @@
   "name": "alcombar-api",
   "version": "0.1.0",
   "private": true,
-  "description": "ALCOMBAR Gestión — API (Express + Sequelize + PostgreSQL)",
+  "description": "ALCONBAR Gestión — API (Express + Sequelize + PostgreSQL)",
   "scripts": {
     "predev": "node scripts/db.mjs start && sequelize-cli db:migrate && tsx src/seed.ts",
     "dev": "tsx watch --clear-screen=false src/index.ts",

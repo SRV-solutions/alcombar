@@ -377,11 +377,11 @@ authRouter.post(
       await user.save({ transaction });
     });
     const intro = `Hola ${user.name}:`;
-    const ask = 'Para confirmar que esta casilla es tuya, escribí este código en ALCOMBAR Gestión:';
+    const ask = 'Para confirmar que esta casilla es tuya, escribí este código en ALCONBAR Gestión:';
     const note = `Vence en ${EMAIL_CODE_MINUTES} minutos. Si no lo pediste vos, ignorá este mensaje.`;
     const sent = await sendMail(
       email,
-      'Tu código para confirmar el mail en ALCOMBAR Gestión',
+      'Tu código para confirmar el mail en ALCONBAR Gestión',
       `${intro}\n\n${ask}\n\n    ${code}\n\n${note}`,
       emailLayout({ title: 'Confirmá tu mail', paragraphs: [intro, ask, code], footnote: note }),
     );

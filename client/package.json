@@ -2,7 +2,7 @@
   "name": "alcombar-client",
   "version": "0.1.0",
   "private": true,
-  "description": "ALCOMBAR Gestión — Front (React + Vite)",
+  "description": "ALCONBAR Gestión — Front (React + Vite)",
   "type": "module",
   "scripts": {
     "dev": "vite",

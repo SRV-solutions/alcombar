@@ -13,9 +13,9 @@ async function main() {
   if (!to) return;
   const ok = await sendMail(
     to,
-    'Prueba de ALCOMBAR Gestión',
-    'Si te llegó este mensaje, el envío de emails de ALCOMBAR Gestión funciona.',
-    emailLayout({ title: 'Prueba de envío', paragraphs: ['Si te llegó este mensaje, el envío de emails de ALCOMBAR Gestión funciona.'] }),
+    'Prueba de ALCONBAR Gestión',
+    'Si te llegó este mensaje, el envío de emails de ALCONBAR Gestión funciona.',
+    emailLayout({ title: 'Prueba de envío', paragraphs: ['Si te llegó este mensaje, el envío de emails de ALCONBAR Gestión funciona.'] }),
   );
   console.log(ok ? `✓ Mail de prueba enviado a ${to}` : '✗ No se pudo enviar (mirá el error de arriba)');
 }

@@ -18,7 +18,7 @@ const mmss = (ms: number) => {
 };
 
 /**
- * "Abrir en el celular": muestra un código QR de un solo uso. Al escanearlo con el celu se abre ALCOMBAR con la
+ * "Abrir en el celular": muestra un código QR de un solo uso. Al escanearlo con el celu se abre ALCONBAR con la
  * sesión iniciada. Vence en pocos minutos; la compu avisa cuando se usó.
  */
 export function OpenOnPhoneDialog({ onClose }: { onClose: () => void }) {
@@ -63,7 +63,7 @@ export function OpenOnPhoneDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal
-      title="Abrir ALCOMBAR en el celular"
+      title="Abrir ALCONBAR en el celular"
       onClose={onClose}
       footer={
         <>
@@ -112,7 +112,7 @@ export function OpenOnPhoneDialog({ onClose }: { onClose: () => void }) {
 
         <ol className="open-phone-steps">
           <li>Abrí la cámara del celular y apuntá al código.</li>
-          <li>Tocá el enlace que aparece: se abre ALCOMBAR con tu sesión iniciada, sin escribir la contraseña.</li>
+          <li>Tocá el enlace que aparece: se abre ALCONBAR con tu sesión iniciada, sin escribir la contraseña.</li>
           <li>
             Para tenerla como una app: en Android, menú <strong>⋮</strong> → <em>Agregar a la pantalla principal</em>. En iPhone (Safari),{' '}
             <strong>Compartir</strong> → <em>Agregar a inicio</em> (ahí te pide entrar una vez con tu email y contraseña).

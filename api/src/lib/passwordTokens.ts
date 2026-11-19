@@ -41,16 +41,16 @@ export async function createQrLogin(user: User) {
 
 export async function sendInvite(user: User, url: string) {
   const intro = `Hola ${user.name}:`;
-  const body = 'Te crearon un usuario en ALCOMBAR Gestión, la plataforma del Grupo Scout 155 Divina Providencia.';
+  const body = 'Te crearon un usuario en ALCONBAR Gestión, la plataforma del Grupo Scout 155 Divina Providencia.';
   const h = config.inviteTokenHours;
   const lasts = h >= 48 ? `${Math.round(h / 24)} días` : `${h} horas`;
   const action = `Para entrar, elegí tu contraseña con este enlace (vence en ${lasts} y sirve una sola vez).`;
   return sendMail(
     user.email,
-    'Tu acceso a ALCOMBAR Gestión',
+    'Tu acceso a ALCONBAR Gestión',
     `${intro}\n\n${body}\n${action}\n\n${url}\n\nSiempre listos.`,
     emailLayout({
-      title: '¡Bienvenida/o a ALCOMBAR Gestión!',
+      title: '¡Bienvenida/o a ALCONBAR Gestión!',
       paragraphs: [intro, body, action],
       button: { label: 'Elegir mi contraseña', url },
       footnote: `Tu usuario es ${user.email}. Si no esperabas este mensaje, podés ignorarlo.`,
@@ -63,7 +63,7 @@ export async function sendReset(user: User, url: string) {
   const body = `Pediste restablecer tu contraseña. Usá este enlace (vence en ${config.resetTokenMinutes} minutos y sirve una sola vez).`;
   return sendMail(
     user.email,
-    'Restablecer tu contraseña de ALCOMBAR Gestión',
+    'Restablecer tu contraseña de ALCONBAR Gestión',
     `${intro}\n\n${body}\n\n${url}\n\nSi no lo pediste, ignorá este mensaje.`,
     emailLayout({
       title: 'Restablecer tu contraseña',

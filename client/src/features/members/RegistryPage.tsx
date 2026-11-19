@@ -146,7 +146,7 @@ export function RegistryPage() {
     <>
       <PageHeader
         title="Altas y bajas · Cruz del Sur"
-        sub="Cada vez que en ALCOMBAR se da de alta o de baja a un protagonista o a un adulto, queda acá para cargarlo en Cruz del Sur, la plataforma oficial de SAAC. Cuando esté cargado, marcalo como hecho así el resto del equipo lo sabe."
+        sub="Cada vez que en ALCONBAR se da de alta o de baja a un protagonista o a un adulto, queda acá para cargarlo en Cruz del Sur, la plataforma oficial de SAAC. Cuando esté cargado, marcalo como hecho así el resto del equipo lo sabe."
       />
       <div className="card registry-note">
         <div className="card-body">
@@ -222,7 +222,7 @@ export function RegistryPage() {
                   ) : null}
                   <th>Movimiento</th>
                   <th>Persona</th>
-                  <th>Registrado en ALCOMBAR</th>
+                  <th>Registrado en ALCONBAR</th>
                   {tab === 'resueltas' ? <th>Resuelto</th> : null}
                   <th />
                 </tr>

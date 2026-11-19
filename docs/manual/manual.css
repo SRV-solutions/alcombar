@@ -17,7 +17,7 @@
 @page {
   size: A4;
   margin: 20mm 17mm 22mm;
-  @bottom-left { content: "ALCOMBAR Gestión · Manual de uso"; font: 600 8.5pt 'Nunito Sans', sans-serif; color: #7A1F2B; }
+  @bottom-left { content: "ALCONBAR Gestión · Manual de uso"; font: 600 8.5pt 'Nunito Sans', sans-serif; color: #7A1F2B; }
   @bottom-right { content: counter(page); font: 600 8.5pt 'Nunito Sans', sans-serif; color: #7A6760; }
   @top-right { content: "Grupo Scout 155 Divina Providencia"; font: 8.5pt 'Nunito Sans', sans-serif; color: #7A6760; }
 }

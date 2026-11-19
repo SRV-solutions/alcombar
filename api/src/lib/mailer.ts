@@ -4,7 +4,7 @@
  *   El remitente (MAIL_FROM) tiene que ser de un dominio verificado en Resend (ej: info@wearesrv.com).
  * - SMTP (alternativa local, ej. Gmail con contraseña de aplicación): SMTP_USER / SMTP_PASS [/ SMTP_HOST / SMTP_PORT].
  * Sin ninguno, el mail se muestra en la consola y la app muestra el enlace en pantalla.
- * MAIL_FROM_NAME es el nombre con que llega ("ALCOMBAR Gestión") y MAIL_REPLY_TO adónde van las respuestas.
+ * MAIL_FROM_NAME es el nombre con que llega ("ALCONBAR Gestión") y MAIL_REPLY_TO adónde van las respuestas.
  */
 import nodemailer, { type Transporter } from 'nodemailer';
 import { config } from '../config';
@@ -40,7 +40,7 @@ export function emailLayout({ title, paragraphs, button, footnote }: { title: st
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF6EE;padding:24px 12px"><tr><td align="center">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e6dfd2">
       <tr><td style="background:#87141B;padding:18px 24px">
-        <div style="color:#F2C230;font-weight:bold;font-size:18px;letter-spacing:.5px">ALCOMBAR Gestión</div>
+        <div style="color:#F2C230;font-weight:bold;font-size:18px;letter-spacing:.5px">ALCONBAR Gestión</div>
         <div style="color:#f3e3dc;font-size:12px">Grupo Scout 155 Divina Providencia</div>
       </td></tr>
       <tr><td style="padding:24px">

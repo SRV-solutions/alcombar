@@ -1,6 +1,6 @@
 /**
  * Altas y bajas para Cruz del Sur (la plataforma oficial de SAAC).
- * Cuando en ALCOMBAR alguien da de alta o de baja a un protagonista o a un adulto, queda un pendiente para que el
+ * Cuando en ALCONBAR alguien da de alta o de baja a un protagonista o a un adulto, queda un pendiente para que el
  * equipo de administración lo cargue en Cruz del Sur, y se le avisa a todo ese equipo (campanita + mail).
  * - Protagonista: cuenta como registrado si está "activo".
  * - Adulto: cuenta como registrado si está "alta" (el período de prueba todavía no se carga).
@@ -28,7 +28,7 @@ export interface RegistryChange {
   kind: RegistryKind;
   member?: Member;
   adult?: Adult;
-  /** Motivo o aclaración (ej. "Se eliminó de ALCOMBAR"). */
+  /** Motivo o aclaración (ej. "Se eliminó de ALCONBAR"). */
   detail?: string | null;
 }
 
@@ -127,9 +127,9 @@ async function notifyRegistry(req: Request | null, items: { kind: RegistryKind; 
     email: {
       subject: items.length === 1 ? `${title}: ${names[0]}` : title,
       paragraphs: [
-        `${actor} registró en ALCOMBAR:`,
+        `${actor} registró en ALCONBAR:`,
         ...lines,
-        'Hay que cargarlo en Cruz del Sur, la plataforma oficial de SAAC. Cuando esté hecho, marcalo como hecho en ALCOMBAR así el resto del equipo sabe que ya se cargó.',
+        'Hay que cargarlo en Cruz del Sur, la plataforma oficial de SAAC. Cuando esté hecho, marcalo como hecho en ALCONBAR así el resto del equipo sabe que ya se cargó.',
       ],
       button: 'Ver pendientes de Cruz del Sur',
       footnote: `Te llega porque sos parte de ${recipients.teams.map((t) => t.name).join(' / ')}, el equipo que recibe los avisos de altas y bajas.`,
