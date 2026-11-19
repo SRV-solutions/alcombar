@@ -91,7 +91,12 @@ section.chapter { break-before: page; }
 
 .shot { margin: 3mm 0 5mm; break-inside: avoid; }
 .shot img { width: 100%; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 3px 10px rgba(42, 23, 20, 0.12); display: block; }
+.shot.narrow { width: 78%; margin-left: auto; margin-right: auto; }
 .shot figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 1.5mm; font-style: italic; }
+
+.phones { margin: 5mm auto 4mm; width: 76%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; break-inside: avoid; }
+.phones img { width: 100%; border: 2.2mm solid var(--ink); border-radius: 6mm; box-shadow: 0 3px 10px rgba(42, 23, 20, 0.16); display: block; }
+.phones figcaption { grid-column: 1 / -1; font-size: 8.5pt; color: var(--muted); font-style: italic; }
 
 table { width: 100%; border-collapse: collapse; margin: 2mm 0 5mm; font-size: 9.5pt; break-inside: auto; }
 th { text-align: left; background: var(--bordo); color: var(--cream); font-family: 'Rubik', sans-serif; font-weight: 600; padding: 2mm 2.5mm; }
