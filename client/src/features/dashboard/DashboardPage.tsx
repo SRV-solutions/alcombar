@@ -16,7 +16,8 @@ interface Dashboard {
     name: string;
     code: string;
     branch: string;
-    minAdults: number | null;
+    kidsPerAdult: number;
+    minAdults: number;
     members: number;
     adults: number;
     docs: { ok: number; expiring: number; expired: number; missing: number } | null;
@@ -133,7 +134,9 @@ export function DashboardPage() {
                     <td className="num">{u.members}</td>
                     <td className="num">
                       {u.adults}
-                      {u.minAdults && u.adults < u.minAdults ? <span title={`Mínimo: ${u.minAdults}`} style={{ color: 'var(--danger)' }}> ▲</span> : null}
+                      {u.adults < u.minAdults ? (
+                        <span title={`Mínimo: ${u.minAdults} (1 adulto cada ${u.kidsPerAdult} protagonistas)`} style={{ color: 'var(--danger)' }}> ▲</span>
+                      ) : null}
                     </td>
                     <td>
                       {d && total ? (

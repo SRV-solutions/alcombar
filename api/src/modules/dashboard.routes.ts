@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Op, QueryTypes } from 'sequelize';
-import { can, documentStatus, todayIso, unitsWith } from '../shared';
+import { can, documentStatus, kidsPerAdultOf, requiredAdults, todayIso, unitsWith } from '../shared';
 import { sequelize } from '../db';
 import { AuditLog, DocumentType, Member, MemberDocument, Unit, User } from '../models';
 import { ah } from '../lib/errors';
@@ -87,16 +87,21 @@ dashboardRouter.get(
         adultsWithoutTraining: noTraining?.n ?? 0,
         users: can(req.auth, 'users', 'view') ? await User.count({ where: { active: true } }) : null,
       },
-      units: units.map((u) => ({
-        id: u.id,
-        name: u.name,
-        code: u.code,
-        branch: u.branch,
-        minAdults: u.minAdults,
-        members: memberCounts.find((c) => c.unit_id === u.id)?.n ?? 0,
-        adults: adultCounts.find((c) => c.unit_id === u.id)?.n ?? 0,
-        docs: docStats.get(u.id) ?? null,
-      })),
+      units: units.map((u) => {
+        const members = memberCounts.find((c) => c.unit_id === u.id)?.n ?? 0;
+        const kidsPerAdult = kidsPerAdultOf(u);
+        return {
+          id: u.id,
+          name: u.name,
+          code: u.code,
+          branch: u.branch,
+          kidsPerAdult,
+          minAdults: requiredAdults(members, kidsPerAdult),
+          members,
+          adults: adultCounts.find((c) => c.unit_id === u.id)?.n ?? 0,
+          docs: docStats.get(u.id) ?? null,
+        };
+      }),
       birthdays: birthdays.map((b) => ({ id: b.id, name: `${b.first_name} ${b.last_name}`, day: b.day, unit: b.unit_code })),
     });
   }),

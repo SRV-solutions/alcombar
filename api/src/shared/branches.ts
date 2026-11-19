@@ -1,6 +1,13 @@
 export const BRANCHES = ['castores', 'lobatos', 'scouts', 'caminantes', 'rovers'] as const;
 export type Branch = (typeof BRANCHES)[number];
 
+/** Cuántos protagonistas puede haber por adulto en cada rama (1 adulto cada N). Cada unidad lo puede cambiar. */
+export const KIDS_PER_ADULT: Record<Branch, number> = { castores: 6, lobatos: 6, scouts: 6, caminantes: 8, rovers: 8 };
+/** Protagonistas por adulto de una unidad: el suyo o, si no lo tiene cargado, el de su rama. */
+export const kidsPerAdultOf = (u: { branch: string; kidsPerAdult?: number | null }): number => u.kidsPerAdult || KIDS_PER_ADULT[u.branch as Branch] || 6;
+/** Mínimo de adultos para una cantidad de protagonistas: 1 cada N, redondeando para arriba. */
+export const requiredAdults = (kids: number, kidsPerAdult: number): number => Math.ceil(kids / kidsPerAdult);
+
 export interface BranchInfo {
   label: string;
   color: string;

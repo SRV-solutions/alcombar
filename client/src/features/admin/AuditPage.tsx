@@ -72,6 +72,7 @@ const FIELD_LABELS: Record<string, string> = {
   code: 'Código',
   branch: 'Rama',
   minAdults: 'Mínimo de adultos',
+  kidsPerAdult: 'Protagonistas por adulto',
   active: 'Activo',
   kind: 'Tipo',
   description: 'Descripción',

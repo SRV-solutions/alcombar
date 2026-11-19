@@ -6,6 +6,8 @@ import {
   documentTypeSchema,
   GROUP_CONTEXT,
   isTeamLeaderPosition,
+  kidsPerAdultOf,
+  requiredAdults,
   smallGroupSchema,
   supportTeamSchema,
   unitSchema,
@@ -38,12 +40,19 @@ groupRouter.get(
       { type: QueryTypes.SELECT, replacements: { year: currentYear() } },
     );
     const out = units
-      .map((u) => ({
-        ...u.toJSON(),
-        smallGroups: [...(u.smallGroups ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
-        memberCount: counts.find((c) => c.unit_id === u.id)?.members ?? 0,
-        adultCount: adults.find((c) => c.unit_id === u.id)?.adults ?? 0,
-      }))
+      .map((u) => {
+        const memberCount = counts.find((c) => c.unit_id === u.id)?.members ?? 0;
+        const kidsPerAdult = kidsPerAdultOf(u);
+        return {
+          ...u.toJSON(),
+          kidsPerAdult,
+          smallGroups: [...(u.smallGroups ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+          memberCount,
+          adultCount: adults.find((c) => c.unit_id === u.id)?.adults ?? 0,
+          // Mínimo de adultos para los protagonistas que tiene hoy: 1 cada kidsPerAdult
+          minAdults: requiredAdults(memberCount, kidsPerAdult),
+        };
+      })
       .sort((a, b) => branchOrder(a.branch) - branchOrder(b.branch) || a.name.localeCompare(b.name));
     res.json(out);
   }),
@@ -211,7 +220,6 @@ groupRouter.delete(
 // ---------------- Organigrama (solo datos no sensibles) ----------------
 // Misma estructura que el organigrama del Grupo en el Drive: Jefatura → Comité Ejecutivo → Ramas menores / mayores
 // → Familia scout y apoyo a adultos. Todo sale de los cargos del año; no se escribe a mano.
-const KIDS_PER_ADULT = 6; // protagonistas por adulto, para calcular cuántos adultos le faltan a una unidad
 const MENORES: Branch[] = ['castores', 'lobatos', 'scouts']; // las Unidades Scouts figuran en ramas menores
 const MAYORES: Branch[] = ['caminantes', 'rovers'];
 const AREA_ORDER = [
@@ -311,7 +319,8 @@ groupRouter.get(
       }));
       const adults = new Set(own.map((a) => a.adult!.id)).size;
       const kids = kidsByUnit.get(u.id) ?? 0;
-      const minAdults = u.minAdults ?? Math.ceil(kids / KIDS_PER_ADULT);
+      const kidsPerAdult = kidsPerAdultOf(u);
+      const minAdults = requiredAdults(kids, kidsPerAdult);
       const status: 'ok' | 'faltan' | 'sin_chicos' = kids === 0 ? 'sin_chicos' : adults >= minAdults ? 'ok' : 'faltan';
       return {
         id: u.id,
@@ -323,6 +332,7 @@ groupRouter.get(
         ayudantes,
         adults,
         kids,
+        kidsPerAdult,
         minAdults,
         missing: Math.max(0, minAdults - adults),
         status,

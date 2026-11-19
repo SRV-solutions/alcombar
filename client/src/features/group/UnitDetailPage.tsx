@@ -243,11 +243,16 @@ export function UnitDetailPage() {
         <div className="card stat">
           <div className="label">Adultos {new Date().getFullYear()}</div>
           <div className="value">{unit.adultCount}</div>
-          {unit.minAdults !== null ? (
-            <div className="hint">
-              Mínimo: {unit.minAdults} {unit.adultCount < unit.minAdults ? <Badge tone="warn">Faltan</Badge> : <Badge tone="ok">Cumple</Badge>}
-            </div>
-          ) : null}
+          <div className="hint">
+            {unit.memberCount ? (
+              <>
+                Mínimo: {unit.minAdults} (1 cada {unit.kidsPerAdult} protagonistas){' '}
+                {unit.adultCount < unit.minAdults ? <Badge tone="warn">Faltan {unit.minAdults - unit.adultCount}</Badge> : <Badge tone="ok">Cumple</Badge>}
+              </>
+            ) : (
+              <>Mínimo: 1 cada {unit.kidsPerAdult} protagonistas</>
+            )}
+          </div>
         </div>
         <div className="card stat">
           <div className="label">{sgLabel.many}</div>

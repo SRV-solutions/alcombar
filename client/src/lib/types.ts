@@ -24,7 +24,10 @@ export interface SmallGroup {
   active: boolean;
 }
 export interface Unit extends UnitRef {
-  minAdults: number | null;
+  /** Protagonistas por adulto (1 adulto cada N). */
+  kidsPerAdult: number;
+  /** Mínimo de adultos para los protagonistas activos de hoy. */
+  minAdults: number;
   active: boolean;
   smallGroups: SmallGroup[];
   memberCount: number;

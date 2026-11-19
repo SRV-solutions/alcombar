@@ -24,7 +24,7 @@ export class Unit extends Model<InferAttributes<Unit>, InferCreationAttributes<U
   declare code: string;
   declare name: string;
   declare branch: string;
-  declare minAdults: number | null;
+  declare kidsPerAdult: number | null;
   declare active: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
@@ -37,7 +37,7 @@ Unit.init(
     code: { type: STRING(12), allowNull: false },
     name: { type: STRING(120), allowNull: false },
     branch: { type: STRING(20), allowNull: false },
-    minAdults: { type: INTEGER, allowNull: true },
+    kidsPerAdult: { type: INTEGER, allowNull: true },
     active: { type: BOOLEAN, allowNull: false, defaultValue: true },
     createdAt: DATE,
     updatedAt: DATE,

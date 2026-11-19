@@ -3,7 +3,7 @@
 // - los roles iniciales que no existan,
 // - unidades, tipos de documento y cursos SOLO si la tabla está vacía (después se editan desde la app),
 // - el primer superadmin SOLO si no hay ningún usuario.
-import { ACTIONS, DEFAULT_COURSES, DEFAULT_DOCUMENT_TYPES, DEFAULT_UNITS, MODULES, parsePermissionCode, ROLE_SEEDS, type ModuleKey } from './shared';
+import { ACTIONS, DEFAULT_COURSES, DEFAULT_DOCUMENT_TYPES, DEFAULT_UNITS, KIDS_PER_ADULT, MODULES, parsePermissionCode, ROLE_SEEDS, type Branch, type ModuleKey } from './shared';
 import { config } from './config';
 import { sequelize } from './db';
 import { Course, DocumentType, Permission, Role, RolePermission, Unit, User, UserRole } from './models';
@@ -36,7 +36,7 @@ async function main() {
   }
 
   if ((await Unit.count({ paranoid: false })) === 0) {
-    for (const u of DEFAULT_UNITS) await Unit.create({ code: u.code, name: u.name, branch: u.branch, minAdults: null });
+    for (const u of DEFAULT_UNITS) await Unit.create({ code: u.code, name: u.name, branch: u.branch, kidsPerAdult: KIDS_PER_ADULT[u.branch as Branch] ?? null });
     created.push(`${DEFAULT_UNITS.length} unidades`);
   }
   if ((await DocumentType.count({ paranoid: false })) === 0) {

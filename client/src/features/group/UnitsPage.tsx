@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import type { z } from 'zod';
 import { Pencil, Plus } from 'lucide-react';
-import { BRANCHES, BRANCH_INFO, unitSchema, type Branch } from '@shared';
+import { BRANCHES, BRANCH_INFO, KIDS_PER_ADULT, requiredAdults, unitSchema, type Branch } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { applyServerErrors } from '../../lib/forms';
@@ -23,13 +23,30 @@ export function UnitFormModal({ unit, onClose }: { unit?: Unit; onClose: () => v
     register,
     handleSubmit,
     setError,
+    setValue,
+    getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<UnitForm>({
     resolver: zodResolver(unitSchema),
     defaultValues: unit
-      ? { code: unit.code, name: unit.name, branch: unit.branch as Branch, minAdults: unit.minAdults, active: unit.active }
-      : { code: '', name: '', branch: 'scouts', minAdults: null, active: true },
+      ? { code: unit.code, name: unit.name, branch: unit.branch as Branch, kidsPerAdult: unit.kidsPerAdult, active: unit.active }
+      : { code: '', name: '', branch: 'scouts', kidsPerAdult: KIDS_PER_ADULT.scouts, active: true },
   });
+  // Al cambiar de rama, el número pasa al de la rama nueva salvo que lo hayan escrito distinto a mano
+  const lastBranch = useRef<Branch>((unit?.branch as Branch) ?? 'scouts');
+  const branchField = register('branch', {
+    onChange: (e: { target: { value: string } }) => {
+      const next = e.target.value as Branch;
+      const current = getValues('kidsPerAdult');
+      if (current === null || current === undefined || Number(current) === KIDS_PER_ADULT[lastBranch.current]) {
+        setValue('kidsPerAdult', KIDS_PER_ADULT[next], { shouldValidate: true });
+      }
+      lastBranch.current = next;
+    },
+  });
+  const branch = watch('branch') as Branch;
+  const perAdult = Number(watch('kidsPerAdult')) || KIDS_PER_ADULT[branch];
 
   const onSubmit = async (values: UnitForm) => {
     try {
@@ -66,7 +83,7 @@ export function UnitFormModal({ unit, onClose }: { unit?: Unit; onClose: () => v
           <Input {...register('code')} invalid={!!errors.code} style={{ textTransform: 'uppercase' }} />
         </Field>
         <Field label="Rama" required error={errors.branch?.message}>
-          <Select {...register('branch')} invalid={!!errors.branch}>
+          <Select {...branchField} invalid={!!errors.branch}>
             {BRANCHES.map((b) => (
               <option key={b} value={b}>
                 {BRANCH_INFO[b].label}
@@ -74,13 +91,22 @@ export function UnitFormModal({ unit, onClose }: { unit?: Unit; onClose: () => v
             ))}
           </Select>
         </Field>
-        <Field label="Mínimo de adultos" error={errors.minAdults?.message} hint="Según SAAC para la cantidad de protagonistas (opcional)">
+        <Field
+          label="Protagonistas por adulto"
+          error={errors.kidsPerAdult?.message}
+          hint={
+            unit?.memberCount
+              ? `1 adulto cada ${perAdult}: con ${unit.memberCount} protagonistas hacen falta ${requiredAdults(unit.memberCount, perAdult)} adultos como mínimo`
+              : `1 adulto cada ${perAdult} protagonistas. En ${BRANCH_INFO[branch].label} lo habitual es ${KIDS_PER_ADULT[branch]}`
+          }
+        >
           <Input
             type="number"
-            min={0}
+            min={1}
             max={50}
-            {...register('minAdults', { setValueAs: (v) => (v === '' || v === null || v === undefined ? null : Number(v)) })}
-            invalid={!!errors.minAdults}
+            placeholder={String(KIDS_PER_ADULT[branch])}
+            {...register('kidsPerAdult', { setValueAs: (v) => (v === '' || v === null || v === undefined ? null : Number(v)) })}
+            invalid={!!errors.kidsPerAdult}
           />
         </Field>
         <div className="field" style={{ justifyContent: 'flex-end' }}>
@@ -160,7 +186,7 @@ function BranchRows({ branch, units, canEdit, onEdit }: { branch: Branch; units:
         </td>
       </tr>
       {units.map((u) => {
-        const shortAdults = u.minAdults !== null && u.adultCount < u.minAdults;
+        const shortAdults = u.adultCount < u.minAdults;
         return (
           <tr key={u.id}>
             <td>
@@ -174,8 +200,13 @@ function BranchRows({ branch, units, canEdit, onEdit }: { branch: Branch; units:
             <td className="num">{u.memberCount}</td>
             <td className="num">
               {u.adultCount}
-              {u.minAdults !== null ? <span className="muted"> / mín. {u.minAdults}</span> : null}{' '}
-              {shortAdults ? <Badge tone="warn">Faltan adultos</Badge> : null}
+              {u.memberCount ? (
+                <span className="muted" title={`1 adulto cada ${u.kidsPerAdult} protagonistas`}>
+                  {' '}
+                  / mín. {u.minAdults}
+                </span>
+              ) : null}{' '}
+              {shortAdults ? <Badge tone="warn">Faltan {u.minAdults - u.adultCount}</Badge> : null}
             </td>
             <td className="num">{u.smallGroups.filter((s) => s.active).length}</td>
             <td>{u.active ? <Badge tone="ok">Activa</Badge> : <Badge>Inactiva</Badge>}</td>

@@ -25,6 +25,7 @@ interface OrgUnit {
   ayudantes: (OrgPerson & { note: string | null })[];
   adults: number;
   kids: number;
+  kidsPerAdult: number;
   minAdults: number;
   missing: number;
   status: 'ok' | 'faltan' | 'sin_chicos';
@@ -99,7 +100,7 @@ function UnitCard({ u }: { u: OrgUnit }) {
         title={
           u.status === 'sin_chicos'
             ? 'La unidad todavía no tiene protagonistas cargados'
-            : `${u.kids} protagonistas · mínimo ${u.minAdults} adultos (1 cada 6, o el mínimo cargado en la unidad)`
+            : `${u.kids} protagonistas · mínimo ${u.minAdults} adultos (1 cada ${u.kidsPerAdult})`
         }
       >
         {statusText(u)}

@@ -124,7 +124,7 @@ export const unitSchema = z.object({
   code: reqStr(12).transform((v) => v.toUpperCase()),
   name: reqStr(120),
   branch: z.enum(BRANCHES),
-  minAdults: z.coerce.number().int().min(0).max(50).nullish().transform((v) => v ?? null),
+  kidsPerAdult: z.coerce.number().int().min(1, 'Tiene que ser 1 o más').max(50).nullish().transform((v) => v ?? null),
   active: z.boolean().default(true),
 });
 export const smallGroupSchema = z.object({
