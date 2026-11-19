@@ -4,7 +4,7 @@ import { Cake, Tent, Upload } from 'lucide-react';
 import { BRANCH_INFO, type Branch } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { Card, ErrorBox, LinkButton, Loading, PageHeader, UnitBadge } from '../../components/ui';
+import { Badge, Card, ErrorBox, LinkButton, Loading, PageHeader, UnitBadge } from '../../components/ui';
 import { PendingCard, UpcomingCard } from './DashboardExtras';
 
 interface Dashboard {
@@ -163,15 +163,36 @@ export function DashboardPage() {
           }
         >
           {data.birthdays.length ? (
-            <ul className="list-plain">
-              {data.birthdays.map((b) => (
-                <li key={b.id} className="row between" style={{ fontWeight: b.day === today.getDate() ? 700 : undefined }}>
-                  <Link to={`/protagonistas/${b.id}`}>{b.name}</Link>
-                  <span className="muted">
-                    {b.day} · {b.unit}
-                  </span>
-                </li>
-              ))}
+            <ul className="list-plain bday-list">
+              {/* Primero el de hoy y los que vienen; al final, los que ya pasaron (el más reciente arriba) */}
+              {[...data.birthdays]
+                .sort((x, y) => {
+                  const k = (d: number) => (d >= today.getDate() ? d - today.getDate() : 100 + (today.getDate() - d));
+                  return k(x.day) - k(y.day);
+                })
+                .map((b) => {
+                // Fecha del cumpleaños de este año y cuánto falta (o si ya pasó)
+                const diff = b.day - today.getDate();
+                const weekday = new Date(today.getFullYear(), today.getMonth(), b.day).toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '');
+                const date = `${weekday} ${b.day}/${today.getMonth() + 1}`;
+                return (
+                  <li key={b.id} className={`bday ${diff < 0 ? 'past' : diff === 0 ? 'today' : ''}`}>
+                    <div className="who">
+                      <Link to={`/protagonistas/${b.id}`}>{b.name}</Link>
+                      <div className="muted when">
+                        {date} · {b.unit}
+                      </div>
+                    </div>
+                    {diff === 0 ? (
+                      <Badge tone="ok">¡Hoy!</Badge>
+                    ) : diff < 0 ? (
+                      <span className="muted state">Ya pasó</span>
+                    ) : (
+                      <Badge tone={diff <= 7 ? 'warn' : 'neutral'}>{diff === 1 ? 'Mañana' : `En ${diff} días`}</Badge>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="muted">No hay cumpleaños cargados para este mes.</p>
