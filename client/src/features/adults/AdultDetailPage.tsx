@@ -183,11 +183,13 @@ export function AdultDetailPage() {
       qc.invalidateQueries({ queryKey: ['organigrama'] }),
     ]);
 
+  const hasAccount = !!(a.access || a.user);
   const removeAdult = async () => {
     try {
-      await api.del(`/adults/${a.id}`);
-      await qc.invalidateQueries({ queryKey: ['adults'] });
-      toast.ok('Adulto eliminado');
+      // Si tiene cuenta para entrar, se elimina junto con la ficha (el aviso de confirmación lo dice)
+      await api.del(`/adults/${a.id}${hasAccount ? '?withAccount=1' : ''}`);
+      await Promise.all([qc.invalidateQueries({ queryKey: ['adults'] }), qc.invalidateQueries({ queryKey: ['users'] }), qc.invalidateQueries({ queryKey: ['organigrama'] })]);
+      toast.ok(hasAccount ? 'Adulto y cuenta eliminados' : 'Adulto eliminado');
       navigate('/adultos');
     } catch (e) {
       toast.error(e);
@@ -249,10 +251,18 @@ export function AdultDetailPage() {
               <ConfirmButton
                 title="Eliminar adulto"
                 message={
-                  <p>
-                    ¿Querés eliminar a <strong>{a.firstName} {a.lastName}</strong>? Si dejó el Grupo, conviene marcarlo como <em>Baja</em> para conservar su
-                    historial.
-                  </p>
+                  <>
+                    <p>
+                      ¿Querés eliminar a <strong>{a.firstName} {a.lastName}</strong>? Si dejó el Grupo, conviene marcarlo como <em>Baja</em> para conservar su
+                      historial.
+                    </p>
+                    {hasAccount ? (
+                      <p>
+                        <strong>Tiene una cuenta para entrar a la app: también se elimina.</strong> Deja de poder entrar y su mail queda libre para usarlo en otra
+                        cuenta.
+                      </p>
+                    ) : null}
+                  </>
                 }
                 confirmLabel="Eliminar"
                 onConfirm={removeAdult}

@@ -15,12 +15,14 @@ import {
   type AdultStatus,
   can,
 } from '../shared';
-import { Adult, AdultAssignment, AdultCourse, AdultDocument, AdultExperience, AdultHabilitation, Course, DocumentType, Member, Role, SupportTeam, Unit, User, UserRole } from '../models';
+import { Adult, AdultAssignment, AdultCourse, AdultDocument, AdultExperience, AdultHabilitation, Course, DocumentType, Member, PasswordToken, Role, SupportTeam, Unit, User, UserRole } from '../models';
 import { writeAudit } from '../lib/audit';
 import { personSearchWhere } from '../lib/personSearch';
 import { adultRegistered, recordRegistryChanges, registryTransition } from '../lib/registry';
 import { sendCsv, toCsv } from '../lib/csv';
-import { ah, badRequest, notFound, parse } from '../lib/errors';
+import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
+import { revokeAllSessions } from '../lib/session';
+import { sequelize } from '../db';
 import { authorize } from '../middlewares/auth';
 
 export const adultsRouter = Router();
@@ -282,8 +284,42 @@ adultsRouter.delete(
   ah(async (req, res) => {
     const adult = await Adult.findByPk(req.params.id);
     if (!adult) throw notFound();
-    if (await User.count({ where: { adultId: adult.id } })) throw badRequest('El adulto tiene un usuario vinculado. Dalo de baja en lugar de eliminarlo.');
-    await adult.destroy();
+    // Si tiene cuenta para entrar a la app, se elimina junto con la ficha: hay que pedirlo a propósito (?withAccount=1)
+    // y tener permiso para eliminar usuarios. No se puede eliminar la cuenta propia ni la del último superadmin.
+    const accounts = await User.findAll({ where: { adultId: adult.id }, include: [{ model: UserRole, as: 'userRoles', include: [{ model: Role, as: 'role' }] }] });
+    if (accounts.length) {
+      if (req.query.withAccount !== '1') throw badRequest('Tiene una cuenta para entrar a la app: para eliminarlo hay que eliminar también su cuenta.');
+      if (!can(req.auth, 'users', 'delete')) {
+        throw forbidden('Tiene una cuenta para entrar a la app: lo puede eliminar quien administra los accesos. Mientras tanto, dalo de baja.');
+      }
+      const sa = await Role.findOne({ where: { key: 'superadmin' } });
+      for (const u of accounts) {
+        if (u.id === req.user!.id) throw badRequest('Es tu propia ficha: no podés eliminar tu cuenta.');
+        if (!u.userRoles?.some((ur) => ur.role?.key === 'superadmin')) continue;
+        if (!req.auth!.isSuperadmin) throw forbidden('Solo un superadmin puede eliminar a otro superadmin');
+        const others = sa
+          ? await UserRole.count({
+              where: { roleId: sa.id, userId: { [Op.ne]: u.id } },
+              include: [{ model: User, as: 'user', where: { active: true }, required: true }],
+              distinct: true,
+              col: 'user_id',
+            })
+          : 0;
+        if (!others) throw badRequest('No se puede eliminar al último superadmin');
+      }
+    }
+    await sequelize.transaction(async (transaction) => {
+      for (const u of accounts) {
+        for (const ur of u.userRoles ?? []) await ur.destroy({ transaction });
+        await PasswordToken.update({ usedAt: new Date() }, { where: { userId: u.id, usedAt: null }, transaction });
+        await writeAudit({ action: 'delete', entity: 'User', entityId: u.id, summary: `Cuenta eliminada junto con la ficha de ${adult.firstName} ${adult.lastName}` }, transaction);
+        // El mail queda libre para otra cuenta
+        await u.update({ active: false, email: null, pendingEmail: null }, { transaction });
+        await u.destroy({ transaction });
+      }
+      await adult.destroy({ transaction });
+    });
+    for (const u of accounts) await revokeAllSessions(u.id);
     if (adultRegistered(adult.status)) {
       await recordRegistryChanges(req, [
         { kind: 'baja', adult, detail: 'Se eliminó de ALCONBAR. Si era un registro duplicado o cargado por error, marcalo como "No corresponde".' },
