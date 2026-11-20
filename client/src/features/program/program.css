@@ -55,6 +55,8 @@
 }
 
 /* Enlace a la ficha del momento, o crearla */
+.meeting-sheet-line { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; }
+.meeting-sheet-line:empty { display: none; }
 .meeting-sheet-link { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 2px 0; border: 0; background: none; color: var(--link); font: inherit; font-size: 0.87rem; cursor: pointer; text-decoration: none; }
 .meeting-sheet-link:hover { text-decoration: underline; }
 .meeting-sheet-link:disabled { opacity: 0.6; cursor: default; }

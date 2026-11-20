@@ -434,6 +434,7 @@ export function MeetingPage() {
                           aria-label="Título"
                         />
                         <Input placeholder="Notas" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} aria-label="Notas" />
+                        <div className="meeting-sheet-line">
                         {sheet ? (
                           <Link to={`/programa/fichas/${sheet.id}`} className="meeting-sheet-link">
                             <ExternalLink size={14} /> Ver la ficha {sheet.code}
@@ -449,6 +450,7 @@ export function MeetingPage() {
                             Ojo: la ficha todavía no está aprobada.
                           </span>
                         ) : null}
+                        </div>
                       </div>
                       <Field label="Responsable">
                         <Select value={r.other ? '__otro' : r.responsibleAdultId} onChange={(e) => pickResponsible(r.key, e.target.value)}>
