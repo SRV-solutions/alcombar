@@ -283,7 +283,7 @@ export function ConfirmButton({
                 Cancelar
               </Button>
               <Button
-                variant={variant === 'danger' ? 'primary' : variant}
+                variant={variant === 'danger' || variant === 'secondary' ? 'primary' : variant}
                 loading={busy}
                 onClick={async () => {
                   setBusy(true);

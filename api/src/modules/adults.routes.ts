@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request } from 'express';
 import { Op, type WhereOptions } from 'sequelize';
 import {
   adultAssignmentSchema,
@@ -271,12 +271,90 @@ adultsRouter.put(
     const data = parse(adultSchema, req.body);
     if (data.advisorAdultId === adult.id) throw badRequest('Revisá los datos', { advisorAdultId: 'No puede ser su propio asesor' });
     const wasRegistered = adultRegistered(adult.status);
+    // Si con este cambio pasa a Baja, su cuenta deja de poder entrar (se desactiva, no se borra)
+    const accounts = adult.status !== 'baja' && data.status === 'baja' ? await activeAccounts(req, adult, 'dar de baja') : [];
     await adult.update(data);
+    const accountsDeactivated = await deactivateAccounts(accounts);
     const kind = registryTransition(wasRegistered, adultRegistered(adult.status));
     if (kind) await recordRegistryChanges(req, [{ kind, adult }]);
-    res.json(adult);
+    res.json({ ...adult.toJSON(), accountsDeactivated });
   }),
 );
+
+/**
+ * Dar de baja sin borrar: la ficha queda con todo su historial (cargos, formación, documentación) y estado «Baja»,
+ * sale de los adultos en actividad y, si tenía cuenta, deja de poder entrar a la app.
+ */
+adultsRouter.post(
+  '/:id/baja',
+  authorize('adults', 'edit'),
+  ah(async (req, res) => {
+    const adult = await Adult.findByPk(req.params.id);
+    if (!adult) throw notFound();
+    if (adult.status === 'baja') throw badRequest('Ya está dado de baja');
+    const wasRegistered = adultRegistered(adult.status);
+    const accounts = await activeAccounts(req, adult, 'dar de baja');
+    await adult.update({ status: 'baja' });
+    const accountsDeactivated = await deactivateAccounts(accounts);
+    const kind = registryTransition(wasRegistered, adultRegistered(adult.status));
+    if (kind) await recordRegistryChanges(req, [{ kind, adult }]);
+    res.json({ ok: true, accountsDeactivated });
+  }),
+);
+
+/** Volver de una baja. La cuenta no se reactiva sola: se vuelve a habilitar desde «Acceso a la app». */
+adultsRouter.post(
+  '/:id/reincorporar',
+  authorize('adults', 'edit'),
+  ah(async (req, res) => {
+    const adult = await Adult.findByPk(req.params.id);
+    if (!adult) throw notFound();
+    if (adult.status !== 'baja') throw badRequest('No está dado de baja');
+    const wasRegistered = adultRegistered(adult.status);
+    await adult.update({ status: 'alta' });
+    const kind = registryTransition(wasRegistered, adultRegistered(adult.status));
+    if (kind) await recordRegistryChanges(req, [{ kind, adult }]);
+    const accountInactive = (await User.count({ where: { adultId: adult.id, active: false } })) > 0;
+    res.json({ ok: true, accountInactive });
+  }),
+);
+
+type AccountWithRoles = User & { userRoles?: (UserRole & { role?: Role })[] };
+
+/** Nadie se saca a sí mismo, ni a un superadmin sin serlo, ni al último superadmin. */
+async function assertAccountsCanGo(req: Request, accounts: AccountWithRoles[], verb: 'eliminar' | 'dar de baja') {
+  const sa = await Role.findOne({ where: { key: 'superadmin' } });
+  for (const u of accounts) {
+    if (u.id === req.user!.id) throw badRequest(verb === 'eliminar' ? 'Es tu propia ficha: no podés eliminar tu cuenta.' : 'Es tu propia ficha: no podés darte de baja a vos mismo.');
+    if (!u.userRoles?.some((ur) => ur.role?.key === 'superadmin')) continue;
+    if (!req.auth!.isSuperadmin) throw forbidden(`Solo un superadmin puede ${verb} a otro superadmin`);
+    const others = sa
+      ? await UserRole.count({
+          where: { roleId: sa.id, userId: { [Op.ne]: u.id } },
+          include: [{ model: User, as: 'user', where: { active: true }, required: true }],
+          distinct: true,
+          col: 'user_id',
+        })
+      : 0;
+    if (u.active && !others) throw badRequest(`No se puede ${verb} al último superadmin`);
+  }
+}
+
+/** Las cuentas activas del adulto, ya controlado que se le pueden sacar. */
+async function activeAccounts(req: Request, adult: Adult, verb: 'eliminar' | 'dar de baja') {
+  const accounts = (await User.findAll({ where: { adultId: adult.id, active: true }, include: [{ model: UserRole, as: 'userRoles', include: [{ model: Role, as: 'role' }] }] })) as AccountWithRoles[];
+  await assertAccountsCanGo(req, accounts, verb);
+  return accounts;
+}
+
+/** Desactiva las cuentas y cierra sus sesiones. Devuelve cuántas. */
+async function deactivateAccounts(accounts: User[]) {
+  for (const u of accounts) {
+    await u.update({ active: false });
+    await revokeAllSessions(u.id);
+  }
+  return accounts.length;
+}
 
 adultsRouter.delete(
   '/:id',
@@ -292,21 +370,7 @@ adultsRouter.delete(
       if (!can(req.auth, 'users', 'delete')) {
         throw forbidden('Tiene una cuenta para entrar a la app: lo puede eliminar quien administra los accesos. Mientras tanto, dalo de baja.');
       }
-      const sa = await Role.findOne({ where: { key: 'superadmin' } });
-      for (const u of accounts) {
-        if (u.id === req.user!.id) throw badRequest('Es tu propia ficha: no podés eliminar tu cuenta.');
-        if (!u.userRoles?.some((ur) => ur.role?.key === 'superadmin')) continue;
-        if (!req.auth!.isSuperadmin) throw forbidden('Solo un superadmin puede eliminar a otro superadmin');
-        const others = sa
-          ? await UserRole.count({
-              where: { roleId: sa.id, userId: { [Op.ne]: u.id } },
-              include: [{ model: User, as: 'user', where: { active: true }, required: true }],
-              distinct: true,
-              col: 'user_id',
-            })
-          : 0;
-        if (!others) throw badRequest('No se puede eliminar al último superadmin');
-      }
+      await assertAccountsCanGo(req, accounts, 'eliminar');
     }
     await sequelize.transaction(async (transaction) => {
       for (const u of accounts) {

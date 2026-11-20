@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { ExternalLink, KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, KeyRound, Pencil, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import { adultCourseSchema, ageAt, BRANCHES, BRANCH_INFO, COURSE_KIND_LABELS, documentLabel, formatDate, trainingSummary, type Branch, type CourseKind } from '@shared';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -184,6 +184,25 @@ export function AdultDetailPage() {
     ]);
 
   const hasAccount = !!(a.access || a.user);
+  /** Dar de baja sin borrar: conserva el historial y, si tenía cuenta, deja de poder entrar. */
+  const setBaja = async () => {
+    try {
+      const r = await api.post<{ accountsDeactivated: number }>(`/adults/${a.id}/baja`, {});
+      await Promise.all([refresh(), qc.invalidateQueries({ queryKey: ['users'] })]);
+      toast.ok(r.accountsDeactivated ? 'Dado de baja. Su cuenta quedó desactivada: ya no puede entrar.' : 'Dado de baja');
+    } catch (e) {
+      toast.error(e);
+    }
+  };
+  const rejoin = async () => {
+    try {
+      const r = await api.post<{ accountInactive: boolean }>(`/adults/${a.id}/reincorporar`, {});
+      await refresh();
+      toast.ok(r.accountInactive ? 'Reincorporado. Su cuenta sigue desactivada: activala desde «Acceso a la app».' : 'Reincorporado');
+    } catch (e) {
+      toast.error(e);
+    }
+  };
   const removeAdult = async () => {
     try {
       // Si tiene cuenta para entrar, se elimina junto con la ficha (el aviso de confirmación lo dice)
@@ -246,6 +265,46 @@ export function AdultDetailPage() {
               <LinkButton to={`/adultos/${a.id}/editar`} variant="secondary">
                 <Pencil /> Editar
               </LinkButton>
+            ) : null}
+            {canEdit && a.status !== 'baja' ? (
+              <ConfirmButton
+                variant="secondary"
+                title="Dar de baja"
+                message={
+                  <>
+                    <p>
+                      ¿Querés dar de baja a <strong>{a.firstName} {a.lastName}</strong>? Su ficha queda guardada con todo su historial (cargos, formación y
+                      documentación) y deja de figurar entre los adultos en actividad. Después se puede reincorporar.
+                    </p>
+                    {hasAccount ? (
+                      <p>
+                        <strong>Su cuenta se desactiva:</strong> deja de poder entrar a la app. No se borra.
+                      </p>
+                    ) : null}
+                    {a.status === 'alta' ? <p className="muted">La baja queda anotada en «Altas y bajas · Cruz del Sur» y le llega el aviso al equipo que la carga.</p> : null}
+                  </>
+                }
+                confirmLabel="Dar de baja"
+                onConfirm={setBaja}
+              >
+                <UserMinus /> Dar de baja
+              </ConfirmButton>
+            ) : null}
+            {canEdit && a.status === 'baja' ? (
+              <ConfirmButton
+                variant="secondary"
+                title="Reincorporar"
+                message={
+                  <p>
+                    <strong>{a.firstName} {a.lastName}</strong> vuelve a figurar entre los adultos en actividad. Si tenía cuenta, sigue desactivada hasta que la
+                    actives desde «Acceso a la app».
+                  </p>
+                }
+                confirmLabel="Reincorporar"
+                onConfirm={rejoin}
+              >
+                <UserPlus /> Reincorporar
+              </ConfirmButton>
             ) : null}
             {can('adults', 'delete') ? (
               <ConfirmButton
