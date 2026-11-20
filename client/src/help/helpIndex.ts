@@ -131,12 +131,12 @@ export const HELP_INDEX: HelpEntry[] = [
     id: 'pase',
     title: 'Pases de unidad (por edad o por elección)',
     description:
-      'Protagonistas → Pases de unidad: los que ya tienen edad para pasar de rama, pasar a varios juntos (por ejemplo de la Pedro Bártolo a la Luis Conde) y el historial del año. Uno solo: botón "Pase de unidad" en su ficha.',
+      'Protagonistas → Pases de unidad: a quiénes les toca pasar de rama en abril (los que cumplen la edad de pase hasta el 30 de junio de ese año; los Caminantes, con 18 cumplidos el día de los pases), pasar a varios juntos (por ejemplo de la Pedro Bártolo a la Luis Conde) y el historial del año. Uno solo: botón "Pase de unidad" en su ficha.',
     path: '/pases',
     section: 'Protagonistas',
     keywords: [
       'pase', 'pases', 'pase de rama', 'cambio de unidad', 'cambiar de unidad', 'pasar de unidad', 'pasar a la manada', 'pasar a la unidad',
-      'pasar a caminantes', 'pasar a rovers', 'subir de rama', 'por edad', 'cumple 11', 'cumple 14', 'mover chicos', 'otra patrulla', 'otra unidad',
+      'pasar a caminantes', 'pasar a rovers', 'subir de rama', 'por edad', 'cumple 11', 'cumple 14', 'cumple 18', 'pases de abril', '30 de junio', 'fecha de corte', 'mover chicos', 'otra patrulla', 'otra unidad',
     ],
     show: can('members', 'edit'),
   },

@@ -35,10 +35,36 @@ export const NEXT_BRANCH: Record<Branch, Branch | null> = {
   rovers: null,
 };
 
-/** ¿Ya tiene edad para pasar de rama? Se compara con la edad máxima de su rama a la fecha de referencia. */
+/**
+ * Pases del Grupo: se hacen una sola vez al año, en abril.
+ * - Castores, Lobatos y Scouts: pasan en abril los que cumplen la edad de pase hasta el 30 de junio de ese año;
+ *   los que la cumplen después pasan al año siguiente.
+ * - Caminantes → Rovers: tienen que tener 18 cumplidos el día de los pases. Los que los cumplen después pueden pasar
+ *   cuando quieran, desde su cumpleaños.
+ * - Rovers: egresan con 21 cumplidos.
+ */
+export const TRANSFER_AGE: Record<Branch, number> = { castores: 7, lobatos: 11, scouts: 14, caminantes: 18, rovers: 21 };
+/** Mes y día de corte para las ramas que pasan por «cumple hasta…». */
+export const TRANSFER_CUTOFF = '06-30';
+/** Ramas en las que cuenta la edad cumplida el día de los pases, no la fecha de corte. */
+export const TRANSFER_ON_THE_DAY: readonly Branch[] = ['caminantes', 'rovers'];
+
+/** A qué fecha se mira la edad de alguien de esa rama para los pases de ese año. */
+export function transferRefDate(branch: string | null | undefined, year: number, passDay: string): string {
+  return TRANSFER_ON_THE_DAY.includes(branch as Branch) ? passDay : `${year}-${TRANSFER_CUTOFF}`;
+}
+
+/** ¿Le toca pasar? `age` es su edad a la fecha de `transferRefDate`. */
 export function dueForTransfer(branch: string | null | undefined, age: number | null): boolean {
-  const info = branch ? BRANCH_INFO[branch as Branch] : null;
-  return !!info && age !== null && age >= info.ages[1];
+  const min = branch ? TRANSFER_AGE[branch as Branch] : undefined;
+  return min !== undefined && age !== null && age >= min;
+}
+
+/** Si el día de los pases no está cargado en el calendario: el último sábado de abril. */
+export function defaultPassDay(year: number): string {
+  const d = new Date(year, 3, 30);
+  while (d.getDay() !== 6) d.setDate(d.getDate() - 1);
+  return `${year}-04-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export const SMALL_GROUP_KINDS = ['equipo', 'seisena', 'patrulla'] as const;

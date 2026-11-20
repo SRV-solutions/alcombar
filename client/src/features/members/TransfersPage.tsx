@@ -2,17 +2,21 @@
  * Pases de unidad: por edad (cambio de rama) o por elección (otra unidad de la misma rama), de a varios.
  * Cada pase queda en el historial del protagonista con fecha y motivo.
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowLeftRight, Search } from 'lucide-react';
 import {
   ageAt,
   BRANCH_INFO,
+  defaultPassDay,
   dueForTransfer,
   formatDate,
   NEXT_BRANCH,
   todayIso,
+  TRANSFER_AGE,
+  TRANSFER_ON_THE_DAY,
+  transferRefDate,
   TRANSFER_REASON_LABELS,
   TRANSFER_REASONS,
   type Branch,
@@ -189,6 +193,9 @@ function SelectableMembers({
   onToggleAll,
   canSelect,
   refDate,
+  ageLabel,
+  selectable,
+  extra,
 }: {
   rows: MemberListItem[];
   selected: Set<string>;
@@ -196,20 +203,28 @@ function SelectableMembers({
   onToggleAll: () => void;
   canSelect: boolean;
   refDate: string;
+  /** Título de la columna de edad (a qué fecha está calculada). */
+  ageLabel?: string;
+  /** A quién se puede tildar (por defecto, a todos). */
+  selectable?: (m: MemberListItem) => boolean;
+  /** Una columna más, propia de la lista. */
+  extra?: { label: string; render: (m: MemberListItem) => ReactNode };
 }) {
-  const allChecked = rows.length > 0 && rows.every((m) => selected.has(m.id));
+  const pickable = selectable ? rows.filter(selectable) : rows;
+  const allChecked = pickable.length > 0 && pickable.every((m) => selected.has(m.id));
   return (
     <div className="table-wrap">
-      <table className="table">
+      <table className="table transfer-table">
         <thead>
           <tr>
             {canSelect ? (
               <th style={{ width: 36 }}>
-                <input type="checkbox" aria-label="Seleccionar todos" checked={allChecked} onChange={onToggleAll} />
+                <input type="checkbox" aria-label="Seleccionar todos" checked={allChecked} disabled={!pickable.length} onChange={onToggleAll} />
               </th>
             ) : null}
             <th>Protagonista</th>
-            <th className="num">Edad</th>
+            <th className="num">{ageLabel ?? 'Edad'}</th>
+            {extra ? <th>{extra.label}</th> : null}
             <th>Pequeño grupo</th>
           </tr>
         </thead>
@@ -218,7 +233,13 @@ function SelectableMembers({
             <tr key={m.id}>
               {canSelect ? (
                 <td>
-                  <input type="checkbox" aria-label={`Seleccionar a ${m.firstName}`} checked={selected.has(m.id)} onChange={() => onToggle(m.id)} />
+                  <input
+                    type="checkbox"
+                    aria-label={`Seleccionar a ${m.firstName}`}
+                    checked={selected.has(m.id)}
+                    disabled={selectable ? !selectable(m) : false}
+                    onChange={() => onToggle(m.id)}
+                  />
                 </td>
               ) : null}
               <td className="nowrap">
@@ -227,6 +248,7 @@ function SelectableMembers({
                 </Link>
               </td>
               <td className="num">{ageAt(m.birthDate, refDate) ?? '—'}</td>
+              {extra ? <td className="nowrap">{extra.render(m)}</td> : null}
               <td>{m.smallGroup?.name ?? <span className="muted">—</span>}</td>
             </tr>
           ))}
@@ -263,53 +285,106 @@ function useSelection() {
 // ---------------------------------------------------------------------------
 // Pestaña: sugeridos por edad
 // ---------------------------------------------------------------------------
+/** El día en que alguien cumple esa edad. */
+const birthdayAt = (birthDate: string, age: number) => `${Number(birthDate.slice(0, 4)) + age}${birthDate.slice(4, 10)}`;
+
+/**
+ * Los pases del Grupo se hacen una vez al año, en abril. Pasan los que cumplen la edad de pase hasta el 30 de junio de
+ * ese año; los Caminantes pasan a Rovers con 18 cumplidos el día de los pases y, si los cumplen después, cuando quieran.
+ */
 function ByAge({ members, units }: { members: MemberListItem[]; units: Unit[] }) {
   const { can } = useAuth();
-  const year = new Date().getFullYear();
-  const [ref, setRef] = useState<'fin' | 'hoy'>('fin');
-  const refDate = ref === 'fin' ? `${year}-12-31` : todayIso();
+  const today = todayIso();
+  const thisYear = Number(today.slice(0, 4));
+  // Pasado abril, lo que se prepara son los pases del año que viene
+  const [year, setYear] = useState(Number(today.slice(5, 7)) > 4 ? thisYear + 1 : thisYear);
+  // El día de los pases sale de «Sábados y servicio» si ahí está anotado; si no, el último sábado de abril. Se puede cambiar.
+  const saturdays = useQuery({
+    queryKey: ['saturdays', year],
+    queryFn: () => api.get<{ saturdays: { date: string; ephemeris: string | null; meetings: string | null; activities: string | null; others: string | null }[] }>(`/calendar/saturdays?year=${year}`),
+    retry: false,
+  });
+  const fromCalendar = useMemo(() => {
+    const s = saturdays.data?.saturdays.find((x) => x.date.slice(5, 7) === '04' && /\bpases?\b/i.test([x.others, x.activities, x.meetings, x.ephemeris].join(' ')));
+    return s ? s.date.slice(0, 10) : null;
+  }, [saturdays.data]);
+  const [picked, setPicked] = useState<Record<number, string>>({});
+  const passDay = picked[year] || fromCalendar || defaultPassDay(year);
+  const cutoff = `${year}-06-30`;
   const sel = useSelection();
   const [dialog, setDialog] = useState<{ rows: MemberListItem[]; targets: Unit[] } | null>(null);
 
   const withUnit = members.filter((m) => m.unit);
   const noBirth = withUnit.filter((m) => !m.birthDate).length;
-  const due = withUnit.filter((m) => dueForTransfer(m.unit!.branch, ageAt(m.birthDate, refDate)));
   const byUnit = useMemo(() => {
-    const map = new Map<string, MemberListItem[]>();
-    for (const m of due) map.set(m.unit!.id, [...(map.get(m.unit!.id) ?? []), m]);
+    const map = new Map<string, { due: MemberListItem[]; later: MemberListItem[] }>();
+    const slot = (id: string) => map.get(id) ?? map.set(id, { due: [], later: [] }).get(id)!;
+    for (const m of members) {
+      if (!m.unit || !m.birthDate) continue;
+      const branch = m.unit.branch as Branch;
+      if (dueForTransfer(branch, ageAt(m.birthDate, transferRefDate(branch, year, passDay)))) slot(m.unit.id).due.push(m);
+      // Caminantes que cumplen los 18 después de los pases, en ese mismo año: pasan cuando quieran
+      else if (branch === 'caminantes' && dueForTransfer(branch, ageAt(m.birthDate, `${year}-12-31`))) slot(m.unit.id).later.push(m);
+    }
+    const byName = (a: MemberListItem, b: MemberListItem) => a.lastName.localeCompare(b.lastName);
     return [...map.entries()]
-      .map(([id, rows]) => ({ unit: units.find((u) => u.id === id) ?? (rows[0].unit as Unit), rows: rows.sort((a, b) => a.lastName.localeCompare(b.lastName)) }))
+      .map(([id, g]) => ({ unit: units.find((u) => u.id === id) ?? (members.find((m) => m.unit?.id === id)!.unit as Unit), due: g.due.sort(byName), later: g.later.sort((a, b) => birthdayAt(a.birthDate!, 18).localeCompare(birthdayAt(b.birthDate!, 18))) }))
       .sort((a, b) => sortUnits(a.unit, b.unit));
-  }, [due, units]);
+  }, [members, units, year, passDay]);
 
   return (
     <div className="stack">
       <div className="toolbar" style={{ marginBottom: 0 }}>
-        <span className="muted">Edad calculada</span>
+        <span className="muted">Pases de abril de</span>
         <div className="segmented">
-          <button className={ref === 'fin' ? 'on' : ''} onClick={() => setRef('fin')}>
-            al 31/12/{year}
-          </button>
-          <button className={ref === 'hoy' ? 'on' : ''} onClick={() => setRef('hoy')}>
-            a hoy
-          </button>
+          {[thisYear, thisYear + 1].map((y) => (
+            <button key={y} className={year === y ? 'on' : ''} onClick={() => (setYear(y), sel.clear())}>
+              {y}
+            </button>
+          ))}
         </div>
+        <label className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+          <span className="muted nowrap">Día de los pases</span>
+          <Input
+            type="date"
+            value={passDay}
+            min={`${year}-01-01`}
+            max={`${year}-12-31`}
+            onChange={(e) => setPicked((p) => ({ ...p, [year]: e.target.value }))}
+            style={{ width: 'auto' }}
+          />
+        </label>
         <span className="muted">
-          Aparecen los que tienen la edad máxima de su rama o más (Castores 7, Lobatos 11, Scouts 14, Caminantes 17, Rovers 21).
+          {picked[year]
+            ? null
+            : fromCalendar
+              ? 'Tomado de «Sábados y servicio».'
+              : saturdays.isLoading
+                ? null
+                : 'No está anotado en «Sábados y servicio»: se toma el último sábado de abril. Podés cambiarlo.'}
         </span>
+      </div>
+      <div className="alert alert-info">
+        Los pases se hacen una vez al año, en abril. Pasan los que cumplen la edad de pase <strong>hasta el 30 de junio</strong> de ese año (Castores {TRANSFER_AGE.castores},
+        Lobatos {TRANSFER_AGE.lobatos}, Scouts {TRANSFER_AGE.scouts}); los que la cumplen después pasan al año siguiente. Los Caminantes pasan a Rovers con{' '}
+        <strong>{TRANSFER_AGE.caminantes} cumplidos el día de los pases</strong>; si los cumplen después, pasan cuando quieran.
       </div>
       {noBirth ? <div className="alert alert-warn">{noBirth} protagonistas no tienen fecha de nacimiento: no se pueden evaluar por edad.</div> : null}
 
       {!byUnit.length ? (
         <Card>
-          <Empty>Nadie tiene edad de pase {ref === 'fin' ? `a fin de ${year}` : 'hoy'}.</Empty>
+          <Empty>A nadie le toca pasar en abril de {year}.</Empty>
         </Card>
       ) : (
-        byUnit.map(({ unit, rows }) => {
-          const next = NEXT_BRANCH[unit.branch as Branch];
+        byUnit.map(({ unit, due, later }) => {
+          const branch = unit.branch as Branch;
+          const next = NEXT_BRANCH[branch];
+          const onTheDay = TRANSFER_ON_THE_DAY.includes(branch);
           const targets = next ? units.filter((u) => u.active && u.branch === next).sort(sortUnits) : [];
           const editable = can('members', 'edit', unit.id) && !!next;
-          const chosen = rows.filter((m) => sel.selected.has(m.id));
+          const chosen = [...due, ...later].filter((m) => sel.selected.has(m.id));
+          // De los que cumplen después, se puede pasar a los que ya tienen la edad hoy
+          const already = (m: MemberListItem) => dueForTransfer(branch, ageAt(m.birthDate, today));
           return (
             <Card
               key={unit.id}
@@ -317,8 +392,8 @@ function ByAge({ members, units }: { members: MemberListItem[]; units: Unit[] })
                 <h2 className="row" style={{ gap: 8 }}>
                   <UnitBadge unit={unit} />
                   <ArrowRight size={16} />
-                  {next ? BRANCH_INFO[next].label : 'Egresan del Movimiento (cumplen 21)'}
-                  <Badge>{rows.length}</Badge>
+                  {next ? BRANCH_INFO[next].label : `Egresan del Movimiento (${TRANSFER_AGE.rovers} cumplidos)`}
+                  <Badge>{due.length}</Badge>
                 </h2>
               }
               actions={
@@ -330,16 +405,42 @@ function ByAge({ members, units }: { members: MemberListItem[]; units: Unit[] })
               }
               bodyClass=""
             >
-              <SelectableMembers
-                rows={rows}
-                selected={sel.selected}
-                onToggle={sel.toggle}
-                onToggleAll={() => sel.setAll(rows.map((m) => m.id), !rows.every((m) => sel.selected.has(m.id)))}
-                canSelect={editable}
-                refDate={refDate}
-              />
+              {due.length ? (
+                <SelectableMembers
+                  rows={due}
+                  selected={sel.selected}
+                  onToggle={sel.toggle}
+                  onToggleAll={() => sel.setAll(due.map((m) => m.id), !due.every((m) => sel.selected.has(m.id)))}
+                  canSelect={editable}
+                  refDate={onTheDay ? passDay : cutoff}
+                  ageLabel={onTheDay ? `Edad el ${formatDate(passDay)}` : `Edad al 30/06/${year}`}
+                />
+              ) : (
+                <div className="card-body muted">
+                  Nadie tiene {TRANSFER_AGE[branch]} cumplidos el día de los pases.
+                </div>
+              )}
+              {later.length ? (
+                <>
+                  <div className="card-body" style={{ paddingBottom: 0 }}>
+                    <strong>Cumplen {TRANSFER_AGE[branch]} después de los pases</strong>
+                    <div className="muted">No pasan en abril: pueden pasar cuando quieran, desde su cumpleaños.</div>
+                  </div>
+                  <SelectableMembers
+                    rows={later}
+                    selected={sel.selected}
+                    onToggle={sel.toggle}
+                    onToggleAll={() => sel.setAll(later.filter(already).map((m) => m.id), !later.filter(already).every((m) => sel.selected.has(m.id)))}
+                    canSelect={editable}
+                    selectable={already}
+                    refDate={today}
+                    ageLabel="Edad hoy"
+                    extra={{ label: `Cumple ${TRANSFER_AGE[branch]}`, render: (m) => formatDate(birthdayAt(m.birthDate!, TRANSFER_AGE[branch])) }}
+                  />
+                </>
+              ) : null}
               {!next ? (
-                <div className="card-body muted">Los Rovers egresan a los 21: si siguen en el Grupo, pueden sumarse como adultos.</div>
+                <div className="card-body muted">Los Rovers egresan a los {TRANSFER_AGE.rovers}: si siguen en el Grupo, pueden sumarse como adultos.</div>
               ) : null}
             </Card>
           );

@@ -412,8 +412,8 @@ export const TUTORIALS: Tutorial[] = [
       {
         target: tab('Sugeridos por edad'),
         pose: 'think',
-        title: 'Los que ya tienen edad',
-        text: 'Te muestro quiénes cumplen la edad máxima de su rama (a fin de año o a hoy), agrupados por unidad. Los tildás y tocás "Pasar" para mandarlos a la rama siguiente.',
+        title: 'A quiénes les toca en abril',
+        text: 'Los pases se hacen una vez al año, en abril. Te muestro, por unidad, a quiénes les toca: pasan los que cumplen la edad de pase hasta el 30 de junio de ese año (Castores 7, Lobatos 11, Scouts 14). Los Caminantes pasan a Rovers con 18 cumplidos el día de los pases; si los cumplen después, pasan cuando quieran. Los tildás y tocás "Pasar".',
       },
       {
         target: tab('Elegir chicos'),

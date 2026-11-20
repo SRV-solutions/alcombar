@@ -111,3 +111,9 @@
 .sidebar-footer .who-noavatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: rgba(255, 255, 255, 0.08); color: var(--sidebar-text); }
 .sidebar-footer .who-noavatar svg { width: 22px; height: 22px; }
 .sidebar-footer .footer-actions { margin-top: 6px; }
+/* Pases de unidad en el celular: el nombre puede partirse y el pequeño grupo se omite, así no hay que deslizar la tabla */
+@media (max-width: 640px) {
+  .transfer-table td.nowrap { white-space: normal; }
+  .transfer-table th, .transfer-table td { padding-left: 10px; padding-right: 10px; }
+  .transfer-table th:last-child, .transfer-table td:last-child { display: none; }
+}
