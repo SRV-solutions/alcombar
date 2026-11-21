@@ -237,7 +237,8 @@ export const HELP_INDEX: HelpEntry[] = [
   {
     id: 'programa-sabado',
     title: 'Programa del sábado',
-    description: 'El cronograma de la reunión por momentos (hora, actividad o ficha, responsable). Se guarda por fecha y se imprime.',
+    description:
+      'El cronograma de la reunión o de un día de campamento, por momentos (hora, actividad o ficha, responsable). Se ordenan solos por hora y quedan plegados en un renglón; tocás uno para editarlo. Se guarda por fecha y se imprime.',
     path: '/programa/sabado',
     section: 'Programa',
     keywords: ['programa del sábado', 'reunión', 'cronograma', 'horarios', 'momentos', 'sábado', 'qué hacemos hoy', 'agenda de la reunión'],

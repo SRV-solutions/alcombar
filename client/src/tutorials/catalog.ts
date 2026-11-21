@@ -600,6 +600,11 @@ export const TUTORIALS: Tutorial[] = [
         text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada) y responsable. El responsable puede ser alguien de la unidad, otro adulto del Grupo o un «Otro» que escribís vos: Jefatura de Grupo para el izado, el Párroco para la misa, un rover en servicio…',
       },
       {
+        pose: 'point',
+        title: 'El día de un vistazo',
+        text: 'Los momentos se ordenan solos por hora y quedan plegados en un renglón: hora, actividad y responsable. Tocás uno para desplegarlo y editarlo; al agregar otro, el anterior se pliega.',
+      },
+      {
         pose: 'think',
         title: 'Horas que no se pisan',
         text: 'Si cambiás la hora de un momento, se acomodan los minutos de ese y del anterior; si cambiás los minutos, se corre la hora del siguiente. Si aun así dos se pisan, te aviso debajo.',

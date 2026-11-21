@@ -75,3 +75,39 @@
 .sheet-hit-label { font-weight: 700; color: var(--muted); }
 .sheet-hit mark { background: var(--gold-soft, rgba(242, 194, 48, 0.4)); color: inherit; border-radius: 3px; padding: 0 2px; }
 .clone-results { max-height: 420px; overflow-y: auto; }
+
+/* Programa del sábado: cada momento es un renglón resumen (hora, actividad, responsable) que se despliega para editarlo */
+.meeting-head, .meeting-summary { display: grid; grid-template-columns: 124px minmax(0, 2fr) minmax(0, 1.3fr) 76px 44px; gap: 10px; align-items: center; }
+.meeting-head { padding: 0 10px 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+.meeting-item { border-bottom: 1px solid var(--border); }
+.meeting-item:last-child { border-bottom: none; }
+.meeting-summary { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.meeting-summary:hover { background: var(--surface-2); }
+.meeting-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.meeting-item.open { background: var(--surface-2); border-radius: 10px; border-bottom-color: transparent; margin: 4px 0; }
+.meeting-item.open .meeting-summary { border-bottom: 1px solid var(--border); border-radius: 10px 10px 0 0; }
+.meeting-item.open .meeting-row { padding: 12px 10px; border-bottom: none; }
+.meeting-item .meeting-overlap { margin: 0 10px 8px; }
+.ms-time { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.ms-end { font-weight: 400; color: var(--muted); }
+.ms-what { min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.ms-sheet { font-size: 0.8rem; color: var(--muted); }
+.ms-who { min-width: 0; overflow-wrap: anywhere; font-size: 0.92rem; }
+.ms-dur { font-size: 0.88rem; color: var(--muted); white-space: nowrap; }
+.ms-icons { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.ms-icons svg { width: 18px; height: 18px; flex-shrink: 0; }
+.ms-warn { color: var(--warn, #b7791f); }
+.ms-chevron { color: var(--muted); transition: transform 0.15s ease; }
+.meeting-item.open .ms-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .ms-chevron { transition: none; } }
+@media (max-width: 760px) {
+  .meeting-head { display: none; }
+  /* En el celular: hora y actividad arriba; responsable y duración abajo */
+  .meeting-summary { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'time icons' 'what what' 'who dur'; gap: 2px 10px; padding: 10px 6px; }
+  .ms-time { grid-area: time; }
+  .ms-what { grid-area: what; }
+  .ms-who { grid-area: who; color: var(--muted); }
+  .ms-dur { grid-area: dur; }
+  .ms-icons { grid-area: icons; }
+  .meeting-item.open .meeting-row { padding: 12px 6px; }
+}

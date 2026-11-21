@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, ExternalLink, FilePlus2, Plus, Printer, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, ChevronDown, ExternalLink, FilePlus2, Plus, Printer, Save, Trash2, X } from 'lucide-react';
 import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
@@ -38,14 +38,32 @@ const addMinutes = (time: string, m: number) => {
   const t = (h * 60 + mm + m) % (24 * 60);
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 };
+const isTime = (t: string) => /^\d{2}:\d{2}$/.test(t);
+/**
+ * Minuto del día para ordenar. La madrugada (antes de las 05:00) cuenta como el final del día: en un campamento,
+ * el juego nocturno de las 00:30 va después de la velada, no antes del desayuno.
+ */
+const dayMinute = (t: string) => {
+  const [h, m] = t.split(':').map(Number);
+  return (h < 5 ? h + 24 : h) * 60 + m;
+};
 /** Minutos entre dos horas HH:MM (null si falta alguna o la segunda no es posterior). */
 const minutesBetween = (from: string, to: string) => {
-  if (!/^\d{2}:\d{2}$/.test(from) || !/^\d{2}:\d{2}$/.test(to)) return null;
-  const [h1, m1] = from.split(':').map(Number);
-  const [h2, m2] = to.split(':').map(Number);
-  const d = h2 * 60 + m2 - (h1 * 60 + m1);
+  if (!isTime(from) || !isTime(to)) return null;
+  const d = dayMinute(to) - dayMinute(from);
   return d > 0 && d <= 600 ? d : null;
 };
+/** Ordena por hora los momentos que la tienen; los que todavía no tienen hora quedan en su lugar. */
+function sortByTime<T extends { time: string }>(rs: T[]): T[] {
+  const timed = rs
+    .map((r, i) => ({ r, i }))
+    .filter((x) => isTime(x.r.time))
+    .sort((a, b) => dayMinute(a.r.time) - dayMinute(b.r.time) || a.i - b.i)
+    .map((x) => x.r);
+  let k = 0;
+  const out = rs.map((r) => (isTime(r.time) ? timed[k++] : r));
+  return out.every((r, i) => r === rs[i]) ? rs : out;
+}
 
 let seq = 0;
 const toRow = (i: MeetingItemRow): Row => ({
@@ -90,6 +108,8 @@ export function MeetingPage() {
   const [dirty, setDirty] = useState(false);
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
+  /** El momento que se está editando: los demás quedan plegados en un renglón resumen. */
+  const [openKey, setOpenKey] = useState<number | null>(null);
   const linked = useRef<string | null>(null);
   const navigate = useNavigate();
   const { can } = useAuth();
@@ -98,10 +118,12 @@ export function MeetingPage() {
   useEffect(() => {
     if (!q.data) return;
     const p = q.data.program;
-    let loaded = p ? p.items.map(toRow) : [];
+    // Siempre en orden de hora, y todo plegado: se ve el día entero de un vistazo
+    let loaded = sortByTime(p ? p.items.map(toRow) : []);
     setNotes(p?.notes ?? '');
     setDirty(false);
     setRowErrors({});
+    setOpenKey(null);
     // Vuelve de crear una ficha para un momento (?vincular=<ficha>&fila=<n>): se vincula y se guarda solo
     const link = params.get('vincular');
     const fila = Number(params.get('fila'));
@@ -167,6 +189,12 @@ export function MeetingPage() {
     setRows((rs) => {
       const i = rs.findIndex((r) => r.key === key);
       if (i < 0) return rs;
+      // Si con la hora nueva el momento va a cambiar de lugar, no se tocan las duraciones de sus vecinos de ahora
+      const before = rs[i - 1];
+      const after = rs[i + 1];
+      const stays =
+        isTime(time) && (!before || !isTime(before.time) || dayMinute(before.time) <= dayMinute(time)) && (!after || !isTime(after.time) || dayMinute(time) <= dayMinute(after.time));
+      if (!stays) return rs.map((r, j) => (j === i ? { ...r, time } : r));
       return rs.map((r, j) => {
         if (j === i) {
           const next = rs[i + 1];
@@ -194,7 +222,16 @@ export function MeetingPage() {
     });
     setDirty(true);
   };
+  /** Acomoda los momentos por hora (al salir del campo de hora o de minutos, y antes de guardar). */
+  const resort = () => setRows((rs) => sortByTime(rs));
+  /** El orden lo da la hora: solo se mueve a mano un momento que todavía no la tiene (o dos a la misma hora). */
+  const canMove = (i: number, d: -1 | 1) => {
+    const a = rows[i];
+    const b = rows[i + d];
+    return !!a && !!b && (!isTime(a.time) || !isTime(b.time) || a.time === b.time);
+  };
   const move = (i: number, d: -1 | 1) => {
+    if (!canMove(i, d)) return;
     setRows((rs) => {
       const j = i + d;
       if (j < 0 || j >= rs.length) return rs;
@@ -205,10 +242,14 @@ export function MeetingPage() {
     setDirty(true);
   };
   const add = () => {
-    const last = rows[rows.length - 1];
-    const next = last?.time && last.durationMin ? addMinutes(last.time, Number(last.durationMin)) : rows.length ? '' : '14:30';
-    setRows([...rows, emptyRow(next)]);
+    // Empieza cuando termina el último momento con hora; queda abierto para completarlo y los demás se pliegan
+    const last = [...rows].reverse().find((r) => isTime(r.time));
+    const next = last ? (Number(last.durationMin) > 0 ? addMinutes(last.time, Number(last.durationMin)) : '') : rows.length ? '' : '14:30';
+    const row = emptyRow(next);
+    setRows(sortByTime([...rows, row]));
+    setOpenKey(row.key);
     setDirty(true);
+    requestAnimationFrame(() => document.querySelector('.meeting-item.open')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   };
   const remove = (key: number) => {
     setRows((rs) => rs.filter((r) => r.key !== key));
@@ -248,6 +289,9 @@ export function MeetingPage() {
       const errs: Record<number, string> = {};
       for (const i of check.error.issues) if (i.path[0] === 'items' && typeof i.path[1] === 'number') errs[rowsArg[i.path[1]].key] ??= i.message;
       setRowErrors(errs);
+      // Se abre el primer momento con problema, para verlo sin buscarlo
+      const firstBad = rowsArg.find((r) => errs[r.key]);
+      if (firstBad) setOpenKey(firstBad.key);
       toast.error(Object.keys(errs).length ? 'Revisá los momentos marcados' : check.error.issues[0].message);
       return false;
     }
@@ -268,15 +312,34 @@ export function MeetingPage() {
       setBusy(false);
     }
   };
-  const save = () => void persist(rows, notes);
+  const save = () => {
+    const sorted = sortByTime(rows);
+    if (sorted !== rows) setRows(sorted);
+    void persist(sorted, notes);
+  };
+  const adultById = new Map(adultOptions.map((a) => [a.id, a]));
+  /** Lo que se ve de un momento cuando está plegado. */
+  const summaryOf = (r: Row) => {
+    const sheet = r.activitySheetId ? sheetById.get(r.activitySheetId) : null;
+    const n = Number(r.durationMin);
+    const who = r.responsibleAdultId ? adultById.get(r.responsibleAdultId) : null;
+    return {
+      end: isTime(r.time) && n > 0 ? addMinutes(r.time, n) : '',
+      name: r.title.trim() || sheet?.name || '',
+      sheetExtra: sheet ? (r.title.trim() ? `${sheet.code} · ${sheet.name}` : sheet.code) : '',
+      who: who ? `${who.firstName} ${who.lastName}` : r.responsibleText.trim(),
+      dur: n > 0 ? minutes(n) : '',
+    };
+  };
 
   if (loading) return <Loading />;
   if (!options.length) return <Empty>No tenés unidades para armar el programa del sábado.</Empty>;
 
   const total = rows.reduce((t, r) => t + (Number(r.durationMin) || 0), 0);
   const saved = q.data?.program;
-  const printRows = (saved?.items ?? []).map((i) => ({
-    time: i.time?.slice(0, 5) ?? '',
+  // También lo impreso va en orden de hora, aunque se haya guardado en otro orden
+  const printRows = sortByTime((saved?.items ?? []).map((i) => ({ ...i, time: i.time?.slice(0, 5) ?? '' }))).map((i) => ({
+    time: i.time,
     what: i.sheet ? `${i.sheet.name} (${i.sheet.code})` : i.title ?? '',
     extra: [i.sheet && i.title ? i.title : '', i.notes ?? ''].filter(Boolean).join(' · '),
     who: meetingResponsibleLabel(i),
@@ -396,12 +459,39 @@ export function MeetingPage() {
               </Empty>
             ) : (
               <div className="meeting-list">
+                <div className="meeting-head" aria-hidden>
+                  <span>Hora</span>
+                  <span>Actividad</span>
+                  <span>Responsable</span>
+                  <span>Duración</span>
+                </div>
                 {rows.map((r, i) => {
                   const sheet = r.activitySheetId ? sheetById.get(r.activitySheetId) : null;
+                  const open = openKey === r.key;
+                  const sum = summaryOf(r);
+                  const warn = overlaps.get(r.key) || rowErrors[r.key];
                   return (
-                    <div key={r.key} className="meeting-row">
+                    <div key={r.key} className={`meeting-item${open ? ' open' : ''}`}>
+                      <button type="button" className="meeting-summary" aria-expanded={open} onClick={() => setOpenKey(open ? null : r.key)} title={open ? 'Plegar' : 'Desplegar para editar'}>
+                        <span className="ms-time">
+                          {r.time || <span className="muted">Sin hora</span>}
+                          {sum.end ? <span className="ms-end"> a {sum.end}</span> : null}
+                        </span>
+                        <span className="ms-what">
+                          <strong>{sum.name || <span className="muted">Momento sin nombre</span>}</strong>
+                          {sum.sheetExtra ? <span className="ms-sheet">{sum.sheetExtra}</span> : null}
+                        </span>
+                        <span className="ms-who">{sum.who || <span className="muted">Sin responsable</span>}</span>
+                        <span className="ms-dur">{sum.dur}</span>
+                        <span className="ms-icons">
+                          {warn ? <AlertTriangle className="ms-warn" aria-label="Tiene un aviso" /> : null}
+                          <ChevronDown className="ms-chevron" aria-hidden />
+                        </span>
+                      </button>
+                      {open ? (
+                    <div className="meeting-row">
                       <Field label="Hora">
-                        <Input type="time" value={r.time} onChange={(e) => changeTime(r.key, e.target.value)} />
+                        <Input type="time" value={r.time} onChange={(e) => changeTime(r.key, e.target.value)} onBlur={resort} />
                       </Field>
                       <div className="what stack" style={{ gap: 6 }}>
                         <Field label="Ficha (opcional)">
@@ -494,19 +584,26 @@ export function MeetingPage() {
                         ) : null}
                       </Field>
                       <Field label="Min.">
-                        <Input type="number" min={0} max={600} value={r.durationMin} invalid={!!overlaps.get(r.key)} onChange={(e) => changeDuration(r.key, e.target.value)} />
+                        <Input type="number" min={0} max={600} value={r.durationMin} invalid={!!overlaps.get(r.key)} onChange={(e) => changeDuration(r.key, e.target.value)} onBlur={resort} />
                       </Field>
                       <div className="row-actions" style={{ paddingTop: 22 }}>
-                        <Button variant="ghost" size="sm" className="btn-icon" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Subir" title="Subir">
-                          <ArrowUp />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="btn-icon" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Bajar" title="Bajar">
-                          <ArrowDown />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="btn-icon" onClick={() => remove(r.key)} aria-label="Quitar" title="Quitar">
+                        {/* El orden lo da la hora: las flechas quedan solo para un momento sin hora */}
+                        {canMove(i, -1) ? (
+                          <Button variant="ghost" size="sm" className="btn-icon" onClick={() => move(i, -1)} aria-label="Subir" title="Subir">
+                            <ArrowUp />
+                          </Button>
+                        ) : null}
+                        {canMove(i, 1) ? (
+                          <Button variant="ghost" size="sm" className="btn-icon" onClick={() => move(i, 1)} aria-label="Bajar" title="Bajar">
+                            <ArrowDown />
+                          </Button>
+                        ) : null}
+                        <Button variant="ghost" size="sm" className="btn-icon" onClick={() => remove(r.key)} aria-label="Quitar este momento" title="Quitar este momento">
                           <X />
                         </Button>
                       </div>
+                    </div>
+                      ) : null}
                       {overlaps.get(r.key) ? (
                         <div className="meeting-overlap" role="alert">
                           <AlertTriangle size={14} /> {overlaps.get(r.key)}
