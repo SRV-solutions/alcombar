@@ -52,6 +52,7 @@ export function CampPermitTab({ c }: { c: CampDetail }) {
   const noOne = p.auto.beneficiaries + p.auto.leaders === 0;
   const missing = [
     ...(noOne ? ['inscriptos (las cantidades salen de «Inscripción y legajo»)'] : []),
+    ...(!noOne && !p.auto.leaders ? ['adultos inscriptos (los dirigentes son los adultos anotados en «Inscripción y legajo»)'] : []),
     ...(p.auto.chief ? (p.auto.chief.dni ? [] : ['DNI del Jefe/a de Campo (se carga en su ficha de adulto)']) : ['Jefe/a de Campo (se elige en «Editar»)']),
     ...EXPECTED.filter(([k]) => !String(values[k] ?? '').trim()).map(([, label]) => label),
   ];
