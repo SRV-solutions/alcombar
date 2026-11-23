@@ -729,6 +729,7 @@ programRouter.put(
             responsibleText: it.responsibleAdultId ? null : it.responsibleText,
             durationMin: it.durationMin,
             notes: it.notes,
+            materials: it.materials,
           },
           { transaction },
         );

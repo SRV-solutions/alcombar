@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, ChevronDown, ExternalLink, FilePlus2, Plus, Printer, Save, Trash2, X } from 'lucide-react';
-import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema } from '@shared';
+import { formatDate, MEETING_RESPONSIBLE_PRESETS, meetingResponsibleLabel, meetingSchema, splitMeetingNotes } from '@shared';
 import { api, ApiError, qs } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { adultName, useAdults } from '../../lib/queries';
@@ -23,6 +23,7 @@ interface Row {
   other: boolean;
   durationMin: string;
   notes: string;
+  materials: string;
 }
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -66,18 +67,23 @@ function sortByTime<T extends { time: string }>(rs: T[]): T[] {
 }
 
 let seq = 0;
-const toRow = (i: MeetingItemRow): Row => ({
+const toRow = (i: MeetingItemRow): Row => {
+  // Momentos viejos con el responsable y los materiales escritos en las notas: pasan a su campo
+  const old = splitMeetingNotes(i.notes, { who: !!i.responsibleAdultId || !!i.responsibleText, materials: !!i.materials });
+  return {
   key: ++seq,
   time: i.time ? i.time.slice(0, 5) : '',
   activitySheetId: i.activitySheetId ?? '',
   title: i.title ?? '',
   responsibleAdultId: i.responsibleAdultId ?? '',
-  responsibleText: i.responsibleAdultId ? '' : (i.responsibleText ?? ''),
-  other: !i.responsibleAdultId && !!i.responsibleText,
+  responsibleText: i.responsibleAdultId ? '' : i.responsibleText || old.who,
+  other: !i.responsibleAdultId && !!(i.responsibleText || old.who),
   durationMin: i.durationMin?.toString() ?? '',
-  notes: i.notes ?? '',
-});
-const emptyRow = (time = ''): Row => ({ key: ++seq, time, activitySheetId: '', title: '', responsibleAdultId: '', responsibleText: '', other: false, durationMin: '', notes: '' });
+  notes: old.notes,
+  materials: i.materials || old.materials,
+  };
+};
+const emptyRow = (time = ''): Row => ({ key: ++seq, time, activitySheetId: '', title: '', responsibleAdultId: '', responsibleText: '', other: false, durationMin: '', notes: '', materials: '' });
 
 /** Programa → Programa del sábado: la grilla de la reunión de una unidad, con fichas o momentos sueltos. */
 export function MeetingPage() {
@@ -282,6 +288,7 @@ export function MeetingPage() {
         responsibleText: r.responsibleAdultId ? null : r.responsibleText.trim() || null,
         durationMin: r.durationMin,
         notes: r.notes,
+        materials: r.materials,
       })),
     };
     const check = meetingSchema.safeParse(payload);
@@ -341,7 +348,7 @@ export function MeetingPage() {
   const printRows = sortByTime((saved?.items ?? []).map((i) => ({ ...i, time: i.time?.slice(0, 5) ?? '' }))).map((i) => ({
     time: i.time,
     what: i.sheet ? `${i.sheet.name} (${i.sheet.code})` : i.title ?? '',
-    extra: [i.sheet && i.title ? i.title : '', i.notes ?? ''].filter(Boolean).join(' · '),
+    extra: [i.sheet && i.title ? i.title : '', i.notes ?? '', i.materials ? 'Materiales: ' + i.materials : ''].filter(Boolean).join(' · '),
     who: meetingResponsibleLabel(i),
     dur: minutes(i.durationMin),
   }));
@@ -523,7 +530,8 @@ export function MeetingPage() {
                           invalid={!!rowErrors[r.key]}
                           aria-label="Título"
                         />
-                        <Input placeholder="Notas" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} aria-label="Notas" />
+                        <Input placeholder="Notas o comentarios" value={r.notes} onChange={(e) => update(r.key, { notes: e.target.value })} aria-label="Notas" />
+                        <Input placeholder="Materiales: carpas, mazas, pelotas…" value={r.materials} maxLength={300} onChange={(e) => update(r.key, { materials: e.target.value })} aria-label="Materiales" />
                         <div className="meeting-sheet-line">
                         {sheet ? (
                           <Link to={`/programa/fichas/${sheet.id}`} className="meeting-sheet-link">

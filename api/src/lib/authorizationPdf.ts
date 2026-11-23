@@ -10,7 +10,7 @@ import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { dniDots, splitMarked, type AuthorizationContent, type AuthorizationText, type SignatureData } from '../shared';
 
-type Doc = InstanceType<typeof PDFDocument>;
+export type Doc = InstanceType<typeof PDFDocument>;
 
 export interface PdfAdultSignature {
   name: string;
@@ -36,13 +36,13 @@ const L = 70.9;
 const R = 561.3;
 const W = R - L;
 const CENTER = (L + R) / 2;
-const FONT = { r: 'Helvetica', b: 'Helvetica-Bold', i: 'Helvetica-Oblique', bi: 'Helvetica-BoldOblique' };
-const BLUE = '#00aaf2';
+export const FONT = { r: 'Helvetica', b: 'Helvetica-Bold', i: 'Helvetica-Oblique', bi: 'Helvetica-BoldOblique' };
+export const BLUE = '#00aaf2';
 const INK = '#0b1f4a';
 /** De "borde superior del renglón" (como se midió) a línea de base. */
-const base = (top: number, size: number) => top + 0.905 * size;
+export const base = (top: number, size: number) => top + 0.905 * size;
 
-function asset(name: string): string | null {
+export function asset(name: string): string | null {
   for (const dir of [path.resolve(process.cwd(), 'assets/saac'), path.resolve(__dirname, '../assets/saac'), path.resolve(__dirname, '../../assets/saac')]) {
     const p = path.join(dir, name);
     if (fs.existsSync(p)) return p;
@@ -50,10 +50,10 @@ function asset(name: string): string | null {
   return null;
 }
 
-function put(doc: Doc, text: string, x: number, top: number, size: number, font = FONT.r, color = '#000000') {
+export function put(doc: Doc, text: string, x: number, top: number, size: number, font = FONT.r, color = '#000000') {
   doc.font(font).fontSize(size).fillColor(color).text(text, x, base(top, size), { lineBreak: false, baseline: 'alphabetic' });
 }
-const widthOf = (doc: Doc, text: string, size: number, font = FONT.r) => doc.font(font).fontSize(size).widthOfString(text);
+export const widthOf = (doc: Doc, text: string, size: number, font = FONT.r) => doc.font(font).fontSize(size).widthOfString(text);
 function centered(doc: Doc, text: string, top: number, size: number, font = FONT.b, color = '#000000') {
   put(doc, text, CENTER - widthOf(doc, text, size, font) / 2, top, size, font, color);
 }
@@ -68,7 +68,7 @@ function centeredCall(doc: Doc, text: string, n: string, top: number, size: numb
   x += widthOf(doc, n, size * 0.65, FONT.b);
   put(doc, ')', x, top, size, FONT.b);
 }
-function rule(doc: Doc, x1: number, x2: number, y: number, dotted = false) {
+export function rule(doc: Doc, x1: number, x2: number, y: number, dotted = false) {
   doc.save().lineWidth(0.5).strokeColor('#000000');
   if (dotted) doc.dash(0.7, { space: 1.6 });
   doc.moveTo(x1, y).lineTo(x2, y).stroke().restore();
@@ -244,6 +244,22 @@ const when = (iso: string) => {
   return `${p(a.getUTCDate())}/${p(a.getUTCMonth() + 1)}/${a.getUTCFullYear()} ${p(a.getUTCHours())}:${p(a.getUTCMinutes())}`;
 };
 
+/** Pie institucional de las planillas de Scouts de Argentina. */
+export function saacFooter(doc: Doc) {
+  const wosm = asset('wosm-pie.png');
+  if (wosm) doc.image(wosm, 70.8, 770.9, { width: 155, height: 70.9 });
+  rule(doc, 229.7, 558.6, 777.8);
+  const it = 'Scouts de Argentina Asociación Civil';
+  put(doc, it, 229.7, 781.2, 8, FONT.i);
+  put(doc, ', es una organización sin fines de lucro, con Personería', 229.7 + widthOf(doc, it, 8, FONT.i), 781.2, 8);
+  put(doc, 'Jurídica Nacional N° 1645416 – Res IGJ N° 999 del 24 de septiembre de 1998.', 229.7, 790.4, 8);
+  put(doc, 'Sede Nacional: ', 229.7, 799.6, 8);
+  const sn = widthOf(doc, 'Sede Nacional: ', 8);
+  put(doc, 'Libertad 1282', 229.7 + sn, 799.6, 8, FONT.i);
+  put(doc, ' – CABA – C1012AAZ – Argentina – Tel: +54-11-4811-0185', 229.7 + sn + widthOf(doc, 'Libertad 1282', 8, FONT.i), 799.6, 8);
+  put(doc, 'CUIT 30-69732250-3 – IVA Exento', 229.7, 808.7, 8);
+}
+
 // ---------------- La hoja ----------------
 function page(doc: Doc, a: PdfAuthorization) {
   const t = a.text;
@@ -344,19 +360,7 @@ function page(doc: Doc, a: PdfAuthorization) {
     }
   }
 
-  // Pie institucional
-  const wosm = asset('wosm-pie.png');
-  if (wosm) doc.image(wosm, 70.8, 770.9, { width: 155, height: 70.9 });
-  rule(doc, 229.7, 558.6, 777.8);
-  const it = 'Scouts de Argentina Asociación Civil';
-  put(doc, it, 229.7, 781.2, 8, FONT.i);
-  put(doc, ', es una organización sin fines de lucro, con Personería', 229.7 + widthOf(doc, it, 8, FONT.i), 781.2, 8);
-  put(doc, 'Jurídica Nacional N° 1645416 – Res IGJ N° 999 del 24 de septiembre de 1998.', 229.7, 790.4, 8);
-  put(doc, 'Sede Nacional: ', 229.7, 799.6, 8);
-  const sn = widthOf(doc, 'Sede Nacional: ', 8);
-  put(doc, 'Libertad 1282', 229.7 + sn, 799.6, 8, FONT.i);
-  put(doc, ' – CABA – C1012AAZ – Argentina – Tel: +54-11-4811-0185', 229.7 + sn + widthOf(doc, 'Libertad 1282', 8, FONT.i), 799.6, 8);
-  put(doc, 'CUIT 30-69732250-3 – IVA Exento', 229.7, 808.7, 8);
+  saacFooter(doc);
 
   if (a.voided) {
     doc.save().rotate(-28, { origin: [297, 420] }).font(FONT.b).fontSize(84).fillColor('#b00020').fillOpacity(0.16);

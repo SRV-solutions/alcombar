@@ -1,4 +1,4 @@
-import type { CampRubro, CampStatus, CampType, DocStatus, Meal } from '@shared';
+import type { Branch, CampPermitValues, CampRubro, CampStatus, CampType, DocStatus, Meal } from '@shared';
 import type { UnitRef } from '../../lib/types';
 import type { MovementRow } from '../accounting/types';
 import type { AdultMini } from '../events/types';
@@ -128,6 +128,22 @@ export interface CampDetail {
   canRecord: boolean;
 }
 
+/** Permiso de Acampe: lo cargado a mano (o propuesto por la app) y lo que sale solo del campamento. */
+export interface CampPermit {
+  saved: boolean;
+  values: Record<keyof CampPermitValues, string>;
+  /** Los datos del lugar se tomaron del permiso de este otro campamento en el mismo lugar. */
+  copiedFrom: { id: string; name: string } | null;
+  auto: {
+    group: { number: string; name: string; district: string; zone: string };
+    branches: Record<Branch, number>;
+    beneficiaries: number;
+    leaders: number;
+    chief: { id: string; name: string; dni: string | null } | null;
+  };
+  canEdit: boolean;
+}
+
 /** Programa y cronograma: cada día del campamento es el programa del día de la unidad. */
 export interface CampProgramItem {
   id: string;
@@ -135,6 +151,7 @@ export interface CampProgramItem {
   title: string | null;
   durationMin: number | null;
   notes: string | null;
+  materials: string | null;
   responsible: AdultMini | null;
   responsibleText: string | null;
   sheet: { id: string; code: string; name: string; status: string } | null;

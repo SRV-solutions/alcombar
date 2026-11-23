@@ -395,6 +395,8 @@ export class Camp extends Model {
   declare siteRating: number | null;
   declare siteReview: string | null;
   declare renderedAt: Date | null;
+  /** Datos del Permiso de Acampe que no salen del resto del campamento (ver campPermitSchema). */
+  declare permit: Record<string, unknown> | null;
   declare ownerUnit?: Unit | null;
   declare site?: CampSite | null;
   declare responsible?: Adult | null;
@@ -422,6 +424,7 @@ Camp.init(
     siteRating: INTEGER,
     siteReview: TEXT,
     renderedAt: DATE,
+    permit: JSONB,
     ...soft,
   },
   { sequelize, tableName: 'camps', modelName: 'Camp' },

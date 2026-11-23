@@ -4,7 +4,7 @@
  * vs. real (movimientos con campId), logística (menú, compras, transporte, materiales) y catálogo de lugares de acampe.
  * Permisos por la unidad organizadora (sin unidad = del Grupo: solo permisos de todo el Grupo).
  */
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { accountIdsFor } from '../lib/accountAccess';
 import { Op, QueryTypes, type Transaction as SqlTx } from 'sequelize';
 import {
@@ -15,6 +15,7 @@ import {
   campBudgetLineSchema,
   campMenuSchema,
   campNights,
+  campPermitSchema,
   campRenderSchema,
   campSchema,
   campShoppingSchema,
@@ -23,9 +24,12 @@ import {
   documentStatus,
   enrollmentSchema,
   formatDate,
+  formatMoney,
+  GROUP_INFO,
   hasProgramWoodBadge,
   enrollSchema,
   round2,
+  splitMeetingNotes,
   unitsWith,
   type Branch,
   type CampType,
@@ -52,6 +56,9 @@ import { notifyReferents } from '../lib/notify';
 import { currentContext } from '../lib/context';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { campProgram } from '../lib/campProgram';
+import { buildPermit, permitPdfData, permitToStore } from '../lib/campPermit';
+import { campPermitPdf } from '../lib/campPermitPdf';
+import { campPlanPdf, type PlanDay, type PlanPdfData } from '../lib/campPlanPdf';
 import { assertCan, authorize } from '../middlewares/auth';
 
 export const campsRouter = Router();
@@ -617,6 +624,186 @@ campsRouter.post(
       await camp.update({ ...data, status: 'rendido', renderedAt: new Date() });
     }
     res.json({ status: camp.status });
+  }),
+);
+
+// ===================================================================
+// Permiso de Acampe (planilla de Scouts de Argentina) y plan del campamento, en PDF
+// ===================================================================
+const pdfName = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\s.-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 110);
+function sendPdf(res: Response, pdf: Buffer, name: string) {
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${pdfName(name)}.pdf"`);
+  res.send(pdf);
+}
+async function permitFor(req: Request) {
+  const camp = await loadCamp(req.params.id);
+  if (!canViewCamp(req, camp)) throw forbidden();
+  const p = await buildPermit(camp.id);
+  if (!p) throw notFound();
+  return p;
+}
+const permitJson = (req: Request, p: Awaited<ReturnType<typeof permitFor>>) => ({
+  saved: p.saved,
+  values: p.values,
+  copiedFrom: p.copiedFrom,
+  auto: p.auto,
+  canEdit: can(req.auth, 'camps', 'edit', p.camp.ownerUnitId),
+});
+campsRouter.get(
+  '/:id/permit',
+  ah(async (req, res) => {
+    res.json(permitJson(req, await permitFor(req)));
+  }),
+);
+campsRouter.put(
+  '/:id/permit',
+  ah(async (req, res) => {
+    const camp = await loadCamp(req.params.id);
+    assertCampPerm(req, camp, 'edit');
+    const data = parse(campPermitSchema, req.body);
+    await camp.update({ permit: permitToStore(camp, data) });
+    res.json(permitJson(req, await permitFor(req)));
+  }),
+);
+campsRouter.get(
+  '/:id/permit/pdf',
+  ah(async (req, res) => {
+    const p = await permitFor(req);
+    const name = `Permiso de acampe - ${p.camp.name}`;
+    sendPdf(res, await campPermitPdf(permitPdfData(p), name), name);
+  }),
+);
+
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const ymd = (iso: string) => iso.slice(0, 10).split('-').map(Number) as [number, number, number];
+/** «8 y 9 de agosto de 2026», «del 3 al 11 de enero de 2026», «del 30 de enero al 2 de febrero de 2026». */
+function longDates(start: string, end: string) {
+  const [y1, m1, d1] = ymd(start);
+  const [y2, m2, d2] = ymd(end);
+  if (start === end) return `${d1} de ${MONTHS[m1 - 1]} de ${y1}`;
+  if (y1 !== y2) return `del ${d1} de ${MONTHS[m1 - 1]} de ${y1} al ${d2} de ${MONTHS[m2 - 1]} de ${y2}`;
+  if (m1 !== m2) return `del ${d1} de ${MONTHS[m1 - 1]} al ${d2} de ${MONTHS[m2 - 1]} de ${y1}`;
+  return campNights(start, end) === 1 ? `${d1} y ${d2} de ${MONTHS[m1 - 1]} de ${y1}` : `del ${d1} al ${d2} de ${MONTHS[m1 - 1]} de ${y1}`;
+}
+/** Texto libre de varios renglones → lista (sin las viñetas que se hayan escrito a mano). */
+const asList = (s: string | null) =>
+  (s ?? '')
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-–—•●·*▪◦]+|\d+[.)])\s*/, '').trim())
+    // Un renglón que es solo el título («Objetivos:») no es un ítem
+    .filter((l) => l && !/^(objetivos|materiales)\s*:?$/i.test(l));
+
+campsRouter.get(
+  '/:id/plan/pdf',
+  ah(async (req, res) => {
+    const camp = await Camp.findByPk(req.params.id, {
+      include: [
+        { model: CampUnit, as: 'campUnits', include: [{ model: Unit, as: 'unit', attributes: unitAttrs }] },
+        { model: Unit, as: 'ownerUnit', attributes: unitAttrs },
+        { model: CampSite, as: 'site' },
+        { model: Adult, as: 'responsible', attributes: adultAttrs },
+      ],
+    });
+    if (!camp) throw notFound();
+    if (!canViewCamp(req, camp)) throw forbidden();
+    const program = await campProgram(req.auth, camp);
+    const units = [...program.units.map((u) => u.unit)].sort((a, b) => Number(b.id === camp.ownerUnitId) - Number(a.id === camp.ownerUnitId));
+    const multi = units.length > 1;
+
+    // Programa: un cuadro por día (y por unidad, si participa más de una)
+    const days: PlanDay[] = [];
+    const dates = [...new Set(program.days.map((d) => d.date))].sort();
+    for (const date of dates) {
+      for (const u of units) {
+        const day = program.days.find((d) => d.date === date && d.unitId === u.id);
+        if (!day || !day.items.length) continue;
+        const [y, m, d] = ymd(date);
+        const weekday = WEEKDAYS[new Date(`${date}T12:00:00Z`).getUTCDay()];
+        days.push({
+          heading: `Programa ${weekday.toLowerCase()} ${d}/${m}${multi ? ` · ${u.name}` : ''}`,
+          bar: `${d}/${m}/${y} ${weekday}`,
+          notes: day.notes,
+          items: day.items.map((i) => {
+            const who = i.responsible ? `${i.responsible.firstName} ${i.responsible.lastName}` : (i.responsibleText ?? '');
+            // Momentos viejos: el responsable y los materiales venían escritos en las notas
+            const old = splitMeetingNotes(i.notes, { who: !!who, materials: !!i.materials });
+            return {
+              time: (i.time ?? '').replace(/^0(\d:)/, '$1'),
+              what: i.sheet ? i.sheet.name : (i.title ?? ''),
+              who: who || old.who,
+              materials: i.materials || old.materials,
+              notes: [i.sheet && i.title && i.title !== i.sheet.name ? i.title : '', old.notes].filter(Boolean).join(' · '),
+            };
+          }),
+        });
+      }
+    }
+
+    // Nómina: adultos y protagonistas inscriptos
+    let roster: PlanPdfData['roster'] = null;
+    if (req.query.nomina !== '0') {
+      const enrollments = await CampEnrollment.findAll({
+        where: { campId: camp.id },
+        include: [
+          {
+            model: Member,
+            as: 'member',
+            attributes: ['id', 'firstName', 'lastName', 'dni'],
+            include: [
+              { model: Unit, as: 'unit', attributes: unitAttrs },
+              { model: SmallGroup, as: 'smallGroup', attributes: ['id', 'name'] },
+            ],
+          },
+          { model: Adult, as: 'adult', attributes: [...adultAttrs, 'dni'] },
+        ],
+      });
+      const members = enrollments.map((e) => e.member).filter((m): m is Member => !!m);
+      const adults = enrollments.map((e) => e.adult).filter((a): a is Adult => !!a);
+      const branches = new Set(members.map((m) => m.unit?.branch).filter(Boolean));
+      const manyUnits = new Set(members.map((m) => m.unit?.id).filter(Boolean)).size > 1;
+      const groupOf = (m: Member) => [manyUnits ? m.unit?.code : null, m.smallGroup?.name].filter(Boolean).join(' · ');
+      roster = {
+        groupLabel: BRANCH_INFO[(branches.size === 1 ? [...branches][0] : branches.size ? '' : camp.ownerUnit?.branch) as Branch]?.smallGroup.one ?? 'Pequeño grupo',
+        adults: adults
+          .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`))
+          .map((a) => ({ dni: a.dni ?? '', lastName: a.lastName, firstName: a.firstName, group: a.id === camp.responsibleAdultId ? 'Jefe/a de Campo' : 'Adulto' })),
+        members: members
+          .map((m) => ({ dni: m.dni ?? '', lastName: m.lastName, firstName: m.firstName, group: groupOf(m) }))
+          .sort((a, b) => (a.group || '~').localeCompare(b.group || '~') || `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`)),
+      };
+    }
+
+    const place = camp.site ? [`${camp.site.name}${camp.site.location ? ` (${camp.site.location})` : ''}`, camp.place].filter(Boolean).join(' · ') : (camp.place ?? '');
+    const facts: [string, string][] = [];
+    if (multi) facts.push(['Participan', units.map((u) => u.name).join(', ')]);
+    if (place) facts.push(['Lugar', place]);
+    if (camp.cost > 0) facts.push(['Costo', formatMoney(camp.cost).replace(/,00$/, '')]);
+    if (camp.responsible) facts.push(['Jefe/a de Campo', `${camp.responsible.firstName} ${camp.responsible.lastName}`]);
+    const transport = [camp.transportCompany, camp.transportSchedule].filter(Boolean).join(' · ');
+    if (transport) facts.push(['Transporte', transport]);
+    const today = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+    const pdf = await campPlanPdf({
+      title: camp.name,
+      dates: longDates(camp.startDate, camp.endDate),
+      headerLines: [camp.ownerUnit?.name ?? 'Grupo Scout', `G.S. ${GROUP_INFO.name}`],
+      objectives: asList(camp.description),
+      facts,
+      days,
+      materials: asList(camp.materials),
+      roster,
+      color: camp.ownerUnit ? (BRANCH_INFO[camp.ownerUnit.branch as Branch]?.color ?? '#7A1F2B') : '#7A1F2B',
+      generated: `Generado con ALCONBAR Gestión el ${formatDate(today)}`,
+    });
+    sendPdf(res, pdf, `${camp.name} - Plan`);
   }),
 );
 

@@ -434,6 +434,16 @@ export const HELP_INDEX: HelpEntry[] = [
     show: can('camps', 'view'),
   },
   {
+    id: 'permiso-acampe',
+    title: 'Permiso de acampe y plan del campamento (PDF)',
+    description:
+      'En el campamento → "Permiso de acampe y plan": completás lo que pide la planilla de Scouts de Argentina y bajás el Permiso de Acampe en PDF para subir a Cruz del Sur. También baja el plan del campamento: objetivos, programa de cada día, materiales y nómina con DNI.',
+    path: '/campamentos',
+    section: 'Tesorería',
+    keywords: ['permiso de acampe', 'permiso', 'acampe', 'cruz del sur', 'planilla', 'plan del campamento', 'nómina', 'director de zona', 'pdf del campamento', 'hospital', 'comisaría'],
+    show: can('camps', 'view'),
+  },
+  {
     id: 'lugares-acampe',
     title: 'Lugares de acampe',
     description: 'Campamentos → "Lugares de acampe": datos de contacto, servicios, costo y la calificación de cada vez que se fue.',

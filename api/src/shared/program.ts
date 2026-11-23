@@ -174,6 +174,7 @@ export const meetingItemSchema = z
     responsibleText: optStr(120),
     durationMin: optInt(0, 600),
     notes: optStr(500),
+    materials: optStr(300),
   })
   .refine((v) => v.activitySheetId || v.title, { message: 'Poné una ficha o un título', path: ['title'] });
 /** Responsables frecuentes de un momento que no son un adulto de la unidad. */
@@ -183,6 +184,26 @@ export const meetingResponsibleLabel = (i: {
   responsible?: { firstName: string; lastName: string; totem?: string | null } | null;
   responsibleText?: string | null;
 }): string => (i.responsible ? `${i.responsible.firstName} ${i.responsible.lastName}${i.responsible.totem ? ` («${i.responsible.totem}»)` : ''}` : (i.responsibleText ?? ''));
+
+/**
+ * Momentos cargados antes de que existieran «Responsable: Otro» y «Materiales»: lo traían escrito en las notas
+ * («A cargo: Todos · Materiales: Pelotas · Tren»). Separa esas partes; lo que ya está cargado en su campo no se toca.
+ */
+export function splitMeetingNotes(notes: string | null | undefined, has: { who: boolean; materials: boolean }) {
+  const out = { who: '', materials: '', notes: '' };
+  const rest: string[] = [];
+  for (const raw of (notes ?? '').split(/\s+·\s+/)) {
+    const seg = raw.trim();
+    if (!seg) continue;
+    const who = /^a cargo\s*:\s*(.+)$/i.exec(seg);
+    const mat = /^materiales\s*:\s*(.+)$/i.exec(seg);
+    if (who && !has.who && !out.who) out.who = who[1].trim();
+    else if (mat && !has.materials && !out.materials) out.materials = mat[1].trim();
+    else rest.push(seg);
+  }
+  out.notes = rest.join(' · ');
+  return out;
+}
 
 export const meetingSchema = z.object({
   unitId: z.string().uuid('Elegí la unidad'),

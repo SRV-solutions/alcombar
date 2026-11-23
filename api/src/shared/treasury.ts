@@ -273,6 +273,83 @@ export const campRenderSchema = z.object({
   siteReview: optStr(3000),
 });
 
+// ---------------- Permiso de Acampe (planilla de Scouts de Argentina) ----------------
+const optTime = z
+  .union([z.literal(''), z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d$/, 'Hora inválida (HH:MM)')])
+  .nullish()
+  .transform((v) => (v ? v.padStart(5, '0') : null));
+/**
+ * Lo que pide el Permiso de Acampe y no sale del resto del campamento. El Grupo, las cantidades por rama, el
+ * nombre y el DNI del Jefe/a de Campo salen solos de la app.
+ */
+export const campPermitSchema = z.object({
+  /** Acompañantes (ni protagonistas ni educadores). */
+  companions: z
+    .union([z.literal(''), z.coerce.number().int('Número entero').min(0).max(999)])
+    .nullish()
+    .transform((v) => (v === '' || v == null ? null : Number(v))),
+  transportCompany: optStr(120),
+  transportAddress: optStr(160),
+  transportPhone: optStr(80),
+  transportLicense: optStr(80),
+  placeLocality: optStr(120),
+  placeProvince: optStr(80),
+  placeAddress: optStr(200),
+  placeOwner: optStr(120),
+  placeContact: optStr(120),
+  placeNearestTown: optStr(120),
+  healthName: optStr(160),
+  healthAddress: optStr(200),
+  healthPhone: optStr(80),
+  policeName: optStr(160),
+  policeAddress: optStr(200),
+  policePhone: optStr(80),
+  campPhone: optStr(60),
+  vehicle: optStr(80),
+  vehiclePlate: optStr(20),
+  vehicleBrand: optStr(60),
+  vehicleModel: optStr(60),
+  departureDate: optDate,
+  departureTime: optTime,
+  arrivalDate: optDate,
+  arrivalTime: optTime,
+  directions: optStr(300),
+  chiefEmail: optStr(120),
+  chiefPhone: optStr(60),
+  chiefLevel: optStr(60),
+  zoneDirectorName: optStr(120),
+  zoneDirectorZone: optStr(20),
+  zoneDirectorPhone: optStr(60),
+  zoneDirectorMobile: optStr(60),
+  zoneDirectorEmail: optStr(120),
+  /** Fecha y medio por el que se le avisó: «Mail enviado el 25/7/26». */
+  zoneDirectorContact: optStr(160),
+});
+export type CampPermitInput = z.input<typeof campPermitSchema>;
+export type CampPermitValues = z.output<typeof campPermitSchema>;
+export const CAMP_PERMIT_KEYS = Object.keys(campPermitSchema.shape) as (keyof CampPermitValues)[];
+/** Los datos que son del lugar (se proponen desde el último permiso hecho para el mismo lugar de acampe). */
+export const CAMP_PERMIT_PLACE_KEYS = [
+  'placeLocality',
+  'placeProvince',
+  'placeAddress',
+  'placeOwner',
+  'placeContact',
+  'placeNearestTown',
+  'healthName',
+  'healthAddress',
+  'healthPhone',
+  'policeName',
+  'policeAddress',
+  'policePhone',
+  'directions',
+  'zoneDirectorName',
+  'zoneDirectorZone',
+  'zoneDirectorPhone',
+  'zoneDirectorMobile',
+  'zoneDirectorEmail',
+] as const satisfies readonly (keyof CampPermitValues)[];
+
 export type AccountInput = z.input<typeof accountSchema>;
 export type TransactionInput = z.input<typeof transactionSchema>;
 export type FeePlanInput = z.input<typeof feePlanSchema>;

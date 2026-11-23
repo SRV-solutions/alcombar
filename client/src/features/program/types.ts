@@ -124,6 +124,7 @@ export interface MeetingItemRow {
   responsibleText?: string | null;
   durationMin: number | null;
   notes: string | null;
+  materials?: string | null;
   sheet?: { id: string; code: string; name: string; durationMin: number | null; place: string | null; status: string } | null;
   responsible?: AdultLite | null;
 }

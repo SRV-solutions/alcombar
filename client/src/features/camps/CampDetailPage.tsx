@@ -26,12 +26,13 @@ import { Money, Stat } from '../accounting/common';
 import { CAMP_STATUS_TONE, CampDialog, campDates } from './CampsPage';
 import { BudgetRenderTab, LogisticsTab } from './CampTabs';
 import { CampProgramTab } from './CampProgramTab';
+import { CampPermitTab } from './CampPermitTab';
 import { Stars } from './CampSitesPage';
 import type { CampDetail, LegajoRow } from './types';
 import '../accounting/accounting.css';
 import './camps.css';
 
-type Tab = 'datos' | 'programa' | 'legajo' | 'presupuesto' | 'logistica';
+type Tab = 'datos' | 'programa' | 'legajo' | 'presupuesto' | 'logistica' | 'permiso';
 
 export function CampDetailPage() {
   const { id } = useParams();
@@ -129,6 +130,7 @@ export function CampDetailPage() {
             { key: 'legajo', label: `Inscripción y legajo (${c.legajo.length})` },
             { key: 'presupuesto', label: 'Presupuesto y rendición' },
             { key: 'logistica', label: 'Logística' },
+            { key: 'permiso', label: 'Permiso de acampe y plan' },
           ]}
           value={tab}
           onChange={setTab}
@@ -139,6 +141,7 @@ export function CampDetailPage() {
       {tab === 'legajo' ? <LegajoTab c={c} refetch={q.refetch} /> : null}
       {tab === 'presupuesto' ? <BudgetRenderTab c={c} refetch={q.refetch} /> : null}
       {tab === 'logistica' ? <LogisticsTab c={c} refetch={q.refetch} /> : null}
+      {tab === 'permiso' ? <CampPermitTab c={c} /> : null}
       {editing ? <CampDialog camp={c} onClose={() => setEditing(false)} onSaved={() => q.refetch()} /> : null}
     </>
   );

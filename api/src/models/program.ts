@@ -214,13 +214,15 @@ export class MeetingItem extends Model<InferAttributes<MeetingItem>, InferCreati
   declare responsibleText: CreationOptional<string | null>;
   declare durationMin: number | null;
   declare notes: string | null;
+  /** Materiales de ese momento (salen en el plan del campamento). */
+  declare materials: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare sheet?: NonAttribute<ActivitySheet | null>;
   declare responsible?: NonAttribute<Adult | null>;
 }
 MeetingItem.init(
-  { id, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, time: STRING(5), title: STRING(200), responsibleText: STRING(120), durationMin: INTEGER, notes: STRING(500), ...stampsHard },
+  { id, sortOrder: { type: INTEGER, allowNull: false, defaultValue: 0 }, time: STRING(5), title: STRING(200), responsibleText: STRING(120), durationMin: INTEGER, notes: STRING(500), materials: STRING(300), ...stampsHard },
   { sequelize, tableName: 'meeting_items', modelName: 'MeetingItem', paranoid: false },
 );
 

@@ -597,7 +597,7 @@ export const TUTORIALS: Tutorial[] = [
         target: { selector: 'button.meeting-add' },
         pose: 'point',
         title: 'Agregar momentos',
-        text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada) y responsable. El responsable puede ser alguien de la unidad, otro adulto del Grupo o un «Otro» que escribís vos: Jefatura de Grupo para el izado, el Párroco para la misa, un rover en servicio…',
+        text: 'Cada momento tiene hora, duración, actividad (o una ficha ya cargada), responsable y, si hace falta, notas y materiales. El responsable puede ser alguien de la unidad, otro adulto del Grupo o un «Otro» que escribís vos: Jefatura de Grupo para el izado, el Párroco para la misa, un rover en servicio…',
       },
       {
         pose: 'point',
@@ -1072,6 +1072,11 @@ export const TUTORIALS: Tutorial[] = [
         pose: 'think',
         title: 'Programa y cronograma',
         text: 'En la pestaña "Programa y cronograma" está la propuesta, el cronograma de cada día y las fichas del campamento. Cada día se arma con el mismo editor del "Programa del sábado", así las fichas quedan enlazadas sin cargar nada dos veces.',
+      },
+      {
+        pose: 'point',
+        title: 'Permiso de acampe y plan',
+        text: 'En la pestaña "Permiso de acampe y plan" completás lo que pide la planilla de Scouts de Argentina (transporte, hospital y comisaría más cercanos, vehículo de apoyo, Director/a de Zona) y bajás el Permiso de Acampe en PDF, listo para subir a Cruz del Sur. El Grupo, las cantidades por rama y el Jefe/a de Campo salen solos. Ahí mismo bajás el plan del campamento: objetivos, programa de cada día, materiales y nómina.',
       },
       {
         target: button('Lugares de acampe'),

@@ -22,7 +22,7 @@ const longDate = (iso: string) => {
 };
 
 function Item({ i, canView }: { i: CampProgramItem; canView: boolean }) {
-  const meta = [i.responsible ? `A cargo: ${adultName(i.responsible)}` : i.responsibleText ? `A cargo: ${i.responsibleText}` : null, i.durationMin ? minutes(i.durationMin) : null, i.notes].filter(Boolean);
+  const meta = [i.responsible ? `A cargo: ${adultName(i.responsible)}` : i.responsibleText ? `A cargo: ${i.responsibleText}` : null, i.durationMin ? minutes(i.durationMin) : null, i.notes, i.materials ? `Materiales: ${i.materials}` : null].filter(Boolean);
   return (
     <li className="camp-item">
       <span className="time">{i.time ?? ''}</span>
