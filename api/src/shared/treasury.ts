@@ -1,6 +1,7 @@
 ﻿// Etapas 5 y 6: contabilidad, cuotas, eventos y campamentos. Esquemas Zod, catálogos y utilidades compartidas entre API y client.
 import { z } from 'zod';
 import { optDate, optStr, optUuid, reqDate, reqStr } from './schemas';
+import { MIN_SIGNATURE_POINTS, signaturePoints, signatureSchema } from './authorizations';
 
 // ---------------- Catálogos ----------------
 export const ACCOUNT_TYPES = ['efectivo', 'banco', 'billetera'] as const;
@@ -349,6 +350,28 @@ export const CAMP_PERMIT_PLACE_KEYS = [
   'zoneDirectorMobile',
   'zoneDirectorEmail',
 ] as const satisfies readonly (keyof CampPermitValues)[];
+
+/** Firma del Jefe/a de Campo: el trazo hecho en el momento o su última firma ya registrada en la app. */
+export const campPermitSignSchema = z
+  .object({
+    signature: signatureSchema.nullish(),
+    useSaved: z.boolean().default(false),
+  })
+  .refine((v) => v.useSaved || signaturePoints(v.signature) >= MIN_SIGNATURE_POINTS, { path: ['signature'], message: 'Falta la firma: firmá con el dedo dentro del recuadro' });
+
+/** Duplicar un campamento: nombre y fechas nuevas, y qué se lleva del original. */
+export const campCloneSchema = z
+  .object({
+    name: reqStr(160),
+    startDate: reqDate,
+    endDate: reqDate,
+    permit: z.boolean().default(true),
+    budget: z.boolean().default(true),
+    logistics: z.boolean().default(true),
+    schedule: z.boolean().default(true),
+  })
+  .refine((c) => c.endDate >= c.startDate, { path: ['endDate'], message: 'Tiene que ser igual o posterior al inicio' });
+export type CampCloneInput = z.input<typeof campCloneSchema>;
 
 export type AccountInput = z.input<typeof accountSchema>;
 export type TransactionInput = z.input<typeof transactionSchema>;

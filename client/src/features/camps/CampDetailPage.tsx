@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, Download, FileSignature, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
+import { CheckCircle2, Copy, Download, FileSignature, Pencil, Printer, RotateCcw, Trash2, UserPlus, Users } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,6 +27,7 @@ import { CAMP_STATUS_TONE, CampDialog, campDates } from './CampsPage';
 import { BudgetRenderTab, LogisticsTab } from './CampTabs';
 import { CampProgramTab } from './CampProgramTab';
 import { CampPermitTab } from './CampPermitTab';
+import { CampCloneDialog } from './CampCloneDialog';
 import { Stars } from './CampSitesPage';
 import type { CampDetail, LegajoRow } from './types';
 import '../accounting/accounting.css';
@@ -42,11 +43,15 @@ export function CampDetailPage() {
   const [search] = useSearchParams();
   const [tab, setTab] = useState<Tab>((search.get('tab') as Tab) || 'datos');
   const [editing, setEditing] = useState(false);
+  const [cloning, setCloning] = useState(false);
+  const { unitsWith } = useAuth();
   const q = useQuery({ queryKey: ['camp', id], queryFn: () => api.get<CampDetail>(`/camps/${id}`) });
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorBox error={q.error} />;
   const c = q.data!;
   const step = CAMP_STATUSES.indexOf(c.status);
+  const creatable = unitsWith('camps', 'create');
+  const canClone = creatable === 'all' || (!!c.ownerUnitId && creatable.includes(c.ownerUnitId));
   const post = async (path: string, msg: string) => {
     try {
       await api.post(`/camps/${c.id}/${path}`, {});
@@ -92,6 +97,11 @@ export function CampDetailPage() {
             {c.canEdit && c.status !== 'rendido' ? (
               <Button variant="secondary" onClick={() => setEditing(true)}>
                 <Pencil /> Editar
+              </Button>
+            ) : null}
+            {canClone ? (
+              <Button variant="secondary" id="btn-clone-camp" title="Crea un campamento nuevo con los datos de este, su permiso de acampe y su cronograma" onClick={() => setCloning(true)}>
+                <Copy /> Duplicar
               </Button>
             ) : null}
             {c.canDelete && c.status === 'borrador' ? (
@@ -143,6 +153,7 @@ export function CampDetailPage() {
       {tab === 'logistica' ? <LogisticsTab c={c} refetch={q.refetch} /> : null}
       {tab === 'permiso' ? <CampPermitTab c={c} /> : null}
       {editing ? <CampDialog camp={c} onClose={() => setEditing(false)} onSaved={() => q.refetch()} /> : null}
+      {cloning ? <CampCloneDialog camp={c} onClose={() => setCloning(false)} /> : null}
     </>
   );
 }

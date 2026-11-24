@@ -5,8 +5,8 @@
  * Las firmas y la aprobación de las autoridades quedan en blanco: se firman después.
  */
 import PDFDocument from 'pdfkit';
-import { BRANCHES, type Branch } from '../shared';
-import { asset, base, BLUE, FONT, put, rule, saacFooter, widthOf, type Doc } from './authorizationPdf';
+import { BRANCHES, dniDots, type Branch, type SignatureData } from '../shared';
+import { asset, base, BLUE, centered, FONT, paragraph, put, rule, saacFooter, signature, when, widthOf, type Doc } from './authorizationPdf';
 
 export interface PermitPdfData {
   group: { number: string; name: string; district: string; zone: string };
@@ -20,6 +20,10 @@ export interface PermitPdfData {
   chiefName: string;
   chiefDni: string;
   v: Record<string, string>;
+  /** Firma en pantalla del Jefe/a de Campo (solo si sigue valiendo para estos datos). */
+  signature?: SignatureData | null;
+  /** Constancia de esa firma: va en una hoja aparte, para que la planilla quede igual a la oficial. */
+  proof?: { camp: string; name: string; dni: string | null; signedAt: string; onDeviceOf: string | null; reused: boolean; hash: string } | null;
 }
 
 const THICK = 0.95;
@@ -247,6 +251,7 @@ function permitPage(doc: Doc, d: PermitPdfData) {
   field(doc, 'DNI:', d.chiefDni, 70.9, 513.8, 190.7);
   field(doc, 'Nivel de formación:', f.chiefLevel, 198.2, 513.8, 325.2);
   label(doc, 'Firma y aclaración:', 332.6, 513.8);
+  signature(doc, d.signature, { x: 405, y: 514.2, w: 54, h: 11.4 });
   // La aclaración a la derecha: queda lugar para firmar a mano
   if (d.chiefName) {
     const t = clip(doc, d.chiefName, 6.7, 565 - 462);
@@ -298,7 +303,37 @@ function permitPage(doc: Doc, d: PermitPdfData) {
   saacFooter(doc);
 }
 
-/** El Permiso de Acampe en PDF (una hoja). */
+/** Hoja aparte: quién firmó el permiso en pantalla, cuándo y su código de verificación. */
+function proofPage(doc: Doc, d: PermitPdfData) {
+  const p = d.proof;
+  if (!p || !d.signature) return;
+  doc.addPage({ size: [595.32, 841.92], margin: 0 });
+  centered(doc, 'CONSTANCIA DE FIRMA EN PANTALLA', 56, 13);
+  let y = paragraph(
+    doc,
+    'El Permiso de Acampe que antecede fue firmado por el Jefe o la Jefa de Campo con trazo manuscrito sobre la pantalla. El sistema ALCONBAR Gestión guarda el trazo de la firma, la fecha y la hora, y un código de verificación que deja de coincidir si se modifican los datos del permiso: en ese caso la firma deja de salir y hay que volver a firmar.',
+    84,
+    { size: 9, pitch: 11.5, justify: true, draw: true },
+  );
+  y += 24;
+  const how = p.reused
+    ? 'con su firma ya registrada en el sistema, aplicada desde su propio usuario'
+    : p.onDeviceOf
+      ? `en persona, en el dispositivo de ${p.onDeviceOf}`
+      : 'desde su propio usuario';
+  const lines = [
+    `Permiso de Acampe · ${p.camp}`,
+    `Firmó: ${p.name}${p.dni ? ` (DNI ${dniDots(p.dni)})` : ''}, Jefe/a de Campo, el ${when(p.signedAt)}`,
+    `Cómo: ${how}`,
+    `Código de verificación: ${p.hash.slice(0, 16).toUpperCase()}`,
+  ];
+  lines.forEach((l, i) => {
+    y = paragraph(doc, i === 0 ? `\u0001${l}\u0002` : l, y, { size: 9, pitch: 11.5, justify: false, draw: true }) + 11.5;
+  });
+  rule(doc, 70.9, 561.3, y + 1);
+}
+
+/** El Permiso de Acampe en PDF (una hoja; si está firmado en pantalla, una segunda con la constancia). */
 export function campPermitPdf(data: PermitPdfData, title: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ autoFirstPage: false, margin: 0, info: { Title: title, Author: 'ALCONBAR Gestión', Creator: 'ALCONBAR Gestión' } });
@@ -308,6 +343,7 @@ export function campPermitPdf(data: PermitPdfData, title: string): Promise<Buffe
     doc.on('error', reject);
     try {
       permitPage(doc, data);
+      proofPage(doc, data);
       doc.end();
     } catch (e) {
       reject(e);

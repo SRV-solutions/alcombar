@@ -437,11 +437,21 @@ export const HELP_INDEX: HelpEntry[] = [
     id: 'permiso-acampe',
     title: 'Permiso de acampe y plan del campamento (PDF)',
     description:
-      'En el campamento → "Permiso de acampe y plan": completás lo que pide la planilla de Scouts de Argentina y bajás el Permiso de Acampe en PDF para subir a Cruz del Sur. También baja el plan del campamento: objetivos, programa de cada día, materiales y nómina con DNI.',
+      'En el campamento → "Permiso de acampe y plan": completás lo que pide la planilla de Scouts de Argentina y bajás el Permiso de Acampe en PDF para subir a Cruz del Sur. El Jefe/a de Campo lo firma en pantalla, con el dedo o con su firma ya guardada. También baja el plan del campamento: objetivos, programa de cada día, materiales y nómina con DNI.',
     path: '/campamentos',
     section: 'Tesorería',
-    keywords: ['permiso de acampe', 'permiso', 'acampe', 'cruz del sur', 'planilla', 'plan del campamento', 'nómina', 'director de zona', 'pdf del campamento', 'hospital', 'comisaría'],
+    keywords: ['permiso de acampe', 'permiso', 'acampe', 'firmar el permiso', 'firma del jefe de campo', 'cruz del sur', 'planilla', 'plan del campamento', 'nómina', 'director de zona', 'pdf del campamento', 'hospital', 'comisaría'],
     show: can('camps', 'view'),
+  },
+  {
+    id: 'duplicar-campamento',
+    title: 'Duplicar un campamento',
+    description:
+      'En el campamento → «Duplicar»: crea uno nuevo, en borrador, con las unidades, el lugar, el Jefe/a de Campo, el costo y los materiales, y si querés el Permiso de Acampe, el cronograma corrido a las fechas nuevas, el presupuesto, el menú y las compras. No copia inscriptos, pagos ni firmas.',
+    path: '/campamentos',
+    section: 'Tesorería',
+    keywords: ['duplicar', 'clonar', 'copiar campamento', 'clonar campamento', 'repetir campamento', 'mismo campamento'],
+    show: can('camps', 'create'),
   },
   {
     id: 'lugares-acampe',

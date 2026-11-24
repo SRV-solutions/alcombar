@@ -1,4 +1,4 @@
-import type { Branch, CampPermitValues, CampRubro, CampStatus, CampType, DocStatus, Meal } from '@shared';
+import type { Branch, CampPermitValues, CampRubro, CampStatus, CampType, DocStatus, Meal, SignatureData } from '@shared';
 import type { UnitRef } from '../../lib/types';
 import type { MovementRow } from '../accounting/types';
 import type { AdultMini } from '../events/types';
@@ -142,6 +142,15 @@ export interface CampPermit {
     chief: { id: string; name: string; dni: string | null } | null;
   };
   canEdit: boolean;
+  /** Firma en pantalla del Jefe/a de Campo. `valid`: sigue valiendo para los datos de hoy (si no, no sale en el PDF). */
+  signature: { name: string; signedAt: string; onDeviceOf: string | null; reused: boolean; valid: boolean; data: SignatureData } | null;
+  sign: {
+    /** Quien tiene la sesión es el Jefe/a de Campo. */
+    isChief: boolean;
+    canSign: boolean;
+    /** Su última firma ya registrada en la app (solo se le muestra a su dueño). */
+    saved: { signature: SignatureData; signedAt: string } | null;
+  };
 }
 
 /** Programa y cronograma: cada día del campamento es el programa del día de la unidad. */

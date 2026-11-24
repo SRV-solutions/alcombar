@@ -46,3 +46,6 @@
 .camp-auth { font-size: 0.85rem; margin-top: 2px; }
 .camp-auth .link-btn { font-size: inherit; }
 .camp-auth-warn { color: var(--warn); font-size: 0.78rem; }
+
+/* Firma del Jefe/a de Campo en el permiso de acampe */
+.permit-signature { display: block; width: 100%; max-width: 280px; height: 96px; margin-top: 10px; border-bottom: 1px dotted var(--border); background: #fff; border-radius: 6px; }

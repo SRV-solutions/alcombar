@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Download, Save } from 'lucide-react';
-import { BRANCH_INFO, BRANCHES, campPermitSchema, type CampPermitInput } from '@shared';
+import { BRANCH_INFO, BRANCHES, campPermitSchema, type CampPermitInput, type SignatureData } from '@shared';
 import { api } from '../../lib/api';
 import { applyServerErrors } from '../../lib/forms';
 import { useToast } from '../../lib/toast';
 import { Button, Card, ErrorBox, Field, Input, Loading } from '../../components/ui';
+import { CampPermitSignature } from './CampPermitSignature';
 import type { CampDetail, CampPermit } from './types';
 
 type Key = keyof CampPermit['values'];
@@ -92,6 +93,21 @@ export function CampPermitTab({ c }: { c: CampDetail }) {
       setBusy('');
     }
   };
+  /** Firma: antes se guarda lo que haya sin guardar, porque se firma lo que quedó guardado. */
+  const sign = async (body: { signature?: SignatureData; useSaved?: boolean }) => {
+    if (p.canEdit && (formState.isDirty || !p.saved) && !(await save(true))) throw new Error('No se pudieron guardar los datos del permiso');
+    const signed = await api.post<CampPermit>(`/camps/${c.id}/permit/sign`, body);
+    qc.setQueryData(key, signed);
+    toast.ok('Permiso firmado');
+  };
+  const unsign = async () => {
+    try {
+      qc.setQueryData(key, await api.del<CampPermit>(`/camps/${c.id}/permit/sign`));
+      toast.ok('Se quitó la firma');
+    } catch (err) {
+      toast.error(err);
+    }
+  };
   const f = (name: Key, label: string, o: { hint?: string; full?: boolean; type?: string; placeholder?: string } = {}) => (
     <Field label={label} hint={o.hint} full={o.full} error={e[name]?.message as string | undefined}>
       <Input type={o.type} placeholder={o.placeholder} disabled={ro} invalid={!!e[name]} {...register(name)} />
@@ -117,7 +133,8 @@ export function CampPermitTab({ c }: { c: CampDetail }) {
       >
         <p style={{ marginTop: 0 }}>
           Es la planilla de Scouts de Argentina (versión 07-21), lista para subir a Cruz del Sur. El Grupo, las cantidades por rama, las fechas y el Jefe/a de Campo salen
-          solos del campamento; acá se completa lo demás. Las firmas y la aprobación de la Jefatura de Grupo y del Distrito quedan en blanco.
+          solos del campamento; acá se completa lo demás. El Jefe/a de Campo lo puede firmar acá mismo, en pantalla; la aprobación de la Jefatura de Grupo y del Distrito queda
+          en blanco.
         </p>
         {p.copiedFrom ? (
           <div className="alert alert-info">Los datos del lugar se tomaron del permiso de «{p.copiedFrom.name}», que fue en el mismo lugar. Revisalos y guardá.</div>
@@ -220,6 +237,8 @@ export function CampPermitTab({ c }: { c: CampDetail }) {
           </div>
         </Card>
       </form>
+
+      <CampPermitSignature p={p} onSign={sign} onRemove={unsign} />
 
       {p.canEdit ? (
         <div className="row no-print">

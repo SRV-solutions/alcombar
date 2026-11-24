@@ -3,8 +3,11 @@
  * por rama según los inscriptos, Jefe/a de Campo, fechas, primer y último horario del cronograma). Los datos del
  * lugar que todavía no se cargaron se proponen desde el último permiso hecho para el mismo lugar de acampe.
  */
-import { Op } from 'sequelize';
-import { BRANCHES, CAMP_PERMIT_KEYS, CAMP_PERMIT_PLACE_KEYS, GROUP_INFO, hasProgramWoodBadge, type Branch, type CampPermitValues } from '../shared';
+import { Op, QueryTypes } from 'sequelize';
+import { BRANCHES, CAMP_PERMIT_KEYS, CAMP_PERMIT_PLACE_KEYS, GROUP_INFO, hasProgramWoodBadge, type Branch, type CampPermitValues, type SignatureData } from '../shared';
+import { sequelize } from '../db';
+import { sha256 } from './security';
+import type { AdultSignature } from '../models/authorizations';
 import { Adult, AdultCourse, Course, Member, Unit } from '../models';
 import { MeetingItem, MeetingProgram } from '../models/program';
 import { Camp, CampEnrollment, CampSite } from '../models/treasury';
@@ -144,20 +147,67 @@ export async function buildPermit(campId: string) {
     } else if (e.adultId) leaders++;
   }
 
+  const auto = {
+    group: { number: GROUP_INFO.number, name: GROUP_INFO.name, district: GROUP_INFO.district, zone: GROUP_INFO.zone },
+    branches,
+    beneficiaries,
+    leaders,
+    chief: chief ? { id: chief.id, name: `${chief.firstName} ${chief.lastName}`, dni: chief.dni ?? null } : null,
+  };
+  // La firma vale mientras siga siendo de quien es Jefe/a de Campo y los datos no hayan cambiado
+  const sig = (camp.permitSignature ?? null) as PermitSignature | null;
+  const hash = permitHash(pdfData(values, auto));
+  const signature = sig ? { ...sig, valid: sig.adultId === chief?.id && sig.hash === hash } : null;
+
   return {
     camp,
     saved: !!stored,
     values,
+    hash,
+    signature,
     /** Si hay datos del lugar tomados del permiso de otro campamento en el mismo lugar. */
     copiedFrom: !stored && copied && previous ? { id: previous.id, name: previous.name } : null,
-    auto: {
-      group: { number: GROUP_INFO.number, name: GROUP_INFO.name, district: GROUP_INFO.district, zone: GROUP_INFO.zone },
-      branches,
-      beneficiaries,
-      leaders,
-      chief: chief ? { id: chief.id, name: `${chief.firstName} ${chief.lastName}`, dni: chief.dni ?? null } : null,
-    },
+    auto,
   };
+}
+
+// ---------------- Firma en pantalla del Jefe/a de Campo ----------------
+export interface PermitSignature {
+  adultId: string;
+  /** Usuario que firmó; null si firmó en el dispositivo de otra persona. */
+  userId: string | null;
+  name: string;
+  dni: string | null;
+  signature: SignatureData;
+  signedAt: string;
+  onDeviceOf: string | null;
+  /** Se aplicó su última firma ya registrada en la app (no la dibujó en el momento). */
+  reused: boolean;
+  /** Código de lo que firmó: si los datos del permiso cambian, deja de coincidir. */
+  hash: string;
+}
+
+/** Código de verificación de lo que dice el permiso (sin la firma). */
+export const permitHash = (d: PermitPdfData) =>
+  sha256(JSON.stringify([d.group, d.branches, d.blankCounts, d.beneficiaries, d.companions, d.leaders, d.chiefName, d.chiefDni, CAMP_PERMIT_KEYS.map((k) => d.v[k] ?? '')]));
+
+/** La última firma que esa persona ya hizo en la app: un aval, una firma de testigo o un permiso anterior. */
+export async function savedSignatureOf(adultId: string): Promise<{ signature: SignatureData; signedAt: string } | null> {
+  const found: { signature: SignatureData; signedAt: string }[] = [];
+  const auths = await sequelize.query<{ aval: AdultSignature | null; witnesses: AdultSignature[] | null }>(
+    `SELECT aval, witnesses FROM signed_authorizations
+     WHERE deleted_at IS NULL AND (aval->>'adultId' = :id OR witnesses @> CAST(:w AS jsonb))
+     ORDER BY updated_at DESC LIMIT 40`,
+    { type: QueryTypes.SELECT, replacements: { id: adultId, w: JSON.stringify([{ adultId }]) } },
+  );
+  for (const a of auths) for (const s of [a.aval, ...(a.witnesses ?? [])]) if (s && s.adultId === adultId && s.signature?.strokes?.length) found.push({ signature: s.signature, signedAt: s.signedAt });
+  const camps = await sequelize.query<{ permit_signature: PermitSignature }>(
+    `SELECT permit_signature FROM camps WHERE deleted_at IS NULL AND permit_signature->>'adultId' = :id ORDER BY updated_at DESC LIMIT 10`,
+    { type: QueryTypes.SELECT, replacements: { id: adultId } },
+  );
+  for (const c of camps) if (c.permit_signature?.signature?.strokes?.length) found.push({ signature: c.permit_signature.signature, signedAt: c.permit_signature.signedAt });
+  found.sort((a, b) => b.signedAt.localeCompare(a.signedAt));
+  return found[0] ?? null;
 }
 
 /** Lo que se guarda: los datos del formulario y con qué campamento se cargaron. */
@@ -168,17 +218,26 @@ export function permitToStore(camp: Camp, data: CampPermitValues): Stored {
   };
 }
 
-export function permitPdfData(p: NonNullable<Awaited<ReturnType<typeof buildPermit>>>): PermitPdfData {
-  const companions = p.values.companions ? Number(p.values.companions) : null;
+type Auto = { group: PermitPdfData['group']; branches: Record<Branch, number>; beneficiaries: number; leaders: number; chief: { id: string; name: string; dni: string | null } | null };
+function pdfData(values: PermitForm, auto: Auto): PermitPdfData {
   return {
-    group: p.auto.group,
-    branches: p.auto.branches,
-    beneficiaries: p.auto.beneficiaries,
-    companions,
-    leaders: p.auto.leaders,
-    blankCounts: p.auto.beneficiaries + p.auto.leaders === 0,
-    chiefName: p.auto.chief?.name ?? '',
-    chiefDni: p.auto.chief?.dni ?? '',
-    v: p.values,
+    group: auto.group,
+    branches: auto.branches,
+    beneficiaries: auto.beneficiaries,
+    companions: values.companions ? Number(values.companions) : null,
+    leaders: auto.leaders,
+    blankCounts: auto.beneficiaries + auto.leaders === 0,
+    chiefName: auto.chief?.name ?? '',
+    chiefDni: auto.chief?.dni ?? '',
+    v: values,
+  };
+}
+
+export function permitPdfData(p: NonNullable<Awaited<ReturnType<typeof buildPermit>>>): PermitPdfData {
+  const s = p.signature?.valid ? p.signature : null;
+  return {
+    ...pdfData(p.values, p.auto),
+    signature: s?.signature ?? null,
+    proof: s ? { camp: p.camp.name, name: s.name, dni: s.dni, signedAt: s.signedAt, onDeviceOf: s.onDeviceOf, reused: s.reused, hash: s.hash } : null,
   };
 }

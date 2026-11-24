@@ -54,7 +54,7 @@ export function put(doc: Doc, text: string, x: number, top: number, size: number
   doc.font(font).fontSize(size).fillColor(color).text(text, x, base(top, size), { lineBreak: false, baseline: 'alphabetic' });
 }
 export const widthOf = (doc: Doc, text: string, size: number, font = FONT.r) => doc.font(font).fontSize(size).widthOfString(text);
-function centered(doc: Doc, text: string, top: number, size: number, font = FONT.b, color = '#000000') {
+export function centered(doc: Doc, text: string, top: number, size: number, font = FONT.b, color = '#000000') {
   put(doc, text, CENTER - widthOf(doc, text, size, font) / 2, top, size, font, color);
 }
 /** Título centrado que termina en una llamada a nota, "(4)": el número va chico y elevado. */
@@ -118,7 +118,7 @@ const wordWidth = (w: Word) => w.reduce((s, p) => s + p.width, 0);
  * Dibuja un párrafo desde `top` y devuelve el borde superior de su último renglón.
  * Los rellenos de puntos o guiones se cortan al final del renglón y siguen en el siguiente, como en la planilla.
  */
-function paragraph(doc: Doc, marked: string, top: number, o: { size: number; pitch: number; justify?: boolean; italic?: boolean; x?: number; width?: number; indent?: number; draw: boolean }): number {
+export function paragraph(doc: Doc, marked: string, top: number, o: { size: number; pitch: number; justify?: boolean; italic?: boolean; x?: number; width?: number; indent?: number; draw: boolean }): number {
   const x0 = o.x ?? L;
   const width = o.width ?? W;
   const space = widthOf(doc, ' ', o.size);
@@ -194,7 +194,7 @@ function paragraph(doc: Doc, marked: string, top: number, o: { size: number; pit
 
 // ---------------- Firmas ----------------
 /** Dibuja el trazo de una firma dentro de un recuadro, apoyada sobre el renglón. */
-function signature(doc: Doc, s: SignatureData | null | undefined, box: { x: number; y: number; w: number; h: number }) {
+export function signature(doc: Doc, s: SignatureData | null | undefined, box: { x: number; y: number; w: number; h: number }) {
   if (!s?.strokes?.length) return;
   let minX = Infinity;
   let minY = Infinity;
@@ -236,7 +236,7 @@ function field(doc: Doc, label: string, value: string | null | undefined, x: num
   return start;
 }
 
-const when = (iso: string) => {
+export const when = (iso: string) => {
   const d = new Date(iso);
   const p = (n: number) => String(n).padStart(2, '0');
   // Hora de Argentina (UTC−3), sin depender del servidor

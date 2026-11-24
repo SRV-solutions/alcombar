@@ -397,6 +397,8 @@ export class Camp extends Model {
   declare renderedAt: Date | null;
   /** Datos del Permiso de Acampe que no salen del resto del campamento (ver campPermitSchema). */
   declare permit: Record<string, unknown> | null;
+  /** Firma en pantalla del Jefe/a de Campo sobre el Permiso de Acampe (ver lib/campPermit). */
+  declare permitSignature: Record<string, unknown> | null;
   declare ownerUnit?: Unit | null;
   declare site?: CampSite | null;
   declare responsible?: Adult | null;
@@ -425,6 +427,7 @@ Camp.init(
     siteReview: TEXT,
     renderedAt: DATE,
     permit: JSONB,
+    permitSignature: JSONB,
     ...soft,
   },
   { sequelize, tableName: 'camps', modelName: 'Camp' },

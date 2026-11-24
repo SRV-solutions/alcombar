@@ -1076,7 +1076,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         pose: 'point',
         title: 'Permiso de acampe y plan',
-        text: 'En la pestaña "Permiso de acampe y plan" completás lo que pide la planilla de Scouts de Argentina (transporte, hospital y comisaría más cercanos, vehículo de apoyo, Director/a de Zona) y bajás el Permiso de Acampe en PDF, listo para subir a Cruz del Sur. El Grupo, las cantidades por rama y el Jefe/a de Campo salen solos. Ahí mismo bajás el plan del campamento: objetivos, programa de cada día, materiales y nómina.',
+        text: 'En la pestaña "Permiso de acampe y plan" completás lo que pide la planilla de Scouts de Argentina (transporte, hospital y comisaría más cercanos, vehículo de apoyo, Director/a de Zona) y bajás el Permiso de Acampe en PDF, listo para subir a Cruz del Sur. El Grupo, las cantidades por rama y el Jefe/a de Campo salen solos. El Jefe/a de Campo lo firma ahí mismo, con el dedo o con su firma ya guardada. Ahí mismo bajás el plan del campamento: objetivos, programa de cada día, materiales y nómina. Y con «Duplicar» armás el próximo campamento a partir de este, con su permiso y su cronograma.',
       },
       {
         target: button('Lugares de acampe'),

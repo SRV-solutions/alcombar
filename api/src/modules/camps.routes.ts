@@ -15,7 +15,9 @@ import {
   campBudgetLineSchema,
   campMenuSchema,
   campNights,
+  campCloneSchema,
   campPermitSchema,
+  campPermitSignSchema,
   campRenderSchema,
   campSchema,
   campShoppingSchema,
@@ -56,7 +58,8 @@ import { notifyReferents } from '../lib/notify';
 import { currentContext } from '../lib/context';
 import { ah, badRequest, forbidden, notFound, parse } from '../lib/errors';
 import { campProgram } from '../lib/campProgram';
-import { buildPermit, permitPdfData, permitToStore } from '../lib/campPermit';
+import { buildPermit, permitPdfData, permitToStore, savedSignatureOf, type PermitSignature } from '../lib/campPermit';
+import { ActivitySheet, MeetingItem, MeetingProgram } from '../models/program';
 import { campPermitPdf } from '../lib/campPermitPdf';
 import { campPlanPdf, type PlanDay, type PlanPdfData } from '../lib/campPlanPdf';
 import { assertCan, authorize } from '../middlewares/auth';
@@ -650,17 +653,30 @@ async function permitFor(req: Request) {
   if (!p) throw notFound();
   return p;
 }
-const permitJson = (req: Request, p: Awaited<ReturnType<typeof permitFor>>) => ({
-  saved: p.saved,
-  values: p.values,
-  copiedFrom: p.copiedFrom,
-  auto: p.auto,
-  canEdit: can(req.auth, 'camps', 'edit', p.camp.ownerUnitId),
-});
+async function permitJson(req: Request, p: Awaited<ReturnType<typeof permitFor>>) {
+  const canEdit = can(req.auth, 'camps', 'edit', p.camp.ownerUnitId);
+  const isChief = !!p.auto.chief && req.user!.adultId === p.auto.chief.id;
+  const s = p.signature;
+  return {
+    saved: p.saved,
+    values: p.values,
+    copiedFrom: p.copiedFrom,
+    auto: p.auto,
+    canEdit,
+    signature: s ? { name: s.name, signedAt: s.signedAt, onDeviceOf: s.onDeviceOf, reused: s.reused, valid: s.valid, data: s.signature } : null,
+    sign: {
+      /** Quien tiene la sesión es el Jefe/a de Campo. */
+      isChief,
+      canSign: !!p.auto.chief && (isChief || canEdit),
+      /** Su última firma ya registrada en la app, para aplicarla sin volver a dibujarla (solo se le muestra a su dueño). */
+      saved: isChief ? await savedSignatureOf(p.auto.chief!.id) : null,
+    },
+  };
+}
 campsRouter.get(
   '/:id/permit',
   ah(async (req, res) => {
-    res.json(permitJson(req, await permitFor(req)));
+    res.json(await permitJson(req, await permitFor(req)));
   }),
 );
 campsRouter.put(
@@ -670,7 +686,7 @@ campsRouter.put(
     assertCampPerm(req, camp, 'edit');
     const data = parse(campPermitSchema, req.body);
     await camp.update({ permit: permitToStore(camp, data) });
-    res.json(permitJson(req, await permitFor(req)));
+    res.json(await permitJson(req, await permitFor(req)));
   }),
 );
 campsRouter.get(
@@ -679,6 +695,183 @@ campsRouter.get(
     const p = await permitFor(req);
     const name = `Permiso de acampe - ${p.camp.name}`;
     sendPdf(res, await campPermitPdf(permitPdfData(p), name), name);
+  }),
+);
+
+// ---- Firma en pantalla del Jefe/a de Campo ----
+/**
+ * Firma el permiso el Jefe/a de Campo: con su propio usuario (dibujando o aplicando su última firma ya registrada
+ * en la app) o, si está presente, con el dedo en el dispositivo de quien puede editar el campamento.
+ */
+campsRouter.post(
+  '/:id/permit/sign',
+  ah(async (req, res) => {
+    const p = await permitFor(req);
+    const data = parse(campPermitSignSchema, req.body);
+    const chief = p.auto.chief;
+    if (!chief) throw badRequest('Primero elegí al Jefe/a de Campo (en «Editar»)');
+    if (!p.saved) throw badRequest('Guardá primero los datos del permiso');
+    const mine = req.user!.adultId === chief.id;
+    if (!mine && !can(req.auth, 'camps', 'edit', p.camp.ownerUnitId)) throw forbidden('El permiso lo firma el Jefe/a de Campo');
+    let signature = data.signature ?? null;
+    if (data.useSaved) {
+      // La firma guardada solo la aplica su dueño, desde su propio usuario
+      if (!mine) throw forbidden('Solo el Jefe/a de Campo, con su propio usuario, puede usar su firma guardada');
+      signature = (await savedSignatureOf(chief.id))?.signature ?? null;
+      if (!signature) throw badRequest('Todavía no tenés una firma registrada en la app: firmá con el dedo');
+    }
+    if (!signature) throw badRequest('Falta la firma');
+    const stored: PermitSignature = {
+      adultId: chief.id,
+      userId: mine ? req.user!.id : null,
+      name: chief.name,
+      dni: chief.dni ? chief.dni.replace(/\D/g, '') : null,
+      signature,
+      signedAt: new Date().toISOString(),
+      onDeviceOf: mine ? null : req.user!.name,
+      reused: data.useSaved,
+      hash: p.hash,
+    };
+    // Sin los ganchos de auditoría (guardarían el trazo entero): queda un renglón con quién y cómo
+    await Camp.update({ permitSignature: stored as never }, { where: { id: p.camp.id }, hooks: false });
+    await writeAudit({
+      action: 'update',
+      entity: 'Camp',
+      entityId: p.camp.id,
+      summary: `Permiso de acampe de ${p.camp.name} firmado por ${chief.name}${stored.onDeviceOf ? ` (en el dispositivo de ${stored.onDeviceOf})` : stored.reused ? ' (con su firma guardada)' : ''}`,
+    });
+    res.json(await permitJson(req, await permitFor(req)));
+  }),
+);
+campsRouter.delete(
+  '/:id/permit/sign',
+  ah(async (req, res) => {
+    const p = await permitFor(req);
+    if (!p.signature) throw badRequest('El permiso no está firmado');
+    if (req.user!.adultId !== p.signature.adultId && !can(req.auth, 'camps', 'edit', p.camp.ownerUnitId)) throw forbidden();
+    await Camp.update({ permitSignature: null }, { where: { id: p.camp.id }, hooks: false });
+    await writeAudit({ action: 'update', entity: 'Camp', entityId: p.camp.id, summary: `Se quitó la firma del permiso de acampe de ${p.camp.name}` });
+    res.json(await permitJson(req, await permitFor(req)));
+  }),
+);
+
+// ---- Duplicar un campamento ----
+const addDays = (iso: string, n: number) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+/**
+ * Crea un campamento nuevo (en borrador) con los datos de otro: unidades, lugar, Jefe/a de Campo, costo, propuesta,
+ * transporte y materiales; y, si se pide, el Permiso de Acampe, el presupuesto, el menú y las compras, y el
+ * cronograma corrido a las fechas nuevas. No copia inscriptos, pagos, movimientos ni firmas.
+ */
+campsRouter.post(
+  '/:id/clone',
+  ah(async (req, res) => {
+    const src = await loadCamp(req.params.id);
+    if (!canViewCamp(req, src)) throw forbidden();
+    const d = parse(campCloneSchema, req.body);
+    assertCan(req, 'camps', 'create', src.ownerUnitId);
+    const unitIds = [...new Set([...(src.ownerUnitId ? [src.ownerUnitId] : []), ...campUnitIds(src)])];
+    const shift = Math.round((new Date(`${d.startDate}T12:00:00Z`).getTime() - new Date(`${src.startDate}T12:00:00Z`).getTime()) / 86_400_000);
+    const copied = { permit: false, budget: 0, menu: 0, shopping: 0, days: 0, daysSkipped: 0 };
+
+    // El permiso: todo lo cargado, menos las fechas (son las nuevas) y cuándo se le avisó al Director/a de Zona
+    let permit: Record<string, unknown> | null = null;
+    if (d.permit && src.permit) {
+      const { basis: _b, departureDate: _d, arrivalDate: _a, zoneDirectorContact: _z, ...rest } = src.permit as Record<string, unknown>;
+      permit = { ...rest, basis: { chiefAdultId: src.responsibleAdultId ?? null, startDate: d.startDate, endDate: d.endDate, campSiteId: src.campSiteId ?? null } };
+      copied.permit = true;
+    }
+
+    const created = await sequelize.transaction(async (transaction) => {
+      const c = await Camp.create(
+        {
+          name: d.name,
+          type: src.type,
+          ownerUnitId: src.ownerUnitId,
+          startDate: d.startDate,
+          endDate: d.endDate,
+          campSiteId: src.campSiteId,
+          place: src.place,
+          responsibleAdultId: src.responsibleAdultId,
+          cost: src.cost,
+          description: src.description,
+          transportCompany: src.transportCompany,
+          transportContact: src.transportContact,
+          transportSchedule: src.transportSchedule,
+          transportNotes: src.transportNotes,
+          materials: src.materials,
+          status: 'borrador',
+          permit,
+        },
+        { transaction },
+      );
+      await setUnits(c.id, unitIds, transaction);
+      if (d.budget) {
+        for (const l of await CampBudgetLine.findAll({ where: { campId: src.id }, order: [['createdAt', 'ASC']], transaction })) {
+          await CampBudgetLine.create({ campId: c.id, rubro: l.rubro, concept: l.concept, planned: l.planned }, { transaction });
+          copied.budget++;
+        }
+      }
+      if (d.logistics) {
+        for (const m of await CampMenuItem.findAll({ where: { campId: src.id }, order: [['createdAt', 'ASC']], transaction })) {
+          // El día se corre con el campamento; si cae fuera de las fechas nuevas queda sin día
+          const day = m.day ? addDays(m.day, shift) : null;
+          await CampMenuItem.create({ campId: c.id, day: day && day <= d.endDate ? day : null, meal: m.meal, dish: m.dish, notes: m.notes }, { transaction });
+          copied.menu++;
+        }
+        for (const s of await CampShoppingItem.findAll({ where: { campId: src.id }, order: [['createdAt', 'ASC']], transaction })) {
+          await CampShoppingItem.create({ campId: c.id, item: s.item, quantity: s.quantity, bought: false, notes: s.notes }, { transaction });
+          copied.shopping++;
+        }
+      }
+      if (d.schedule) {
+        // Cada día del cronograma pasa al mismo día del campamento nuevo, si ahí todavía no hay programa.
+        // Las fichas no se enlazan (son las del campamento anterior): queda el nombre de la actividad.
+        const editable = unitIds.filter((u) => can(req.auth, 'activities', 'edit', u));
+        const programs = editable.length
+          ? await MeetingProgram.findAll({
+              where: { unitId: editable, date: { [Op.between]: [src.startDate, src.endDate] } },
+              include: [{ model: MeetingItem, as: 'items', include: [{ model: ActivitySheet, as: 'sheet', attributes: ['id', 'name'] }] }],
+              order: [[{ model: MeetingItem, as: 'items' }, 'sortOrder', 'ASC']],
+              transaction,
+            })
+          : [];
+        for (const p of programs) {
+          const date = addDays(p.date, shift);
+          if (date > d.endDate || !(p.items ?? []).length) continue;
+          if (await MeetingProgram.findOne({ where: { unitId: p.unitId, date }, transaction })) {
+            copied.daysSkipped++;
+            continue;
+          }
+          const np = await MeetingProgram.create({ unitId: p.unitId, date, notes: p.notes }, { transaction });
+          for (const i of p.items ?? []) {
+            await MeetingItem.create(
+              {
+                meetingProgramId: np.id,
+                sortOrder: i.sortOrder,
+                time: i.time,
+                activitySheetId: null,
+                title: i.title || i.sheet?.name || 'Actividad',
+                responsibleAdultId: i.responsibleAdultId,
+                responsibleText: i.responsibleText ?? null,
+                durationMin: i.durationMin,
+                notes: i.notes,
+                materials: i.materials ?? null,
+              },
+              { transaction },
+            );
+          }
+          copied.days++;
+        }
+      }
+      await writeAudit({ action: 'create', entity: 'Camp', entityId: c.id, summary: `${d.name}: duplicado de «${src.name}»` }, transaction);
+      return c;
+    });
+    void notifyCampReferents(req, created, unitIds);
+    res.status(201).json({ id: created.id, copied });
   }),
 );
 
